@@ -4,6 +4,7 @@ import { jumpToPhase } from '../src/sim/actions';
 import { clockAt } from '../src/sim/clock';
 import { windAt } from '../src/sim/environment';
 import { SimRunner } from '../src/sim/runner';
+import { fromPlain, toPlain } from '../src/sim/save';
 import { createInitialState } from '../src/sim/state';
 import { advance, step } from '../src/sim/tick';
 
@@ -40,10 +41,12 @@ describe('fixed-step simulation', () => {
     expect(a).toEqual(b);
   });
 
-  it('state is plain JSON (save-friendly)', () => {
+  it('state survives a JSON round trip via toPlain (save-friendly)', () => {
     const s = createInitialState();
     advance(s, 30, TICK_SECONDS);
-    expect(JSON.parse(JSON.stringify(s))).toEqual(s);
+    const plain = toPlain(s);
+    expect(JSON.parse(JSON.stringify(plain))).toEqual(plain);
+    expect(toPlain(fromPlain(plain))).toEqual(plain);
   });
 });
 

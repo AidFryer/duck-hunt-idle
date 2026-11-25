@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, type Texture } from 'pixi.js';
 import { palette } from '../../data/palette';
 import { lerpColor, multiplyColor } from '../../util/color';
 import { clamp, seededRandom } from '../../util/math';
@@ -21,6 +21,11 @@ export class EffectsLayer implements Layer {
   private readonly steam: ParticlePool;
   private readonly leaves: ParticlePool[];
   private readonly fireflies: ParticlePool;
+  private readonly feathers: ParticlePool;
+  private readonly puffs: ParticlePool;
+  private readonly arcs: ParticlePool;
+  private readonly sparkles: ParticlePool;
+  private readonly confettiTex: Texture[];
   private l!: SceneLayout;
   private smokeTimer = 0;
   private steamTimer = 0;
@@ -37,7 +42,16 @@ export class EffectsLayer implements Layer {
     this.leaves = [0, 1, 2].map((i) => new ParticlePool(tex.get(`leaf${i}`), 5));
     this.fireflies = new ParticlePool(tex.get('glow'), 22);
     this.fireflies.view.blendMode = 'add';
-    this.view.addChild(this.smoke.view, this.steam.view, ...this.leaves.map((p) => p.view), this.drops.view, this.fireflies.view);
+    this.feathers = new ParticlePool(tex.get('feather'), 70);
+    this.puffs = new ParticlePool(tex.get('softDot'), 30);
+    this.arcs = new ParticlePool(tex.get('soundArc'), 18, 0, 0.5);
+    this.sparkles = new ParticlePool(tex.get('star'), 30);
+    this.sparkles.view.blendMode = 'add';
+    this.confettiTex = [tex.get('feather'), tex.get('leaf0'), tex.get('leaf1'), tex.get('leaf2')];
+    this.view.addChild(
+      this.smoke.view, this.steam.view, ...this.leaves.map((p) => p.view), this.drops.view,
+      this.puffs.view, this.arcs.view, this.feathers.view, this.sparkles.view, this.fireflies.view,
+    );
     for (const ff of this.fireflies.items) {
       ff.active = true;
       ff.sprite.visible = true;
@@ -84,6 +98,105 @@ export class EffectsLayer implements Layer {
     }
     this.ripple(x, y, size * 1.3, 2.6);
     this.ripple(x, y, size * 0.8, 1.8);
+  }
+
+  /** Soft burst of feathers that drift down (harvest, never graphic). */
+  featherPuff(x: number, y: number, s: number, count = 7): void {
+    for (let i = 0; i < count; i++) {
+      const p = this.feathers.spawn();
+      p.sprite.texture = this.confettiTex[0]!;
+      const a = this.rnd() * Math.PI * 2;
+      const v = (20 + this.rnd() * 40) * s;
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v - 15 * s;
+      p.life = 2.2 + this.rnd() * 1.2;
+      p.spin = (this.rnd() - 0.5) * 4;
+      p.scale0 = s * (0.45 + this.rnd() * 0.3);
+      p.extra = 0;
+    }
+  }
+
+  /** Feather-and-leaf confetti for milestones. */
+  confetti(x: number, y: number, s: number, count = 26): void {
+    for (let i = 0; i < count; i++) {
+      const p = this.feathers.spawn();
+      p.sprite.texture = this.confettiTex[i % this.confettiTex.length]!;
+      const a = -Math.PI / 2 + (this.rnd() - 0.5) * 2.2;
+      const v = (90 + this.rnd() * 110) * s;
+      p.x = x;
+      p.y = y;
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v;
+      p.life = 2.6 + this.rnd() * 1.4;
+      p.spin = (this.rnd() - 0.5) * 8;
+      p.scale0 = s * (0.6 + this.rnd() * 0.4);
+      p.extra = 1;
+    }
+  }
+
+  /** A soft distant "pop": small grey puffs, no flash. */
+  shotPuff(x: number, y: number, s: number, dir: number): void {
+    for (let i = 0; i < 4; i++) {
+      const p = this.puffs.spawn();
+      p.x = x + dir * i * 3 * s;
+      p.y = y - i * 1.5 * s;
+      p.vx = dir * (10 + i * 6) * s;
+      p.vy = -(6 + this.rnd() * 6) * s;
+      p.life = 1.4 + i * 0.2;
+      p.scale0 = 0.12 * s;
+      p.scale1 = (0.45 + i * 0.1) * s;
+      p.alpha0 = 0.55;
+      p.extra = 0xdcd6cc;
+    }
+  }
+
+  /** Little steam puff from a working bot. */
+  steamPuff(x: number, y: number, s: number): void {
+    const p = this.puffs.spawn();
+    p.x = x;
+    p.y = y;
+    p.vx = (this.rnd() - 0.5) * 6 * s;
+    p.vy = -16 * s;
+    p.life = 1.1;
+    p.scale0 = 0.06 * s;
+    p.scale1 = 0.24 * s;
+    p.alpha0 = 0.6;
+    p.extra = 0xffffff;
+  }
+
+  /** Sound-wave rings from a duck call, travelling in `dir`. */
+  callRings(x: number, y: number, s: number, dir: number): void {
+    for (let i = 0; i < 3; i++) {
+      const p = this.arcs.spawn();
+      p.x = x;
+      p.y = y;
+      p.vx = dir * 38 * s;
+      p.life = 1.1;
+      p.age = -i * 0.22;
+      p.scale0 = 0.35 * s;
+      p.scale1 = 1.1 * s;
+      p.alpha0 = 0.85;
+      p.extra = dir;
+      p.sprite.visible = false;
+    }
+  }
+
+  /** Twinkling sparkles (level-ups, repairs). */
+  sparkle(x: number, y: number, s: number, count = 8): void {
+    for (let i = 0; i < count; i++) {
+      const p = this.sparkles.spawn();
+      const a = this.rnd() * Math.PI * 2;
+      const r = (6 + this.rnd() * 18) * s;
+      p.x = x + Math.cos(a) * r;
+      p.y = y + Math.sin(a) * r;
+      p.vy = -10 * s;
+      p.life = 0.7 + this.rnd() * 0.6;
+      p.age = -this.rnd() * 0.3;
+      p.scale0 = (0.5 + this.rnd() * 0.6) * s;
+      p.sprite.visible = false;
+    }
   }
 
   // ---------------------------------------------------------------- update
@@ -161,6 +274,67 @@ export class EffectsLayer implements Layer {
         if (p.seed > 0.6) this.ripple(p.x, p.extra, 0.35, 1.2);
         this.drops.release(p);
       }
+    }
+
+    // Feathers & confetti: burst, then drift down swaying.
+    for (const p of this.feathers.items) {
+      if (!p.active) continue;
+      if (this.age(p, dt)) { this.feathers.release(p); continue; }
+      const t = p.age / p.life;
+      const drag = p.extra === 1 ? 1.6 : 2.4;
+      p.vx -= p.vx * drag * dt;
+      p.vy += ((p.extra === 1 ? 70 : 22) * l.scale - p.vy * drag) * dt;
+      p.x += (p.vx + Math.sin(p.age * 3 + p.seed * 9) * 10 * l.scale) * dt;
+      p.y += p.vy * dt;
+      p.sprite.position.set(p.x, p.y);
+      p.sprite.rotation += p.spin * dt;
+      p.sprite.scale.set(p.scale0 * Math.cos(p.age * 3 + p.seed * 7), p.scale0);
+      p.sprite.alpha = Math.min(1, (1 - t) * 3);
+      p.sprite.tint = sky.light;
+    }
+
+    // Shot & steam puffs
+    for (const p of this.puffs.items) {
+      if (!p.active) continue;
+      if (this.age(p, dt)) { this.puffs.release(p); continue; }
+      const t = p.age / p.life;
+      p.vx *= 1 - dt * 1.5;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.sprite.position.set(p.x, p.y);
+      p.sprite.scale.set(p.scale0 + (p.scale1 - p.scale0) * Math.sqrt(t));
+      p.sprite.alpha = p.alpha0 * (1 - t);
+      p.sprite.tint = multiplyColor(p.extra, lightTint);
+    }
+
+    // Call rings
+    for (const p of this.arcs.items) {
+      if (!p.active) continue;
+      p.age += dt;
+      if (p.age < 0) continue;
+      if (p.age >= p.life) { this.arcs.release(p); continue; }
+      const t = p.age / p.life;
+      p.sprite.visible = true;
+      p.sprite.position.set(p.x + p.vx * p.age, p.y);
+      p.sprite.scale.set((p.scale0 + (p.scale1 - p.scale0) * t) * p.extra, p.scale0 + (p.scale1 - p.scale0) * t);
+      p.sprite.alpha = p.alpha0 * (1 - t);
+      p.sprite.tint = lerpColor(palette.cream, palette.gold, 0.3);
+    }
+
+    // Sparkles
+    for (const p of this.sparkles.items) {
+      if (!p.active) continue;
+      p.age += dt;
+      if (p.age < 0) continue;
+      if (p.age >= p.life) { this.sparkles.release(p); continue; }
+      const t = p.age / p.life;
+      p.sprite.visible = true;
+      p.y += p.vy * dt;
+      p.sprite.position.set(p.x, p.y);
+      p.sprite.scale.set(p.scale0 * Math.sin(t * Math.PI));
+      p.sprite.rotation += dt * 2;
+      p.sprite.tint = palette.gold;
+      p.sprite.alpha = 1;
     }
 
     // Ripples

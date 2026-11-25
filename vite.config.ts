@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import preact from '@preact/preset-vite';
 import type { Plugin } from 'vite';
-import { GAME_TITLE } from './src/config';
+import { GAME_TITLE } from './src/config.ts';
 
 /** Inject GAME_TITLE into index.html so the name lives in one place. */
 function gameTitle(): Plugin {

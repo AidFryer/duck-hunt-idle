@@ -42,7 +42,21 @@ const recipes: Record<string, Recipe> = {
   'duck.swim.hen': { paint: () => P.paintDuckSwim({ drake: false }), resolution: PAINT_SCALE },
   'decoy.drake': { paint: () => P.paintDuckSwim({ drake: true }, true), resolution: PAINT_SCALE },
   'decoy.hen': { paint: () => P.paintDuckSwim({ drake: false }, true), resolution: PAINT_SCALE },
+  feather: { paint: P.paintFeather, resolution: PAINT_SCALE },
+  soundArc: { paint: P.paintSoundArc, resolution: PAINT_SCALE },
+  gear: { paint: P.paintGear, resolution: PAINT_SCALE },
+  pegLeg: { paint: P.paintPegLeg, resolution: PAINT_SCALE },
+  deck: { paint: P.paintDeck, resolution: PAINT_SCALE },
+  'bot.caller': { paint: () => P.paintDecoyBot('caller'), resolution: PAINT_SCALE },
+  'bot.blind': { paint: () => P.paintDecoyBot('blind'), resolution: PAINT_SCALE },
+  'bot.generic': { paint: () => P.paintDecoyBot('generic'), resolution: PAINT_SCALE },
 };
+for (const k of ['lab', 'robo'] as const) {
+  recipes[`dog.${k}.body`] = { paint: () => P.paintDogBody(k), resolution: PAINT_SCALE };
+  recipes[`dog.${k}.leg`] = { paint: () => P.paintDogLeg(k), resolution: PAINT_SCALE };
+  recipes[`dog.${k}.tail`] = { paint: () => P.paintDogTail(k), resolution: PAINT_SCALE };
+  recipes[`dog.${k}.swim`] = { paint: () => P.paintDogSwim(k), resolution: PAINT_SCALE };
+}
 for (let i = 0; i < 4; i++) recipes[`cloud${i}`] = { paint: () => P.paintCloud(i), resolution: 1 };
 for (let i = 0; i < 3; i++) recipes[`reed${i}`] = { paint: () => P.paintReedBlade(i), resolution: PAINT_SCALE };
 for (let i = 0; i < 3; i++) recipes[`leaf${i}`] = { paint: () => P.paintLeaf(i), resolution: PAINT_SCALE };

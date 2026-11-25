@@ -2,6 +2,7 @@ import { TICK_RATE, TICK_SECONDS } from '../config';
 
 /** Tick length in whole milliseconds — integer math avoids float drift. */
 const TICK_MS = 1000 / TICK_RATE;
+import type { SimEvent } from './events';
 import type { GameState } from './state';
 import { step } from './tick';
 
@@ -19,6 +20,8 @@ export class SimRunner {
   /** Multiplier on real time (dev time-lapse). */
   timeScale = 1;
   readonly listeners = new Set<(state: GameState) => void>();
+  /** Events produced since the last drain(). */
+  private events: SimEvent[] = [];
 
   constructor(
     public readonly state: GameState,
@@ -39,13 +42,30 @@ export class SimRunner {
     let ticks = 0;
     // Tiny epsilon so 299.99999ms of float noise still counts as 3 ticks.
     while (this.acc >= TICK_MS - 1e-6) {
-      step(this.state, TICK_SECONDS);
+      step(this.state, TICK_SECONDS, this.events);
       this.acc -= TICK_MS;
       ticks++;
     }
     if (this.acc < 0) this.acc = 0;
     if (ticks > 0) for (const fn of this.listeners) fn(this.state);
     return ticks;
+  }
+
+  /** Push an event from outside the tick (e.g. a player tap). */
+  emit(e: SimEvent): void {
+    this.events.push(e);
+  }
+
+  /** Hand over (and clear) every event since the last call. */
+  drain(): SimEvent[] {
+    const out = this.events;
+    this.events = [];
+    return out;
+  }
+
+  /** The live event buffer, for actions that run outside a tick. */
+  get sink(): SimEvent[] {
+    return this.events;
   }
 
   /** Fraction of the way to the next tick (for render interpolation). */

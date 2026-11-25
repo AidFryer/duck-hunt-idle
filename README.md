@@ -58,7 +58,7 @@ Rules the code follows:
 ## Build status
 
 - [x] Phase 1: scaffold, palette, animated marsh (day cycle, water, reeds, fog, flocks), responsive layout
-- [ ] Phase 2: core loop (manual hunt, currencies, saves, first bots)
+- [x] Phase 2: core loop (manual hunt, currencies, saves, first bots)
 - [ ] Phase 3: automation (job board, flock queue, exceptions, foremen)
 - [ ] Phase 4: species, weather, upgrades, achievements, offline progress
 - [ ] Phase 5: workflows and prestige

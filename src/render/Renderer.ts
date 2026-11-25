@@ -1,7 +1,9 @@
 import { Application } from 'pixi.js';
 import { MAX_RENDER_RESOLUTION, TICK_SECONDS } from '../config';
 import { clockAt, duckActivityAt } from '../sim/clock';
+import type { SimEvent } from '../sim/events';
 import type { SimRunner } from '../sim/runner';
+import type { Point } from './types';
 import { MarshScene } from './MarshScene';
 import { computeSkyState, createSkyState } from './skyState';
 
@@ -23,8 +25,32 @@ export class Renderer {
   /** Optional override hour for previews/debugging (null = follow sim). */
   hourOverride: number | null = null;
   options: RendererOptions = { motion: 1 };
+  /** Called for each sim event after the scene animates it. */
+  onEvent: ((e: SimEvent, at: Point | null) => void) | null = null;
 
-  constructor(private readonly host: HTMLElement, private readonly runner: SimRunner) {}
+  /** True while frames are being drawn (tab visible, initialised). */
+  get active(): boolean {
+    return this.ready && !document.hidden;
+  }
+  private ready = false;
+
+  constructor(private readonly host: HTMLElement, private runner: SimRunner) {}
+
+  /** Swap in a new sim (after import / reset) and rebuild the visuals. */
+  setRunner(runner: SimRunner): void {
+    this.runner = runner;
+    if (this.ready) {
+      this.app.stage.removeChild(this.scene.root);
+      const old = this.scene;
+      old.root.destroy({ children: true });
+      old.tex.destroy();
+      this.scene = new MarshScene();
+      this.app.stage.addChild(this.scene.root);
+      this.lastW = this.lastH = 0;
+      this.handleResize();
+      this.scene.sync(runner.state);
+    }
+  }
 
   async init(): Promise<void> {
     await this.app.init({
@@ -42,6 +68,7 @@ export class Renderer {
     this.scene = new MarshScene();
     this.app.stage.addChild(this.scene.root);
     this.handleResize();
+    this.scene.sync(this.runner.state);
 
     // ResizeObserver catches layout changes (panel resizes, orientation)
     // that don't fire a window resize.
@@ -53,10 +80,14 @@ export class Renderer {
 
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.app.ticker.stop();
-      else this.app.ticker.start();
+      else {
+        this.scene.sync(this.runner.state);
+        this.app.ticker.start();
+      }
     });
 
     this.app.ticker.add((ticker) => this.frame(Math.min(ticker.deltaMS / 1000, 0.1)));
+    this.ready = true;
   }
 
   private lastW = 0;
@@ -75,9 +106,15 @@ export class Renderer {
     this.runner.update();
     this.time += dt;
     const state = this.runner.state;
+    for (const e of this.runner.drain()) {
+      const at = this.scene.handle(e);
+      this.onEvent?.(e, at);
+    }
+    this.scene.sync(state);
     const dayTime = state.clock.dayTime + this.runner.alpha * TICK_SECONDS * this.runner.timeScale;
     const hour = this.hourOverride ?? clockAt(dayTime).hour;
     computeSkyState(hour, this.sky);
+    // Reduced motion slows ambient animation; it never hides feedback.
     this.scene.update({
       time: this.time,
       dt,

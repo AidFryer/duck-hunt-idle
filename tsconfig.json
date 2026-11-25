@@ -13,6 +13,8 @@
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "useDefineForClassFields": true,

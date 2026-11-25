@@ -1,9 +1,11 @@
 import { GAME_TITLE } from '../../config';
+import type { Notation } from '../../util/format';
 import type { HudSnapshot } from '../hudState';
 import { activityLabel, windLabel } from '../hudState';
+import { Counter } from './Counter';
 import { Icon } from './Icon';
 
-export function TopBar({ hud }: { hud: HudSnapshot }) {
+export function TopBar({ hud, notation, onSettings }: { hud: HudSnapshot; notation: Notation; onSettings: () => void }) {
   const night = hud.phaseId === 'night' || hud.phaseId === 'predawn';
   return (
     <header class="topbar">
@@ -14,19 +16,37 @@ export function TopBar({ hud }: { hud: HudSnapshot }) {
       </div>
 
       <div class="chips" aria-label="Resources">
-        <Chip icon="coin" label="Coins" value={hud.coins} tone="gold" />
-        <Chip icon="feather" label="Feathers" value={hud.feathers} tone="cream" />
-        <Chip icon="duck" label="Bag" value={hud.bag} tone="sage" />
+        <div class="chip chip--gold" title="Coins">
+          <Icon name="coin" size={18} />
+          <span class="chip__value"><Counter value={hud.coins} notation={notation} /></span>
+          <span class="chip__label">Coins</span>
+        </div>
+        <div class="chip chip--cream" title="Feathers">
+          <Icon name="feather" size={18} />
+          <span class="chip__value"><Counter value={hud.feathers} notation={notation} /></span>
+          <span class="chip__label">Feathers</span>
+        </div>
+        <div class="chip chip--sage" title={`Today's bag (best: ${hud.bestBag})`}>
+          <Icon name="duck" size={18} />
+          <span class="chip__value"><Counter value={hud.bag} notation={notation} /></span>
+          <span class="chip__label">Bag</span>
+        </div>
       </div>
 
-      <div class="clock" aria-label={`Day ${hud.day}, ${hud.clock}, ${hud.phaseLabel}`}>
-        <Icon name={night ? 'moon' : 'sun'} size={20} class={night ? 'clock__moon' : 'clock__sun'} />
-        <div class="clock__text">
-          <strong>{hud.clock}</strong>
-          <span>
-            {hud.phaseLabel} · Day {hud.day}
-          </span>
+      <div class="topbar__right">
+        <div class="clock" aria-label={`Day ${hud.day}, ${hud.clock}, ${hud.phaseLabel}`}>
+          <Icon name={night ? 'moon' : 'sun'} size={20} class={night ? 'clock__moon' : 'clock__sun'} />
+          <div class="clock__text">
+            <strong>{hud.clock}</strong>
+            <span>
+              {hud.phaseLabel}
+              <span class="clock__day"> · Day {hud.day}</span>
+            </span>
+          </div>
         </div>
+        <button class="icon-btn" onClick={onSettings} aria-label="Settings" title="Settings">
+          <Icon name="gear" size={22} />
+        </button>
       </div>
 
       <div class="conditions">
@@ -38,15 +58,5 @@ export function TopBar({ hud }: { hud: HudSnapshot }) {
         </span>
       </div>
     </header>
-  );
-}
-
-function Chip({ icon, label, value, tone }: { icon: 'coin' | 'feather' | 'duck'; label: string; value: number; tone: string }) {
-  return (
-    <div class={`chip chip--${tone}`} title={label}>
-      <Icon name={icon} size={18} />
-      <span class="chip__value">{value.toLocaleString()}</span>
-      <span class="chip__label">{label}</span>
-    </div>
   );
 }

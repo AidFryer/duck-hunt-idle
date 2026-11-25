@@ -790,3 +790,362 @@ export function paintBlind(): Canvas {
   ctx.fillRect(m.x - 4, m.y + 2.4, 8, 1.2);
   return t.canvas;
 }
+
+// ---------------------------------------------------------------- phase 2: crew & fx
+
+/** A small curved feather (for harvest puffs and confetti). Design 10×22. */
+export function paintFeather(): Canvas {
+  const t = createPaintTarget(10, 22);
+  const { ctx } = t;
+  ctx.fillStyle = linearV(ctx, 0, 22, [
+    [0, palette.cream],
+    [1, plumage.henLight],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(5, 21);
+  ctx.quadraticCurveTo(0, 12, 4, 1);
+  ctx.quadraticCurveTo(10, 9, 5, 21);
+  ctx.fill();
+  ctx.strokeStyle = css(plumage.henDark, 0.6);
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.moveTo(5, 21.5);
+  ctx.quadraticCurveTo(4.6, 11, 4.2, 2);
+  ctx.stroke();
+  return t.canvas;
+}
+
+/** Sound-wave arc for the duck call: ")". Design 14×30. */
+export function paintSoundArc(): Canvas {
+  const t = createPaintTarget(14, 30);
+  const { ctx } = t;
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.arc(-6, 15, 16, -0.75, 0.75);
+  ctx.stroke();
+  return t.canvas;
+}
+
+/** Brass gear with 8 teeth. Design 14×14, centered. */
+export function paintGear(): Canvas {
+  const t = createPaintTarget(14, 14);
+  const { ctx } = t;
+  ctx.fillStyle = css(palette.brass);
+  ctx.beginPath();
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const r = i % 2 === 0 ? 6.8 : 5.2;
+    ctx.lineTo(7 + Math.cos(a) * r, 7 + Math.sin(a) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = css(0x8a6a2a);
+  ctx.beginPath();
+  ctx.arc(7, 7, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(0xf0d690, 0.7);
+  ctx.beginPath();
+  ctx.arc(5.6, 5.4, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+  return t.canvas;
+}
+
+/** Wooden peg leg with a brass foot. Design 6×12, anchor top-center. */
+export function paintPegLeg(): Canvas {
+  const t = createPaintTarget(6, 12);
+  const { ctx } = t;
+  ctx.fillStyle = css(palette.woodDark);
+  ctx.beginPath();
+  ctx.roundRect(1.8, 0, 2.4, 10, 1.2);
+  ctx.fill();
+  ctx.fillStyle = css(palette.brass);
+  ctx.beginPath();
+  ctx.ellipse(3.6, 10.6, 2.6, 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  return t.canvas;
+}
+
+export type DecoyBotKind = 'caller' | 'blind' | 'generic';
+
+/**
+ * Decoy-bot: an upright carved decoy body on peg legs with a duck head,
+ * rivets and a brass gear socket. Design 28×36, feet at y=36.
+ */
+export function paintDecoyBot(kind: DecoyBotKind): Canvas {
+  const t = createPaintTarget(28, 36);
+  const { ctx } = t;
+  // Body (painted like a drake: chestnut chest, gray flank, dark tail cap)
+  ctx.fillStyle = linearV(ctx, 12, 34, [
+    [0, plumage.drakeFlank],
+    [1, 0xa8a094],
+  ]);
+  ctx.beginPath();
+  ctx.ellipse(13, 24, 10, 10.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(plumage.drakeBreast);
+  ctx.beginPath();
+  ctx.ellipse(17, 21.5, 6, 6.5, 0.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(plumage.drakeTail);
+  ctx.beginPath();
+  ctx.ellipse(5, 28, 3.5, 4.5, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  // Carved seam & rivets
+  ctx.strokeStyle = css(palette.woodDark, 0.55);
+  ctx.lineWidth = 0.7;
+  ctx.beginPath();
+  ctx.moveTo(4, 25);
+  ctx.quadraticCurveTo(13, 28, 22.5, 24);
+  ctx.stroke();
+  ctx.fillStyle = css(palette.brass);
+  for (const [x, y] of [[7, 22], [12, 31], [20, 28]] as const) {
+    ctx.beginPath();
+    ctx.arc(x, y, 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Neck + head
+  const headColor = kind === 'blind' ? plumage.henBody : plumage.drakeHead;
+  ctx.fillStyle = css(headColor);
+  ctx.beginPath();
+  ctx.ellipse(15, 12, 4, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(16, 8, 6, 5.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (kind !== 'blind') {
+    ctx.strokeStyle = css(palette.white);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(11.5, 14.2);
+    ctx.lineTo(18.5, 14.6);
+    ctx.stroke();
+    ctx.fillStyle = css(plumage.drakeHeadSheen, 0.6);
+    ctx.beginPath();
+    ctx.ellipse(15, 6.3, 3, 1.5, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Bill
+  ctx.fillStyle = css(kind === 'blind' ? plumage.henBill : plumage.bill);
+  ctx.beginPath();
+  ctx.moveTo(21, 7.5);
+  ctx.quadraticCurveTo(27, 8.6, 27, 10.2);
+  ctx.quadraticCurveTo(24, 11.2, 21, 10.8);
+  ctx.fill();
+  // Button eye with a brass rim
+  ctx.fillStyle = css(palette.brass);
+  ctx.beginPath();
+  ctx.arc(18, 6.8, 1.7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.arc(18.2, 6.8, 1, 0, Math.PI * 2);
+  ctx.fill();
+  if (kind === 'caller') {
+    // Wooden duck call held in the bill, brass band
+    ctx.fillStyle = css(palette.woodLight);
+    ctx.beginPath();
+    ctx.roundRect(22.5, 10.4, 5.2, 2.6, 1);
+    ctx.fill();
+    ctx.fillStyle = css(palette.brass);
+    ctx.fillRect(24.6, 10.4, 1, 2.6);
+  }
+  if (kind === 'blind') {
+    // Grass hat for staying hidden
+    const grass = [palette.reedDry, palette.reed, 0xd8be82, palette.sage];
+    for (let i = 0; i < 18; i++) {
+      const x = 9 + (i / 17) * 14;
+      ctx.strokeStyle = css(grass[i % grass.length]!);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, 5);
+      ctx.lineTo(x + (i % 3 - 1) * 2.2, -0.5 + (i % 4));
+      ctx.stroke();
+    }
+    ctx.fillStyle = css(0x9a8a5a);
+    ctx.beginPath();
+    ctx.ellipse(16, 4.4, 8, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return t.canvas;
+}
+
+export type DogKind = 'lab' | 'robo';
+
+/** Dog body without legs, facing right. Design 56×30; leg sockets noted in DOG_RIG. */
+export function paintDogBody(kind: DogKind): Canvas {
+  const t = createPaintTarget(56, 30);
+  const { ctx } = t;
+  const coat = kind === 'lab' ? 0xd9b26f : palette.woodLight;
+  const dark = kind === 'lab' ? 0xb88a4a : palette.wood;
+  // Body
+  ctx.fillStyle = linearV(ctx, 8, 26, [
+    [0, coat],
+    [1, dark],
+  ]);
+  ctx.beginPath();
+  ctx.ellipse(24, 17, 16, 7.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Chest
+  ctx.beginPath();
+  ctx.ellipse(36, 17, 7, 7.5, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Neck & head
+  ctx.fillStyle = css(coat);
+  ctx.beginPath();
+  ctx.ellipse(41, 11, 5, 6, 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(45, 7.5, 6.5, 5.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Snout
+  ctx.beginPath();
+  ctx.roundRect(46, 6.5, 9, 5.5, 2.6);
+  ctx.fill();
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.ellipse(54.3, 8, 1.6, 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Ear
+  ctx.fillStyle = css(dark);
+  ctx.beginPath();
+  ctx.ellipse(42.5, 8.5, 2.6, 4.8, 0.25, 0, Math.PI * 2);
+  ctx.fill();
+  // Eye
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.arc(47.5, 5.8, 1, 0, Math.PI * 2);
+  ctx.fill();
+  if (kind === 'lab') {
+    // Red collar
+    ctx.strokeStyle = css(palette.rust);
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(38.6, 8.5);
+    ctx.lineTo(41.2, 15.5);
+    ctx.stroke();
+  } else {
+    // Wood grain, brass rivets and a gear socket
+    ctx.strokeStyle = css(palette.woodDark, 0.45);
+    ctx.lineWidth = 0.6;
+    for (const y of [13, 17, 21]) {
+      ctx.beginPath();
+      ctx.moveTo(11, y);
+      ctx.quadraticCurveTo(24, y - 1.5, 34, y + 0.5);
+      ctx.stroke();
+    }
+    ctx.fillStyle = css(palette.brass);
+    for (const [x, y] of [[14, 12], [30, 12], [38, 19]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = css(palette.brass);
+    ctx.beginPath();
+    ctx.arc(47.5, 5.8, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(palette.ink);
+    ctx.beginPath();
+    ctx.arc(47.7, 5.8, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return t.canvas;
+}
+
+/** Dog leg. Design 6×12, anchor top-center. */
+export function paintDogLeg(kind: DogKind): Canvas {
+  const t = createPaintTarget(6, 12);
+  const { ctx } = t;
+  ctx.fillStyle = css(kind === 'lab' ? 0xc9a060 : palette.woodDark);
+  ctx.beginPath();
+  ctx.roundRect(1.4, 0, 3.2, 11, 1.6);
+  ctx.fill();
+  if (kind === 'robo') {
+    ctx.fillStyle = css(palette.brass);
+    ctx.beginPath();
+    ctx.arc(3, 5, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return t.canvas;
+}
+
+/** Tail: Lab otter tail or a brass spring. Design 14×8, anchor right-center. */
+export function paintDogTail(kind: DogKind): Canvas {
+  const t = createPaintTarget(14, 8);
+  const { ctx } = t;
+  if (kind === 'lab') {
+    ctx.fillStyle = css(0xc9a060);
+    ctx.beginPath();
+    ctx.moveTo(14, 3);
+    ctx.quadraticCurveTo(6, 1, 0, 3.6);
+    ctx.quadraticCurveTo(6, 4, 14, 6);
+    ctx.fill();
+  } else {
+    ctx.strokeStyle = css(palette.brass);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let x = 14; x >= 1; x -= 0.5) {
+      const y = 4 + Math.sin(x * 1.6) * 2.2;
+      if (x === 14) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  return t.canvas;
+}
+
+/** Swimming dog: head and a sliver of back above the waterline. Design 40×16, waterline y=14. */
+export function paintDogSwim(kind: DogKind): Canvas {
+  const t = createPaintTarget(40, 16);
+  const { ctx } = t;
+  const coat = kind === 'lab' ? 0xd9b26f : palette.woodLight;
+  const dark = kind === 'lab' ? 0xb88a4a : palette.wood;
+  ctx.fillStyle = css(dark);
+  ctx.beginPath();
+  ctx.ellipse(14, 14, 13, 2.6, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(coat);
+  ctx.beginPath();
+  ctx.ellipse(29, 8.5, 6, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(30, 7.5, 9, 5, 2.4);
+  ctx.fill();
+  ctx.fillRect(25, 9, 7, 5);
+  ctx.fillStyle = css(dark);
+  ctx.beginPath();
+  ctx.ellipse(26.5, 9.5, 2.4, 4.2, 0.25, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.ellipse(38.4, 9, 1.5, 1.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(31.5, 6.8, kind === 'robo' ? 1.2 : 0.9, 0, Math.PI * 2);
+  ctx.fill();
+  return t.canvas;
+}
+
+/** A weathered plank deck beside the blind. Design 80×22, deck top at y=4. */
+export function paintDeck(): Canvas {
+  const t = createPaintTarget(80, 22);
+  const { ctx } = t;
+  ctx.fillStyle = css(palette.woodDark);
+  for (const x of [4, 38, 72]) ctx.fillRect(x, 6, 3.4, 16);
+  ctx.fillStyle = linearV(ctx, 2, 8, [
+    [0, palette.woodLight],
+    [1, palette.wood],
+  ]);
+  ctx.beginPath();
+  ctx.roundRect(0, 2, 80, 6, 1.5);
+  ctx.fill();
+  ctx.strokeStyle = css(palette.woodDark, 0.6);
+  ctx.lineWidth = 0.6;
+  for (let x = 9; x < 80; x += 9) {
+    ctx.beginPath();
+    ctx.moveTo(x, 2.4);
+    ctx.lineTo(x, 7.6);
+    ctx.stroke();
+  }
+  return t.canvas;
+}

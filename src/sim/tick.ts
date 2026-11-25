@@ -1,12 +1,15 @@
 import { DAY_LENGTH_SECONDS } from '../config';
 import type { GameState } from './state';
+import { clockAt, duckActivityAt } from './clock';
 import { windAt } from './environment';
+import type { EventSink } from './events';
+import { stepHunt } from './hunt';
 
 /**
  * Advance the simulation by exactly one fixed step of `dt` seconds.
  * Mutates `state` in place (cheap at 10 Hz, and keeps GC quiet).
  */
-export function step(state: GameState, dt: number): void {
+export function step(state: GameState, dt: number, events: EventSink = []): void {
   state.tick += 1;
   state.elapsed += dt;
 
@@ -15,14 +18,21 @@ export function step(state: GameState, dt: number): void {
   while (clock.dayTime >= DAY_LENGTH_SECONDS) {
     clock.dayTime -= DAY_LENGTH_SECONDS;
     clock.day += 1;
+    // A new day begins at pre-dawn: tally yesterday's bag.
+    const bag = state.hunt.bag;
+    const best = bag > state.stats.bestBag;
+    if (best) state.stats.bestBag = bag;
+    events.push({ type: 'dayEnded', day: clock.day - 1, bag, best });
+    state.hunt.bag = 0;
   }
 
   state.environment.wind = windAt(state.elapsed, state.environment.seed);
+  stepHunt(state, dt, duckActivityAt(clockAt(clock.dayTime).hour), events);
 }
 
 /** Advance by many seconds at once (offline progress / time-lapse). */
-export function advance(state: GameState, seconds: number, dt: number): number {
+export function advance(state: GameState, seconds: number, dt: number, events: EventSink = []): number {
   const ticks = Math.floor(seconds / dt);
-  for (let i = 0; i < ticks; i++) step(state, dt);
+  for (let i = 0; i < ticks; i++) step(state, dt, events);
   return ticks;
 }

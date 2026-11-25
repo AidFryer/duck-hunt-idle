@@ -25,6 +25,8 @@ export interface SceneAnchors {
   decoySpread: number;
   blind: Point;
   lodge: Point;
+  /** Middle of the crew's dock (for celebrations). */
+  crew: Point;
 }
 
 /** Everything a layer needs to draw one frame. */

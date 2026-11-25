@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 import { TextureLibrary } from './assets/TextureLibrary';
 import { BlindLayer } from './layers/BlindLayer';
 import { CloudLayer } from './layers/CloudLayer';
+import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
 import { EffectsLayer } from './layers/EffectsLayer';
 import { FogLayer } from './layers/FogLayer';
@@ -11,7 +12,9 @@ import { ReedLayer, type ReedClump } from './layers/ReedLayer';
 import { ShoreLayer } from './layers/ShoreLayer';
 import { SkyLayer } from './layers/SkyLayer';
 import { WaterLayer } from './layers/WaterLayer';
-import type { FrameContext, Layer, SceneLayout } from './types';
+import type { SimEvent } from '../sim/events';
+import type { GameState } from '../sim/state';
+import type { FrameContext, Layer, Point, SceneLayout } from './types';
 
 /**
  * Composes every layer of the marsh in back-to-front order and owns the
@@ -24,13 +27,15 @@ export class MarshScene {
   readonly water: WaterLayer;
   readonly ducks: DuckLayer;
   readonly fx: EffectsLayer;
+  readonly blind: BlindLayer;
+  readonly crew: CrewLayer;
   private readonly layers: Layer[];
   private readonly layoutOrder: Layer[];
   layout: SceneLayout = {
     w: 1, h: 1, horizon: 1, scale: 1,
     anchors: {
       chimney: { x: 0, y: 0 }, mug: { x: 0, y: 0 }, decoyCenter: { x: 0, y: 0 },
-      decoySpread: 100, blind: { x: 0, y: 0 }, lodge: { x: 0, y: 0 },
+      decoySpread: 100, blind: { x: 0, y: 0 }, lodge: { x: 0, y: 0 }, crew: { x: 0, y: 0 },
     },
   };
 
@@ -43,9 +48,10 @@ export class MarshScene {
     this.water = new WaterLayer(tex);
     this.fx = new EffectsLayer(tex);
     const shore = new ShoreLayer(tex);
-    const blind = new BlindLayer(tex, this.fx);
+    const blind = (this.blind = new BlindLayer(tex, this.fx));
     const midReeds = new ReedLayer(tex, 21, midReedClumps, 0.9);
     this.ducks = new DuckLayer(tex, this.fx);
+    this.crew = new CrewLayer(tex, this.fx, this.ducks);
     const nearFog = new FogLayer(tex, [
       { at: 0.16, speed: 10, alpha: 0.6, height: 0.55 },
       { at: 0.55, speed: 16, alpha: 0.32, height: 0.7 },
@@ -54,18 +60,18 @@ export class MarshScene {
     const overlay = new OverlayLayer(tex);
 
     // Reflections live inside the water, under shimmer and ripples.
-    this.water.reflections.addChild(land.reflection, shore.reflection, blind.reflection);
+    this.water.reflections.addChild(land.reflection, shore.reflection, blind.reflection, this.crew.reflection);
     this.water.surface.addChild(this.fx.rippleView);
 
     // Back-to-front draw order.
     this.layers = [
       this.sky, clouds, farFog, land, this.water, shore, midReeds, blind,
-      this.ducks, nearFog, this.fx, fgReeds, overlay,
+      this.ducks, this.crew, nearFog, this.fx, fgReeds, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, shore, blind, midReeds,
+      this.sky, clouds, farFog, land, this.water, shore, blind, this.crew, midReeds,
       this.ducks, nearFog, this.fx, fgReeds, overlay,
     ];
   }
@@ -77,6 +83,68 @@ export class MarshScene {
     l.horizon = Math.round(h * (w / h < 1 ? 0.46 : 0.52));
     l.scale = Math.max(0.45, Math.min(h, w * 0.8) / 520);
     for (const layer of this.layoutOrder) layer.layout(l);
+  }
+
+  /**
+   * Play the animation for one sim event. Returns a screen point where the
+   * HUD can show feedback (e.g. "+5 coins"), or null.
+   */
+  handle(e: SimEvent): Point | null {
+    switch (e.type) {
+      case 'decoySet':
+        this.blind.tossDecoy();
+        return this.crew.decoyFrom();
+      case 'decoyDrift':
+        this.blind.driftDecoy();
+        return null;
+      case 'flockArrived':
+        this.ducks.arrive(e.flockId, e.size);
+        return null;
+      case 'flockPassed':
+        this.ducks.spawnFlyover(Math.min(e.size, 6), 0.35, true);
+        return null;
+      case 'flockCalled':
+        this.ducks.call(e.flockId);
+        return this.crew.call(e.source);
+      case 'flockLeft':
+        this.ducks.leave(e.flockId);
+        return null;
+      case 'flockFlared':
+        this.ducks.flare(e.flockId);
+        return null;
+      case 'shot': {
+        const p = this.crew.shoot(e.source);
+        this.ducks.shoot(e.flockId, e.downed);
+        return p;
+      }
+      case 'retrieved':
+        return this.crew.retrieve(e.source);
+      case 'botBought':
+        this.crew.botBought(e.bot, e.owned);
+        return this.layout.anchors.crew;
+      case 'botLevel':
+        this.crew.celebrate(e.bot, false);
+        return this.layout.anchors.crew;
+      case 'botMilestone':
+        this.crew.celebrate(e.bot, true);
+        return this.layout.anchors.crew;
+      case 'acreRestored':
+        this.fx.confetti(this.layout.anchors.decoyCenter.x, this.layout.anchors.decoyCenter.y, this.layout.scale);
+        return this.layout.anchors.decoyCenter;
+      case 'dayEnded':
+        return null;
+    }
+  }
+
+  /** Bring visuals in line with the sim (on load and every frame, cheaply). */
+  sync(state: GameState): void {
+    this.blind.reconcile(state.hunt.decoys);
+    this.ducks.reconcile(state);
+    this.crew.setOwned({
+      caller: state.bots.caller.owned,
+      blind: state.bots.blind.owned,
+      retriever: state.bots.retriever.owned,
+    });
   }
 
   update(f: Omit<FrameContext, 'layout'>): void {
