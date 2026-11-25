@@ -1,5 +1,10 @@
 # Getting started on Windows (PowerShell)
 
+> **Just want to play?** You don't need any of this. The latest build is
+> published as a private claude.ai page you can open on your phone:
+> <https://claude.ai/artifact/22yXQskjPm1t3hQALT4TGe>. It's updated after
+> each phase. This guide is only for running and editing the code on a PC.
+
 This guide assumes you've never used Git before. Copy each command into
 **PowerShell** and press Enter.
 
@@ -36,13 +41,10 @@ git clone https://github.com/AidFryer/duck-hunt-idle.git
 cd duck-hunt-idle
 ```
 
-The work happens on a branch called `claude/duck-hunt-idle-game-05ie4u`.
-A branch is a separate line of changes, so `main` stays clean until you
-decide to merge. Switch to the branch:
-
-```powershell
-git checkout claude/duck-hunt-idle-game-05ie4u
-```
+The work happens on a branch called `claude/duck-hunt-idle-game-05ie4u`
+(a branch is a named line of changes). It's currently the repository's
+default branch, so `git clone` already gives you the latest code and you
+don't need to switch branches.
 
 ## 3. Run the game
 
@@ -70,16 +72,19 @@ npm install
 npm run dev
 ```
 
-## 5. When you're happy with a phase: merge it into `main`
+## 5. Optional: a public web link (GitHub Pages)
 
-The easiest way is on the GitHub website:
+The repository has a workflow (`.github/workflows/pages.yml`) that publishes
+the game to `https://aidfryer.github.io/duck-hunt-idle/` on every push. On
+GitHub's free plan, Pages only works for **public** repositories, so the
+workflow skips itself while the repo is private. To turn it on (works from a
+phone browser too):
 
-1. Go to <https://github.com/AidFryer/duck-hunt-idle>.
-2. GitHub usually shows a yellow banner, "claude/duck-hunt-idle-game-05ie4u had
-   recent pushes", with a **Compare & pull request** button. Click it. If there's
-   no banner, open the **Pull requests** tab, click **New pull request**, set
-   *base* to `main` and *compare* to the claude branch.
-3. Click **Create pull request**, then **Merge pull request**.
+1. Open <https://github.com/AidFryer/duck-hunt-idle/settings>, scroll to
+   **Danger Zone** → **Change visibility** → **Make public**.
+2. Open **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. Open the **Actions** tab, pick **Deploy to GitHub Pages**, and press
+   **Run workflow**.
 
 ## Handy Git commands
 
@@ -88,7 +93,6 @@ The easiest way is on the GitHub website:
 | `git status` | Shows which branch you're on and what has changed |
 | `git log --oneline -10` | Shows the last 10 commits |
 | `git pull` | Downloads new commits for your current branch |
-| `git checkout main` | Switches to the `main` branch |
 | `git restore .` | Throws away your local edits (careful!) |
 
 ## Troubleshooting

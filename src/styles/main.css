@@ -52,8 +52,8 @@ button {
 /* Portrait phones: scene on top, tabbed panel below. */
 .layout {
   display: grid;
-  height: 100dvh;
-  grid-template-rows: minmax(260px, 50dvh) 1fr;
+  height: 100%;
+  grid-template-rows: minmax(260px, 50%) minmax(0, 1fr);
   grid-template-columns: 100%;
 }
 
@@ -93,7 +93,7 @@ button {
 /* Landscape tablets & desktop: scene left, panel right. */
 @media (min-width: 860px) and (min-aspect-ratio: 1/1) {
   .layout {
-    grid-template-rows: 100dvh;
+    grid-template-rows: 100%;
     grid-template-columns: 1fr clamp(360px, 30vw, 440px);
   }
 }

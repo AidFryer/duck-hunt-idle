@@ -1,7 +1,7 @@
-import '@fontsource/zilla-slab/500.css';
-import '@fontsource/zilla-slab/700.css';
-import '@fontsource/nunito/600.css';
-import '@fontsource/nunito/800.css';
+import '@fontsource/zilla-slab/latin-500.css';
+import '@fontsource/zilla-slab/latin-700.css';
+import '@fontsource/nunito/latin-600.css';
+import '@fontsource/nunito/latin-800.css';
 import './styles/main.css';
 
 import { h, render } from 'preact';

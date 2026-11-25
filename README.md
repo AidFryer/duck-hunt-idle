@@ -6,6 +6,9 @@ sip coffee in the blind at dawn.
 
 > The game's name lives in one place: `GAME_TITLE` in `src/config.ts`.
 
+**Play the latest build:** <https://claude.ai/artifact/22yXQskjPm1t3hQALT4TGe>
+(private to the repo owner; built with `npm run build:artifact`).
+
 ## Run it locally
 
 You need **Node.js 22 or newer** (the "LTS" download from nodejs.org is fine).
@@ -23,6 +26,7 @@ Other commands:
 | `npm run typecheck` | Checks the TypeScript for mistakes |
 | `npm run build` | Makes a production build in `dist/` |
 | `npm run preview` | Serves the production build locally |
+| `npm run build:artifact` | Production build plus `dist/artifact.html` for the claude.ai play page |
 
 New to Git on Windows? See **[docs/GETTING_STARTED_WINDOWS.md](docs/GETTING_STARTED_WINDOWS.md)**.
 
