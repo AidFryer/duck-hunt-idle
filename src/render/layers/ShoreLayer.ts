@@ -97,6 +97,9 @@ export class ShoreLayer implements Layer {
       y: ground + (LODGE_ANCHORS.chimneyTop.y - LODGE_SIZE.ground) * this.lodgeScale,
     };
     l.anchors.lodge = { x: lodgeX + lodgeW / 2, y: ground };
+    l.anchors.porch = { x: lodgeX + 30 * this.lodgeScale, y: ground + 3 * this.lodgeScale };
+    l.anchors.woodpile = { x: lodgeX + 196 * this.lodgeScale, y: ground - 8 * this.lodgeScale };
+    l.anchors.lodgeScale = this.lodgeScale;
   }
 
   update(f: FrameContext): void {

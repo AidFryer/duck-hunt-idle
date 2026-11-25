@@ -190,20 +190,24 @@ export class DuckLayer implements Layer {
     f.ducks.length = 0;
   }
 
-  /** The called flock waited too long: flare off. */
-  flare(id: number): void {
+  /** The called flock waited too long: flare off. Returns where it was. */
+  flare(id: number): Point | null {
     const f = this.findHunt(id);
-    if (!f) return;
+    if (!f) return null;
+    const at = { x: f.lx, y: f.ly };
     for (const d of f.ducks) if (d.flock === f && d.mode === 'fly') this.exit(d, true);
     f.ducks.length = 0;
+    return at;
   }
 
-  /** A circling flock gave up waiting and moves on. */
-  leave(id: number): void {
+  /** A circling flock gave up waiting and moves on. Returns where it was. */
+  leave(id: number): Point | null {
     const f = this.findHunt(id);
-    if (!f) return;
+    if (!f) return null;
+    const at = { x: f.lx, y: f.ly };
     for (const d of f.ducks) if (d.flock === f && d.mode === 'fly') this.exit(d, false);
     f.ducks.length = 0;
+    return at;
   }
 
   /**

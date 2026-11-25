@@ -50,6 +50,12 @@ const recipes: Record<string, Recipe> = {
   'bot.caller': { paint: () => P.paintDecoyBot('caller'), resolution: PAINT_SCALE },
   'bot.blind': { paint: () => P.paintDecoyBot('blind'), resolution: PAINT_SCALE },
   'bot.generic': { paint: () => P.paintDecoyBot('generic'), resolution: PAINT_SCALE },
+  'bot.scout': { paint: () => P.paintDecoyBot('scout'), resolution: PAINT_SCALE },
+  'bot.setter': { paint: () => P.paintDecoyBot('setter'), resolution: PAINT_SCALE },
+  'bot.ledger': { paint: () => P.paintDecoyBot('ledger'), resolution: PAINT_SCALE },
+  'bot.foreman': { paint: () => P.paintDecoyBot('foreman'), resolution: PAINT_SCALE },
+  'bot.tinker': { paint: () => P.paintDecoyBot('tinker'), resolution: PAINT_SCALE },
+  alert: { paint: P.paintAlertBubble, resolution: PAINT_SCALE },
 };
 for (const k of ['lab', 'robo'] as const) {
   recipes[`dog.${k}.body`] = { paint: () => P.paintDogBody(k), resolution: PAINT_SCALE };

@@ -1,6 +1,7 @@
 import { Application } from 'pixi.js';
 import { MAX_RENDER_RESOLUTION, TICK_SECONDS } from '../config';
 import { clockAt, duckActivityAt } from '../sim/clock';
+import type { BotId } from '../data/economy';
 import type { SimEvent } from '../sim/events';
 import type { SimRunner } from '../sim/runner';
 import type { Point } from './types';
@@ -27,6 +28,8 @@ export class Renderer {
   options: RendererOptions = { motion: 1 };
   /** Called for each sim event after the scene animates it. */
   onEvent: ((e: SimEvent, at: Point | null) => void) | null = null;
+  /** Called when the player taps a stuck bot's "!" bubble. */
+  onFix: ((bot: BotId) => void) | null = null;
 
   /** True while frames are being drawn (tab visible, initialised). */
   get active(): boolean {
@@ -45,6 +48,7 @@ export class Renderer {
       old.root.destroy({ children: true });
       old.tex.destroy();
       this.scene = new MarshScene();
+      this.scene.crew.onFix = (b) => this.onFix?.(b);
       this.app.stage.addChild(this.scene.root);
       this.lastW = this.lastH = 0;
       this.handleResize();
@@ -66,6 +70,7 @@ export class Renderer {
     this.host.appendChild(this.app.canvas);
 
     this.scene = new MarshScene();
+    this.scene.crew.onFix = (b) => this.onFix?.(b);
     this.app.stage.addChild(this.scene.root);
     this.handleResize();
     this.scene.sync(this.runner.state);

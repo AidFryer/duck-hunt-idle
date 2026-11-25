@@ -9,7 +9,9 @@ import { TABS, type TabId } from './tabs';
 import { BotsTab } from './components/BotsTab';
 import { ComingSoon } from './components/ComingSoon';
 import { Icon } from './components/Icon';
+import { JobBoard } from './components/JobBoard';
 import { MarshTab } from './components/MarshTab';
+import { ProblemLog } from './components/ProblemLog';
 import { Settings } from './components/Settings';
 import { TopBar } from './components/TopBar';
 import { UpgradesTab } from './components/UpgradesTab';
@@ -22,13 +24,14 @@ interface AppProps {
   onSceneHost: (el: HTMLElement) => void;
 }
 
-const BUILT_THROUGH_PHASE = 2;
+const BUILT_THROUGH_PHASE = 3;
 
 export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSceneHost }: AppProps) {
   const hud = useStore(hudStore);
   const prefs = useStore(prefsStore);
   const [tab, setTab] = useState<TabId>('marsh');
   const [settings, setSettings] = useState(false);
+  const [problems, setProblems] = useState(false);
   const sceneRef = useRef<HTMLDivElement>(null);
   const floatRef = useRef<HTMLDivElement>(null);
   const toastRef = useRef<HTMLDivElement>(null);
@@ -48,14 +51,15 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       <section class="scene" aria-label="The marsh">
         <div class="scene-host" ref={sceneRef} />
         <div class="floaters" ref={floatRef} aria-hidden="true" />
-        <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} />
+        <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
       </section>
 
       <aside class="panel">
         <nav class="tabs" role="tablist" aria-label="Lodge sections">
           {TABS.map((t) => {
-            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert);
+            const jobsAlert = Object.values(hud.jobs).some((j) => j.backedUp && j.tokens.length > 0);
+            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'jobs' && jobsAlert);
             return (
               <button
                 role="tab"
@@ -74,10 +78,12 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           {tab === 'marsh' && <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} />}
           {tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
-          {tab !== 'marsh' && tab !== 'bots' && tab !== 'upgrades' && <ComingSoon tab={active} />}
+          {tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
+          {active.phase > BUILT_THROUGH_PHASE && <ComingSoon tab={active} />}
         </div>
       </aside>
 
+      {problems && <ProblemLog hud={hud} controls={controls} onClose={() => setProblems(false)} />}
       {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} />}
     </div>
   );

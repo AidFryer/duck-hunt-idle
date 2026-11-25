@@ -1,9 +1,9 @@
 import Decimal from 'break_infinity.js';
 import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
-import { ACRES, BOT_ORDER, START, type BotId, type SpeciesId } from '../data/economy';
+import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export type WeatherId = 'clear' | 'fog' | 'drizzle' | 'coldFront' | 'wind';
 
@@ -19,8 +19,32 @@ export interface FlockState {
 export interface BotState {
   owned: number;
   level: number;
-  /** Fractional work banked toward the next action (0–1). */
-  progress: number;
+}
+
+/** A bot that hit a snag (an "exception" in orchestrator terms). */
+export interface Problem {
+  id: number;
+  bot: BotId;
+  job: JobId;
+  kind: ProblemKind;
+  /** Sim time (elapsed seconds) it happened. */
+  at: number;
+  /** Foreman retries made so far. */
+  attempts: number;
+  /** When the foreman's next retry lands (elapsed seconds), or -1. */
+  nextAt: number;
+  status: 'open' | 'retrying' | 'escalated' | 'fixed';
+  fixedBy?: 'you' | 'foreman';
+  closedAt?: number;
+}
+
+export interface JobMetrics {
+  /** Actions completed per second, oldest first (last 60 s). */
+  done: number[];
+  /** Problems per second, oldest first (last 60 s). */
+  fail: number[];
+  totalDone: number;
+  totalFail: number;
 }
 
 /**
@@ -68,8 +92,39 @@ export interface GameState {
     downed: SpeciesId[];
     /** Birds brought in today (resets each pre-dawn). */
     bag: number;
+    /** Retrieved birds waiting to be logged at the lodge (logging pays coins). */
+    ledger: SpeciesId[];
+    /** Gus's own logging progress (0–1). */
+    keeperProgress: number;
   };
   bots: Record<BotId, BotState>;
+  /** How many of each bot type work each job (or rest on the bench). */
+  assign: Record<BotId, Partial<Record<Slot, number>>>;
+  /** Fractional work banked toward each job's next action. */
+  jobs: Record<JobId, { progress: number }>;
+  problems: {
+    nextId: number;
+    open: Problem[];
+    /** Most recent closed problems, newest last. */
+    closed: Problem[];
+    total: number;
+    fixedByYou: number;
+    fixedByForeman: number;
+    escalated: number;
+  };
+  foreman: {
+    /** Retries before a problem is handed back to the player. */
+    retries: number;
+    /** Seconds before the first retry; doubles after each miss. */
+    backoff: number;
+  };
+  /** Banked Tinker work toward the next free tune-up. */
+  tinkerWork: number;
+  metrics: {
+    /** Whole sim second the newest bucket belongs to. */
+    sec: number;
+    jobs: Record<JobId, JobMetrics>;
+  };
   /** Restored wetland acres (Wetland Acres currency). */
   acres: number;
   stats: {
@@ -77,10 +132,15 @@ export interface GameState {
     lifetimeFeathers: Decimal;
     lifetimeBirds: number;
     bestBag: number;
+    lifetimeLogged: number;
     flocksCalled: number;
     flocksFlared: number;
+    /** Flocks that left, flared or passed by today. */
+    lostToday: number;
     shots: number;
     manualActions: number;
+    /** Times the player moved a bot on the Job Board. */
+    botMoves: number;
   };
   meta: {
     /** Wall-clock ms when this save was created / last written. */
@@ -91,7 +151,29 @@ export interface GameState {
 
 export function createBotStates(): Record<BotId, BotState> {
   const out = {} as Record<BotId, BotState>;
-  for (const id of BOT_ORDER) out[id] = { owned: 0, level: 1, progress: 0 };
+  for (const id of BOT_ORDER) out[id] = { owned: 0, level: 1 };
+  return out;
+}
+
+export const METRIC_WINDOW = 60;
+
+export function createJobMetrics(): Record<JobId, JobMetrics> {
+  const out = {} as Record<JobId, JobMetrics>;
+  for (const j of JOB_ORDER) {
+    out[j] = { done: new Array(METRIC_WINDOW).fill(0), fail: new Array(METRIC_WINDOW).fill(0), totalDone: 0, totalFail: 0 };
+  }
+  return out;
+}
+
+export function createAssignments(): Record<BotId, Partial<Record<Slot, number>>> {
+  const out = {} as Record<BotId, Partial<Record<Slot, number>>>;
+  for (const id of BOT_ORDER) out[id] = {};
+  return out;
+}
+
+export function createJobs(): Record<JobId, { progress: number }> {
+  const out = {} as Record<JobId, { progress: number }>;
+  for (const j of JOB_ORDER) out[j] = { progress: 0 };
   return out;
 }
 
@@ -113,18 +195,29 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       committed: [],
       downed: [],
       bag: 0,
+      ledger: [],
+      keeperProgress: 0,
     },
     bots: createBotStates(),
+    assign: createAssignments(),
+    jobs: createJobs(),
+    problems: { nextId: 1, open: [], closed: [], total: 0, fixedByYou: 0, fixedByForeman: 0, escalated: 0 },
+    foreman: { retries: FOREMAN.retriesDefault, backoff: FOREMAN.backoffDefault },
+    tinkerWork: 0,
+    metrics: { sec: 0, jobs: createJobMetrics() },
     acres: ACRES.start,
     stats: {
       lifetimeCoins: new Decimal(0),
       lifetimeFeathers: new Decimal(0),
       lifetimeBirds: 0,
       bestBag: 0,
+      lifetimeLogged: 0,
       flocksCalled: 0,
       flocksFlared: 0,
+      lostToday: 0,
       shots: 0,
       manualActions: 0,
+      botMoves: 0,
     },
     meta: { createdAt: now, lastSaved: now },
   };

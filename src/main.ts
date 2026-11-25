@@ -8,13 +8,15 @@ import { h, render } from 'preact';
 import { backupBrokenSave, AUTOSAVE_MS, clearSave, loadGame, saveGame } from './app/persistence';
 import { loadPrefs, savePrefs, type Prefs } from './app/prefs';
 import { GAME_TITLE } from './config';
-import { BOTS } from './data/economy';
+import { BOTS, JOBS, PROBLEMS } from './data/economy';
 import { LAB_NAME } from './data/goals';
 import { applyCssTokens } from './data/palette';
 import { Renderer } from './render/Renderer';
 import type { Point } from './render/types';
 import { jumpToPhase } from './sim/actions';
 import { buyAcre, buyBot, levelUpBot } from './sim/economy';
+import { moveBots } from './sim/jobs';
+import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
 import { doAction } from './sim/hunt';
 import { SimRunner } from './sim/runner';
@@ -64,20 +66,54 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', save);
 
 // --- Feedback for sim events -------------------------------------------------
+// Logging happens often (Gus + Ledger Bots), so coin pop-ups are batched.
+let pendingCoins = 0;
+let pendingAt: Point | null = null;
+setInterval(() => {
+  if (pendingCoins > 0 && pendingAt) feedback.float(`+${formatNumber(pendingCoins, prefs.get().notation)}`, pendingAt.x, pendingAt.y, 'coins');
+  pendingCoins = 0;
+}, 700);
+let seenProblem = false;
+
 function onEvent(e: SimEvent, at: Point | null): void {
   const n = prefs.get().notation;
   switch (e.type) {
     case 'retrieved':
-      if (at) {
-        feedback.float(`+${formatNumber(e.coins, n)}`, at.x, at.y, 'coins');
-        feedback.float(`+${formatNumber(e.feathers, n)} feather${e.feathers === 1 ? '' : 's'}`, at.x + 18, at.y + 12, 'feathers', 0.15);
+      if (at) feedback.float(`+${formatNumber(e.feathers, n)} feather${e.feathers === 1 ? '' : 's'}`, at.x, at.y, 'feathers');
+      break;
+    case 'logged':
+      pendingCoins += e.coins;
+      if (at) pendingAt = at;
+      break;
+    case 'problem':
+      if (at) feedback.float(PROBLEMS[e.kind].title, at.x, at.y, 'alert');
+      if (!seenProblem && state.problems.total <= 1) {
+        seenProblem = true;
+        feedback.toast(`A ${BOTS[e.bot].name} hit a snag: ${PROBLEMS[e.kind].title.toLowerCase()}. Tap the "!" over it to fix it.`, 'info', 6000);
       }
+      break;
+    case 'problemFixed':
+      if (at) feedback.float(e.by === 'foreman' ? 'Foreman fixed it' : 'Fixed!', at.x, at.y, 'info');
+      break;
+    case 'problemEscalated':
+      feedback.toast(`The foreman couldn't free a ${BOTS[e.bot].name}. It needs you. Tap its "!" or open the Problem Log.`, 'info', 5000);
+      break;
+    case 'flockLeft':
+      if (at) feedback.float('Flew on', at.x, at.y, 'info');
       break;
     case 'botBought':
       if (at) feedback.float(e.count > 1 ? `+${e.count} ${BOTS[e.bot].name}s` : `New ${BOTS[e.bot].name}!`, at.x, at.y - 20, 'info');
       break;
     case 'botLevel':
-      feedback.toast(`${BOTS[e.bot].name}s tuned up to level ${e.level}. They work faster now.`, 'good');
+      feedback.toast(
+        e.by === 'tinker'
+          ? `The Tinker tuned your ${BOTS[e.bot].name}s up to level ${e.level}.`
+          : `${BOTS[e.bot].name}s tuned up to level ${e.level}. They work faster now.`,
+        'good',
+      );
+      break;
+    case 'botMoved':
+      feedback.toast(`A ${BOTS[e.bot].name} moved to ${e.to === 'bench' ? 'the bench' : JOBS[e.to].name}.`);
       break;
     case 'botMilestone':
       feedback.toast(`${e.owned} ${BOTS[e.bot].name}s! They work together now: output ×${e.multiplier}.`, 'celebrate', 4200);
@@ -132,6 +168,30 @@ const controls: GameControls = {
     hud.set(snapshot(state));
     return ok;
   },
+  moveBot(bot, from, to) {
+    const ok = moveBots(state, bot, from, to, 1, runner.sink) > 0;
+    hud.set(snapshot(state));
+    return ok;
+  },
+  fixProblem(id) {
+    const ok = fixProblem(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  fixBot(bot) {
+    const ok = fixBot(state, bot, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  fixAll() {
+    const n = fixAll(state, runner.sink);
+    hud.set(snapshot(state));
+    return n;
+  },
+  setForeman(retries, backoff) {
+    setForemanSettings(state, retries, backoff);
+    hud.set(snapshot(state));
+  },
   exportSave: () => exportSave(state),
   importSave(code) {
     try {
@@ -168,6 +228,7 @@ async function startScene(host: HTMLElement): Promise<void> {
   renderer = new Renderer(host, runner);
   renderer.options.motion = prefs.get().reducedMotion ? 0.35 : 1;
   renderer.onEvent = onEvent;
+  renderer.onFix = (bot) => controls.fixBot(bot);
   await renderer.init();
   document.body.classList.add('is-ready');
   if (loaded.kind === 'loaded') feedback.toast(`Welcome back to the marsh. Day ${state.clock.day}.`);

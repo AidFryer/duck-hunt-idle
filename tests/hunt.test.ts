@@ -2,7 +2,8 @@ import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
 import { TICK_SECONDS } from '../src/config';
 import { BOTS, HUNT, SPECIES } from '../src/data/economy';
-import { acrePrice, botPrice, botRate, buyAcre, buyBot, levelUpBot, maxAffordableBots, milestoneMultiplier, nextMilestone } from '../src/sim/economy';
+import { acrePrice, botPrice, buyAcre, buyBot, levelUpBot, maxAffordableBots, milestoneMultiplier, nextMilestone } from '../src/sim/economy';
+import { jobRate } from '../src/sim/jobs';
 import type { SimEvent } from '../src/sim/events';
 import { canDo, doAction } from '../src/sim/hunt';
 import { createInitialState, type GameState } from '../src/sim/state';
@@ -34,8 +35,12 @@ describe('manual hunt pipeline', () => {
 
     for (let i = 0; i < downed; i++) doAction(s, 'retrieve', 'manual', ev);
     expect(s.hunt.bag).toBe(downed);
-    expect(s.currencies.coins.toNumber()).toBe(downed * SPECIES.mallard.coins);
+    expect(s.hunt.ledger).toHaveLength(downed);
+    expect(s.currencies.coins.toNumber()).toBe(0); // paid when logged
     expect(s.currencies.feathers.toNumber()).toBe(downed * SPECIES.mallard.feathers);
+    for (let i = 0; i < downed; i++) doAction(s, 'log', 'manual', ev);
+    expect(s.hunt.ledger).toHaveLength(0);
+    expect(s.currencies.coins.toNumber()).toBeGreaterThanOrEqual(downed * SPECIES.mallard.coins);
     expect(s.stats.lifetimeBirds).toBe(downed);
     expect(ev.map((e) => e.type)).toContain('retrieved');
   });
@@ -122,15 +127,15 @@ describe('bots', () => {
     const ev: SimEvent[] = [];
     buyBot(s, 'caller', 10, ev);
     expect(ev.some((e) => e.type === 'botMilestone')).toBe(true);
-    expect(botRate(s, 'caller')).toBeCloseTo(10 * BOTS.caller.baseSpeed * 2);
+    expect(jobRate(s, 'call')).toBeCloseTo(10 * BOTS.caller.baseSpeed * 2);
   });
 
   it('tune-ups raise speed', () => {
     const s = rich();
     buyBot(s, 'retriever', 1);
-    const before = botRate(s, 'retriever');
+    const before = jobRate(s, 'retrieve');
     expect(levelUpBot(s, 'retriever')).toBe(true);
-    expect(botRate(s, 'retriever')).toBeCloseTo(before * (1 + BOTS.retriever.levelSpeedBonus));
+    expect(jobRate(s, 'retrieve')).toBeCloseTo(before * (1 + BOTS.retriever.levelSpeedBonus));
   });
 
   it('a full bot crew runs the hunt on its own (decoys pre-set)', () => {

@@ -15,7 +15,7 @@ export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 
 export const TABS: readonly TabDef[] = [
   { id: 'marsh', label: 'Marsh', icon: 'marsh', comingSoon: '', phase: 1 },
   { id: 'bots', label: 'Bots', icon: 'bot', comingSoon: '', phase: 2 },
-  { id: 'jobs', label: 'Job Board', icon: 'board', comingSoon: 'An empty corkboard and a tin of thumbtacks. Jobs get pinned here once the bots are carved.', phase: 3 },
+  { id: 'jobs', label: 'Job Board', icon: 'board', comingSoon: '', phase: 3 },
   { id: 'workflows', label: 'Workflows', icon: 'rope', comingSoon: 'A coil of rope for linking jobs into chains. Unlocks mid-season.', phase: 5 },
   { id: 'upgrades', label: 'Upgrades', icon: 'hammer', comingSoon: '', phase: 2 },
   { id: 'guide', label: 'Field Guide', icon: 'book', comingSoon: 'A leather-bound guide with blank pages, waiting for its first entry.', phase: 4 },

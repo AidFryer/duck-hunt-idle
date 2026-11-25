@@ -21,6 +21,7 @@ interface Decoy {
   /** Animation clock for toss / drift. */
   t: number;
   driftX: number;
+  from: { x: number; y: number };
 }
 
 const MAX_DECOY_SLOTS = 12;
@@ -62,6 +63,7 @@ export class BlindLayer implements Layer {
         mode: 'out',
         t: 0,
         driftX: 0,
+        from: { x: 0, y: 0 },
       });
       s.visible = refl.visible = false;
     }
@@ -90,18 +92,13 @@ export class BlindLayer implements Layer {
     for (const d of [...this.decoys].sort((a, b) => a.ny - b.ny)) this.decoyLayer.addChild(d.s);
   }
 
-  /** Where tossed decoys fly from (the deck beside the blind). */
-  private tossOrigin(): { x: number; y: number } {
-    const b = this.l.anchors.blind;
-    return { x: b.x - 70 * this.l.scale, y: b.y - 30 * this.l.scale };
-  }
-
-  /** Toss the next decoy into the spread. */
-  tossDecoy(): void {
+  /** Toss the next decoy into the spread from a point (dock or setter bot). */
+  tossDecoy(from: { x: number; y: number }): void {
     const d = this.decoys.find((x) => x.mode === 'out');
     if (!d) return;
     d.mode = 'tossing';
     d.t = 0;
+    d.from = { ...from };
   }
 
   /** The most recently set decoy drifts loose and floats away. */
@@ -165,7 +162,7 @@ export class BlindLayer implements Layer {
       if (d.mode === 'tossing') {
         d.t += f.dt;
         const k = Math.min(1, d.t / TOSS_TIME);
-        const o = this.tossOrigin();
+        const o = d.from;
         x = o.x + (slot.x - o.x) * k;
         y = o.y + (slot.y - o.y) * k - Math.sin(k * Math.PI) * 50 * l.scale;
         rot = (1 - k) * d.facing * 6;

@@ -12,13 +12,13 @@ interface StageView {
   bot: string;
 }
 
-const STAGES: StageView[] = [
+const STAGES: (StageView & { stage: Exclude<HuntStage, 'log'> })[] = [
   {
     stage: 'decoys',
     verb: 'Set Decoys',
     status: (h) => `${h.decoys}/${h.spread} out`,
     idle: 'Spread is full',
-    bot: 'Decoy Setters arrive in Phase 3',
+    bot: 'Decoy Setters',
   },
   {
     stage: 'call',
@@ -73,6 +73,28 @@ export function HuntPanel({ hud, controls, highlight }: { hud: HudSnapshot; cont
           );
         })}
       </ol>
+      <div class={`ledger-bar ${hud.ledger >= 10 ? 'is-hot' : ''}`}>
+        <div class="ledger-bar__text">
+          <strong>Lodge ledger</strong>
+          <span>
+            {hud.ledger} bird{hud.ledger === 1 ? '' : 's'} to log · Gus {formatRate(hud.keeperRate)}
+            {hud.auto.log > 0 ? ` · Ledger Bots ${formatRate(hud.auto.log)}` : ''} · guests pay ×{hud.reputation.toFixed(2)}
+          </span>
+        </div>
+        <button
+          class={`btn btn--small ${hud.can.log ? '' : ''}`}
+          aria-disabled={!hud.can.log}
+          onClick={(e) => {
+            const ok = controls.act('log');
+            const el = e.currentTarget as HTMLElement;
+            el.classList.remove('is-pressed', 'is-nope');
+            void el.offsetWidth;
+            el.classList.add(ok ? 'is-pressed' : 'is-nope');
+          }}
+        >
+          Log a bird
+        </button>
+      </div>
     </section>
   );
 }

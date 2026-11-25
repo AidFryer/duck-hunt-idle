@@ -1,5 +1,6 @@
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER } from '../data/economy';
+import { normalizeAssignments } from './jobs';
 import { createInitialState, SAVE_VERSION, type GameState } from './state';
 
 /**
@@ -16,6 +17,13 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   1: (s) => {
     const fresh = toPlain(createInitialState((s.environment as Json | undefined)?.seed as number | undefined));
     return { ...fresh, ...s, version: 2 };
+  },
+  // v2 (Phase 2) had no job assignments, ledger or problems. Every owned
+  // bot starts on its home job (normalizeAssignments does that on load).
+  2: (s) => {
+    const bots = (s.bots ?? {}) as Record<string, Json>;
+    for (const b of Object.values(bots)) delete b.progress;
+    return { ...s, version: 3 };
   },
 };
 
@@ -54,6 +62,7 @@ export function fromPlain(input: Json): GameState {
     const g = state[group] as unknown as Record<string, unknown>;
     g[key] = toDecimal(g[key]);
   }
+  normalizeAssignments(state);
   return state;
 }
 

@@ -5,7 +5,7 @@ import { activityLabel, windLabel } from '../hudState';
 import { Counter } from './Counter';
 import { Icon } from './Icon';
 
-export function TopBar({ hud, notation, onSettings }: { hud: HudSnapshot; notation: Notation; onSettings: () => void }) {
+export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnapshot; notation: Notation; onSettings: () => void; onProblems: () => void }) {
   const night = hud.phaseId === 'night' || hud.phaseId === 'predawn';
   return (
     <header class="topbar">
@@ -44,6 +44,17 @@ export function TopBar({ hud, notation, onSettings }: { hud: HudSnapshot; notati
             </span>
           </div>
         </div>
+        {hud.problemStats.total > 0 && (
+          <button
+            class={`icon-btn problems-btn ${hud.needsYou ? 'is-alert' : ''}`}
+            onClick={onProblems}
+            aria-label={`Problem Log: ${hud.openProblems} open`}
+            title="Problem Log"
+          >
+            <span class="problems-btn__mark">!</span>
+            {hud.openProblems > 0 && <span class="problems-btn__count">{hud.openProblems}</span>}
+          </button>
+        )}
         <button class="icon-btn" onClick={onSettings} aria-label="Settings" title="Settings">
           <Icon name="gear" size={22} />
         </button>

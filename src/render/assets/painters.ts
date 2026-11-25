@@ -866,7 +866,7 @@ export function paintPegLeg(): Canvas {
   return t.canvas;
 }
 
-export type DecoyBotKind = 'caller' | 'blind' | 'generic';
+export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker';
 
 /**
  * Decoy-bot: an upright carved decoy body on peg legs with a duck head,
@@ -875,6 +875,13 @@ export type DecoyBotKind = 'caller' | 'blind' | 'generic';
 export function paintDecoyBot(kind: DecoyBotKind): Canvas {
   const t = createPaintTarget(28, 36);
   const { ctx } = t;
+  if (kind === 'setter') {
+    // Waist-deep in the marsh: clip the body at the waterline.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, -4, 28, 31);
+    ctx.clip();
+  }
   // Body (painted like a drake: chestnut chest, gray flank, dark tail cap)
   ctx.fillStyle = linearV(ctx, 12, 34, [
     [0, plumage.drakeFlank],
@@ -905,7 +912,8 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fill();
   }
   // Neck + head
-  const headColor = kind === 'blind' ? plumage.henBody : plumage.drakeHead;
+  const henHead = kind === 'blind' || kind === 'setter' || kind === 'foreman';
+  const headColor = henHead ? plumage.henBody : plumage.drakeHead;
   ctx.fillStyle = css(headColor);
   ctx.beginPath();
   ctx.ellipse(15, 12, 4, 4.5, 0, 0, Math.PI * 2);
@@ -913,7 +921,7 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
   ctx.beginPath();
   ctx.ellipse(16, 8, 6, 5.2, 0, 0, Math.PI * 2);
   ctx.fill();
-  if (kind !== 'blind') {
+  if (!henHead) {
     ctx.strokeStyle = css(palette.white);
     ctx.lineWidth = 1.1;
     ctx.beginPath();
@@ -926,7 +934,7 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fill();
   }
   // Bill
-  ctx.fillStyle = css(kind === 'blind' ? plumage.henBill : plumage.bill);
+  ctx.fillStyle = css(henHead ? plumage.henBill : plumage.bill);
   ctx.beginPath();
   ctx.moveTo(21, 7.5);
   ctx.quadraticCurveTo(27, 8.6, 27, 10.2);
@@ -967,6 +975,138 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.ellipse(16, 4.4, 8, 2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
+  if (kind === 'scout') {
+    // Brass spyglass held up to the eye
+    ctx.save();
+    ctx.translate(19, 6.5);
+    ctx.rotate(-0.12);
+    ctx.fillStyle = css(palette.brass);
+    ctx.beginPath();
+    ctx.roundRect(0, -1.6, 9, 3.2, 1);
+    ctx.fill();
+    ctx.fillStyle = css(0x8a6a2a);
+    ctx.fillRect(3.2, -1.8, 1, 3.6);
+    ctx.fillStyle = css(0xbfe0ff, 0.9);
+    ctx.fillRect(8.4, -1.2, 0.8, 2.4);
+    ctx.restore();
+  }
+  if (kind === 'ledger') {
+    // Round spectacles and a little notebook
+    ctx.strokeStyle = css(palette.brass);
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    ctx.arc(18, 6.8, 2.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = css(palette.cream);
+    ctx.beginPath();
+    ctx.roundRect(15, 20, 9, 7, 1);
+    ctx.fill();
+    ctx.strokeStyle = css(palette.rust);
+    ctx.lineWidth = 0.6;
+    for (const y of [22, 23.6, 25.2]) {
+      ctx.beginPath();
+      ctx.moveTo(16.5, y);
+      ctx.lineTo(22.5, y);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = css(palette.woodDark);
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(23.5, 17.5);
+    ctx.lineTo(20.5, 23);
+    ctx.stroke();
+  }
+  if (kind === 'foreman') {
+    // Yellow hard hat and a clipboard
+    ctx.fillStyle = css(0xf2c43a);
+    ctx.beginPath();
+    ctx.ellipse(16, 4.2, 6.5, 4.5, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(8.5, 3.6, 15, 1.6);
+    ctx.fillStyle = css(palette.woodLight);
+    ctx.beginPath();
+    ctx.roundRect(16, 19, 8, 10, 1);
+    ctx.fill();
+    ctx.fillStyle = css(palette.cream);
+    ctx.fillRect(17, 20.5, 6, 7.5);
+    ctx.fillStyle = css(palette.brass);
+    ctx.fillRect(18.5, 18.4, 3, 1.4);
+  }
+  if (kind === 'tinker') {
+    // Goggles pushed up and a wrench
+    ctx.fillStyle = css(palette.woodDark);
+    ctx.fillRect(10, 3.4, 12, 1.6);
+    ctx.fillStyle = css(palette.brass);
+    for (const x of [13, 18.5]) {
+      ctx.beginPath();
+      ctx.arc(x, 4.2, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = css(0x9fd0e0);
+      ctx.beginPath();
+      ctx.arc(x, 4.2, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = css(palette.brass);
+    }
+    ctx.save();
+    ctx.translate(22, 22);
+    ctx.rotate(-0.6);
+    ctx.fillStyle = css(0x9aa0a6);
+    ctx.fillRect(-1, 0, 2, 9);
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(palette.cream, 0);
+    ctx.restore();
+  }
+  if (kind === 'setter') {
+    ctx.restore();
+    // Decoy tucked under a wing, and a ring of water at the waist
+    ctx.fillStyle = css(plumage.drakeHead);
+    ctx.beginPath();
+    ctx.ellipse(5, 20, 4.5, 3, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(plumage.drakeFlank);
+    ctx.beginPath();
+    ctx.ellipse(4, 22.5, 5, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = css(palette.white, 0.7);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(13, 27, 11, 2.2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  return t.canvas;
+}
+
+/** "!" speech bubble shown over a stuck bot. Design 22×26, tail at bottom. */
+export function paintAlertBubble(): Canvas {
+  const t = createPaintTarget(22, 26);
+  const { ctx } = t;
+  ctx.fillStyle = css(palette.cream);
+  ctx.strokeStyle = css(palette.woodDark);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.roundRect(1.5, 1.5, 19, 17, 7);
+  ctx.moveTo(8, 18.2);
+  ctx.lineTo(11, 24);
+  ctx.lineTo(14, 18.2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(1.5, 1.5, 19, 17, 7);
+  ctx.stroke();
+  ctx.fillStyle = css(palette.white);
+  ctx.beginPath();
+  ctx.moveTo(8, 17.6);
+  ctx.lineTo(11, 23);
+  ctx.lineTo(14, 17.6);
+  ctx.fill();
+  ctx.fillStyle = css(palette.rust);
+  ctx.beginPath();
+  ctx.roundRect(9.6, 4.5, 2.8, 8, 1.4);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(11, 15, 1.6, 0, Math.PI * 2);
+  ctx.fill();
   return t.canvas;
 }
 

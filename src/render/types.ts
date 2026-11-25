@@ -27,6 +27,12 @@ export interface SceneAnchors {
   lodge: Point;
   /** Middle of the crew's dock (for celebrations). */
   crew: Point;
+  /** In front of the lodge porch (Ledger Bots work here). */
+  porch: Point;
+  /** Beside the woodpile (Tinker Bots work here). */
+  woodpile: Point;
+  /** Scale the lodge is drawn at (shore bots match it). */
+  lodgeScale: number;
 }
 
 /** Everything a layer needs to draw one frame. */

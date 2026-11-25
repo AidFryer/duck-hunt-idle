@@ -24,6 +24,7 @@ export function step(state: GameState, dt: number, events: EventSink = []): void
     if (best) state.stats.bestBag = bag;
     events.push({ type: 'dayEnded', day: clock.day - 1, bag, best });
     state.hunt.bag = 0;
+    state.stats.lostToday = 0;
   }
 
   state.environment.wind = windAt(state.elapsed, state.environment.seed);

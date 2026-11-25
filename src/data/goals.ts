@@ -66,10 +66,40 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => s.bots.retriever.owned > 0,
   },
   {
+    id: 'setter',
+    title: 'Carve a Decoy Setter',
+    gus: 'Decoys drift loose in the wind. A Decoy Setter wades out and keeps the spread full, so you can rest your arm.',
+    done: (s) => s.bots.setter.owned > 0,
+  },
+  {
+    id: 'fix',
+    title: 'Fix a stuck bot',
+    gus: 'Every crew hits a snag. When a bot wobbles with a "!" over its head, tap it to set it right.',
+    done: (s) => s.problems.fixedByYou + s.problems.fixedByForeman > 0,
+  },
+  {
     id: 'acre',
     title: 'Restore a wetland acre',
     gus: 'More marsh means more ducks. Check the Upgrades tab and restore an acre.',
     done: (s) => s.acres >= 2,
+  },
+  {
+    id: 'ledger',
+    title: 'Hire a Ledger Bot',
+    gus: "I can only write so fast. Birds don't pay till they're logged, so a Ledger Bot on the porch would be a real help.",
+    done: (s) => s.bots.ledger.owned > 0,
+  },
+  {
+    id: 'board',
+    title: 'Move a bot on the Job Board',
+    gus: 'Open the Job Board. If one job is backing up, move a bot over to help. They work slower off their own job, but it keeps things moving.',
+    done: (s) => s.stats.botMoves > 0,
+  },
+  {
+    id: 'foreman',
+    title: 'Hire a Foreman Bot',
+    gus: "Fixing every stuck bot yourself gets old. A Foreman will retry them for you. Set how hard it tries in the Problem Log.",
+    done: (s) => s.bots.foreman.owned > 0,
   },
   {
     id: 'bag25',
@@ -78,15 +108,27 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => s.stats.bestBag >= 25 || s.hunt.bag >= 25,
   },
   {
+    id: 'scout',
+    title: 'Hire a Scout Bot',
+    gus: 'A Scout up on the blind roof spots flocks early, so more of them find our spread.',
+    done: (s) => s.bots.scout.owned > 0,
+  },
+  {
     id: 'callers10',
     title: 'Own 10 Caller Bots',
     gus: 'Ten of a kind and they start working together. Their speed doubles.',
     done: (s) => s.bots.caller.owned >= 10,
   },
   {
+    id: 'tinker',
+    title: 'Hire a Tinker Bot',
+    gus: 'A Tinker keeps the whole crew in good repair and tunes them up while you sleep.',
+    done: (s) => s.bots.tinker.owned > 0,
+  },
+  {
     id: 'more',
     title: 'More coming soon',
-    gus: "That's a fine operation. Next season we'll put up a job board and let the bots sort out their own troubles.",
+    gus: "That's a fine operation. Next we'll learn the birds by name, and keep an eye on the weather.",
     done: () => false,
   },
 ];

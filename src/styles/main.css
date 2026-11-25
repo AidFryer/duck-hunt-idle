@@ -1278,3 +1278,527 @@ button {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
 }
+
+/* ============================================================ Phase 3 */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.floater--alert {
+  font-size: 13px;
+  color: #ffe2c8;
+  background: rgba(181, 86, 43, 0.85);
+  padding: 2px 8px;
+  border-radius: 8px;
+  text-shadow: none;
+}
+
+/* ------------------------------------------------------------ ledger bar */
+
+.ledger-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px 10px 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid var(--ui-panelShade);
+}
+
+.ledger-bar.is-hot {
+  border-color: var(--c-amber);
+}
+
+.ledger-bar__text {
+  display: grid;
+  min-width: 0;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.ledger-bar__text strong {
+  font-family: var(--ui-fontHeading);
+  font-size: 15px;
+}
+
+.ledger-bar__text span {
+  color: var(--ui-textSoft);
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------ problems button */
+
+.problems-btn {
+  position: relative;
+}
+
+.problems-btn__mark {
+  font-family: var(--ui-fontHeading);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.problems-btn.is-alert {
+  background: rgba(181, 86, 43, 0.9);
+  animation: wobble 1.2s ease-in-out infinite;
+}
+
+.problems-btn__count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--c-amber);
+  color: var(--c-ink);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+@keyframes wobble {
+  20% {
+    transform: rotate(-8deg);
+  }
+  40% {
+    transform: rotate(6deg);
+  }
+  60% {
+    transform: rotate(-3deg);
+  }
+  80% {
+    transform: rotate(0);
+  }
+}
+
+/* ------------------------------------------------------------ job board */
+
+.board-tab {
+  gap: 10px;
+}
+
+.queue-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--c-woodDark);
+  color: var(--c-cream);
+}
+
+.queue-item {
+  display: grid;
+  justify-items: center;
+  padding: 4px 2px;
+  border-radius: 8px;
+  text-align: center;
+  transition: background 0.3s;
+}
+
+.queue-item strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-item span {
+  font-size: 10.5px;
+  font-weight: 700;
+  opacity: 0.8;
+  line-height: 1.1;
+}
+
+.queue-item.is-hot {
+  background: rgba(217, 119, 47, 0.55);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.queue-item.is-warn strong {
+  color: #ffc49a;
+}
+
+.board-hint {
+  margin: 0;
+}
+
+.pick-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: var(--c-sageDark);
+  color: var(--c-cream);
+  font-weight: 700;
+  font-size: 13.5px;
+  animation: pop-in 0.25s ease;
+}
+
+.pick-banner img {
+  width: 30px;
+}
+
+.pick-banner span {
+  flex: 1;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px 10px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(90, 55, 25, 0.25) 0 1.5px, transparent 2px) 0 0 / 11px 13px,
+    radial-gradient(circle at 70% 60%, rgba(255, 230, 180, 0.18) 0 1px, transparent 1.6px) 0 0 / 9px 7px,
+    linear-gradient(160deg, #c69a62, #a87a45);
+  box-shadow:
+    inset 0 0 0 6px var(--c-wood),
+    inset 0 0 0 8px var(--c-woodDark),
+    inset 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.job-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 10px 10px;
+  border-radius: 3px;
+  background: linear-gradient(#fbf4e4, #f1e4c7);
+  box-shadow:
+    0 6px 10px rgba(40, 24, 10, 0.3),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  transform: rotate(var(--tilt, 0deg));
+  transition:
+    transform 0.2s cubic-bezier(0.3, 0.7, 0.4, 1.4),
+    box-shadow 0.2s,
+    opacity 0.2s;
+}
+
+.job-card h4 {
+  margin: 0;
+  font-family: var(--ui-fontHeading);
+  font-size: 16px;
+}
+
+.job-card__blurb {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--ui-textSoft);
+}
+
+.job-card.is-backed-up {
+  box-shadow:
+    0 6px 10px rgba(40, 24, 10, 0.3),
+    0 0 0 3px var(--c-amber);
+}
+
+.job-card.is-target {
+  cursor: pointer;
+  transform: rotate(0deg) scale(1.03);
+  box-shadow:
+    0 10px 18px rgba(40, 24, 10, 0.35),
+    0 0 0 3px var(--c-sageDark);
+}
+
+.job-card.is-blocked {
+  opacity: 0.45;
+}
+
+.job-card--bench {
+  background: linear-gradient(#e9e1d0, #d8ccb2);
+}
+
+.pin {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f08a6a, var(--c-rust) 55%, #6a2a10);
+  box-shadow: 0 3px 4px rgba(0, 0, 0, 0.35);
+}
+
+.job-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 8px;
+  margin: 2px 0 0;
+  font-size: 11px;
+}
+
+.job-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+.job-stats dt {
+  color: var(--ui-textSoft);
+}
+
+.job-stats dd {
+  margin: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-stats .is-hot dd,
+.stats .is-hot dd,
+.log-stats .is-hot strong {
+  color: var(--c-rust);
+}
+
+.spark {
+  width: 100%;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(107, 74, 47, 0.08);
+}
+
+.spark__area {
+  fill: rgba(94, 115, 82, 0.25);
+}
+
+.spark__line {
+  fill: none;
+  stroke: var(--c-sageDark);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+
+.spark__fail {
+  fill: var(--c-rust);
+}
+
+.tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 44px;
+  align-items: center;
+}
+
+.tokens__empty {
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--ui-textSoft);
+}
+
+.token {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 2px solid var(--ui-panelEdge);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #fffaf0, var(--ui-panelShade));
+  cursor: grab;
+  transition: transform 0.15s cubic-bezier(0.3, 0.7, 0.4, 1.6);
+  touch-action: manipulation;
+}
+
+.token img {
+  width: 34px;
+  pointer-events: none;
+}
+
+.token:active {
+  transform: scale(0.9);
+}
+
+.token.is-selected {
+  border-color: var(--c-sageDark);
+  box-shadow: 0 0 0 3px rgba(94, 115, 82, 0.45);
+  transform: translateY(-3px) scale(1.08);
+  animation: bob 1s ease-in-out infinite;
+}
+
+.token__count {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 20px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--c-woodDark);
+  color: var(--c-cream);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.token__stuck {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--c-rust);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+/* ------------------------------------------------------------ problem log */
+
+.log-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.log-stats div {
+  display: grid;
+  justify-items: center;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: var(--c-cream);
+}
+
+.log-stats strong {
+  font-size: 18px;
+}
+
+.log-stats span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ui-textSoft);
+}
+
+.log-fixall {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepper strong {
+  min-width: 22px;
+  text-align: center;
+  font-size: 17px;
+}
+
+.stepper .btn {
+  width: 44px;
+  padding: 0;
+  font-size: 20px;
+}
+
+.problem-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.problem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+  border-left: 4px solid var(--ui-panelEdge);
+}
+
+.problem img {
+  width: 32px;
+  flex: none;
+}
+
+.problem__text {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.problem__text strong {
+  font-size: 13.5px;
+}
+
+.problem__text span {
+  color: var(--ui-textSoft);
+  font-weight: 600;
+}
+
+.problem--retrying {
+  border-left-color: var(--c-amber);
+}
+
+.problem--fixed {
+  opacity: 0.7;
+  border-left-color: var(--c-sageDark);
+}
+
+.problem.is-needs-you {
+  border-left-color: var(--c-rust);
+  background: rgba(233, 199, 180, 0.6);
+}
+
+@media (max-width: 420px) {
+  .queue-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 4px;
+  }
+
+  .queue-item span {
+    font-size: 9.5px;
+  }
+
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 8px;
+    gap: 14px 8px;
+  }
+
+  .token {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Compact clock: just the time, so the Problem Log and Settings buttons fit. */
+  .clock {
+    padding: 6px 10px 6px 8px;
+  }
+
+  .clock__text > span {
+    display: none;
+  }
+
+  .topbar__right {
+    gap: 4px;
+  }
+
+  .job-stats {
+    grid-template-columns: 1fr;
+  }
+}

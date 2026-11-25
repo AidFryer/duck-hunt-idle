@@ -1,5 +1,8 @@
 import Decimal from 'break_infinity.js';
-import { ACRES, BOT_MILESTONES, BOTS, HUNT, MILESTONE_MULTIPLIER, SPECIES, type BotId, type SpeciesId } from '../data/economy';
+import {
+  ACRES, BOT_MILESTONES, BOTS, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
+  type BotId, type SpeciesId,
+} from '../data/economy';
 import type { EventSink } from './events';
 import type { GameState } from './state';
 
@@ -29,10 +32,11 @@ export function botUnitSpeed(id: BotId, level: number): number {
   return d.baseSpeed * (1 + d.levelSpeedBonus * (level - 1));
 }
 
-/** Total actions per second for all owned bots of this type. */
-export function botRate(state: GameState, id: BotId): number {
-  const b = state.bots[id];
-  return b.owned * botUnitSpeed(id, b.level) * milestoneMultiplier(b.owned);
+/** Chance an action goes smoothly for one bot of this type at a level. */
+export function botReliability(id: BotId, level: number): number {
+  const d = BOTS[id];
+  if (d.reliability >= 1) return 1;
+  return Math.min(RELIABILITY_CAP, d.reliability + RELIABILITY_PER_LEVEL * (level - 1));
 }
 
 /** Price of buying `count` more bots, given how many are owned. */
@@ -75,6 +79,8 @@ export function buyBot(state: GameState, id: BotId, count: number, events?: Even
   pay(state, price);
   const before = b.owned;
   b.owned += count;
+  const home = BOTS[id].job;
+  state.assign[id][home] = (state.assign[id][home] ?? 0) + count;
   events?.push({ type: 'botBought', bot: id, count, owned: b.owned });
   for (const t of BOT_MILESTONES) {
     if (before < t && b.owned >= t) {
@@ -100,7 +106,7 @@ export function levelUpBot(state: GameState, id: BotId, events?: EventSink): boo
   if (!canAfford(state, price)) return false;
   pay(state, price);
   b.level += 1;
-  events?.push({ type: 'botLevel', bot: id, level: b.level });
+  events?.push({ type: 'botLevel', bot: id, level: b.level, by: 'you' });
   return true;
 }
 
@@ -136,8 +142,13 @@ export function flockDraw(state: GameState): number {
   return HUNT.baseFlockRate * spread * acreBonus;
 }
 
-/** Coins and feathers paid for one bird of a species. */
-export function birdValue(_state: GameState, species: SpeciesId): { coins: number; feathers: number } {
+/** Lodge reputation: more birds logged, better-paying guests. */
+export function reputationMultiplier(state: GameState): number {
+  return 1 + LEDGER.reputationK * Math.sqrt(state.stats.lifetimeLogged);
+}
+
+/** Coins (when logged) and feathers (when retrieved) for one bird. */
+export function birdValue(state: GameState, species: SpeciesId): { coins: number; feathers: number } {
   const s = SPECIES[species];
-  return { coins: s.coins, feathers: s.feathers };
+  return { coins: Math.round(s.coins * reputationMultiplier(state) * 100) / 100, feathers: s.feathers };
 }

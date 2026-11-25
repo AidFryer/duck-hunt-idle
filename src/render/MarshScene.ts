@@ -36,6 +36,7 @@ export class MarshScene {
     anchors: {
       chimney: { x: 0, y: 0 }, mug: { x: 0, y: 0 }, decoyCenter: { x: 0, y: 0 },
       decoySpread: 100, blind: { x: 0, y: 0 }, lodge: { x: 0, y: 0 }, crew: { x: 0, y: 0 },
+      porch: { x: 0, y: 0 }, woodpile: { x: 0, y: 0 }, lodgeScale: 1,
     },
   };
 
@@ -92,8 +93,8 @@ export class MarshScene {
   handle(e: SimEvent): Point | null {
     switch (e.type) {
       case 'decoySet':
-        this.blind.tossDecoy();
-        return this.crew.decoyFrom();
+        this.blind.tossDecoy(this.crew.decoyFrom(e.source));
+        return null;
       case 'decoyDrift':
         this.blind.driftDecoy();
         return null;
@@ -107,11 +108,9 @@ export class MarshScene {
         this.ducks.call(e.flockId);
         return this.crew.call(e.source);
       case 'flockLeft':
-        this.ducks.leave(e.flockId);
-        return null;
+        return this.ducks.leave(e.flockId);
       case 'flockFlared':
-        this.ducks.flare(e.flockId);
-        return null;
+        return this.ducks.flare(e.flockId);
       case 'shot': {
         const p = this.crew.shoot(e.source);
         this.ducks.shoot(e.flockId, e.downed);
@@ -119,8 +118,24 @@ export class MarshScene {
       }
       case 'retrieved':
         return this.crew.retrieve(e.source);
+      case 'logged':
+        return this.crew.logged(e.source);
+      case 'scouted':
+        this.crew.scouted(e.source);
+        return null;
+      case 'problem':
+        return this.crew.problem(e.bot);
+      case 'problemRetry':
+        this.crew.retry(e.bot);
+        return null;
+      case 'problemFixed':
+        return this.crew.fixed(e.bot);
+      case 'problemEscalated':
+        return this.crew.problem(e.bot);
+      case 'botMoved':
+        return null;
       case 'botBought':
-        this.crew.botBought(e.bot, e.owned);
+        this.crew.botBought(e.bot, e.owned, e.count);
         return this.layout.anchors.crew;
       case 'botLevel':
         this.crew.celebrate(e.bot, false);
@@ -140,11 +155,7 @@ export class MarshScene {
   sync(state: GameState): void {
     this.blind.reconcile(state.hunt.decoys);
     this.ducks.reconcile(state);
-    this.crew.setOwned({
-      caller: state.bots.caller.owned,
-      blind: state.bots.blind.owned,
-      retriever: state.bots.retriever.owned,
-    });
+    this.crew.sync(state);
   }
 
   update(f: Omit<FrameContext, 'layout'>): void {

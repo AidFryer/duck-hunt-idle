@@ -10,13 +10,6 @@ import { portrait } from '../portraits';
 
 type BuyMode = 1 | 10 | 'max';
 
-const FUTURE = [
-  { name: 'Scout Bot', note: 'Spots flocks early. Arrives in Phase 3.' },
-  { name: 'Decoy Setter', note: 'Keeps the spread set. Arrives in Phase 3.' },
-  { name: 'Ledger Bot', note: 'Logs the bag for the lodge. Arrives in Phase 3.' },
-  { name: 'Foreman Bot', note: 'Sorts out stuck bots. Arrives in Phase 3.' },
-];
-
 export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const [mode, setMode] = useState<BuyMode>(1);
   return (
@@ -33,15 +26,6 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
       </div>
       {BOT_ORDER.map((id) => (
         <BotCard id={id} hud={hud} controls={controls} notation={notation} mode={mode} />
-      ))}
-      {FUTURE.map((f) => (
-        <div class="bot-card is-locked">
-          <div class="bot-card__portrait"><Icon name="bot" size={26} /></div>
-          <div class="bot-card__info">
-            <h4>{f.name}</h4>
-            <p>{f.note}</p>
-          </div>
-        </div>
       ))}
     </div>
   );
@@ -79,9 +63,12 @@ function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSna
         </h4>
         <p>{def.blurb}</p>
         <dl class="stats">
-          <div><dt>Speed</dt><dd>{formatRate(b.unitSpeed)} each</dd></div>
-          <div><dt>Crew total</dt><dd>{formatRate(b.rate)}</dd></div>
-          <div><dt>Reliability</dt><dd>{Math.round(def.reliability * 100)}%</dd></div>
+          {id !== 'foreman' && <div><dt>Speed</dt><dd>{formatRate(b.unitSpeed)} each</dd></div>}
+          {id !== 'foreman' && <div><dt>Working</dt><dd>{formatRate(b.rate)}</dd></div>}
+          {id === 'foreman' && <div><dt>Handles</dt><dd>{Math.max(1, Math.floor(b.unitSpeed * b.multiplier))} at a time each</dd></div>}
+          <div><dt>Reliability</dt><dd>{(b.reliability * 100).toFixed(1)}%</dd></div>
+          {b.stuck > 0 && <div class="is-hot"><dt>Stuck</dt><dd>{b.stuck}</dd></div>}
+          {b.bench > 0 && <div><dt>Resting</dt><dd>{b.bench}</dd></div>}
         </dl>
         {ms && (
           <div class="milestone" title={`At ${ms} owned, output doubles`}>
