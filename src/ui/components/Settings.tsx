@@ -90,6 +90,15 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
               onChange={(e) => onPrefs({ ...prefs, screenShake: (e.currentTarget as HTMLInputElement).checked })}
             />
           </label>
+          <label class="row" for="opt-haptics">
+            <span>Vibration on shots and big moments</span>
+            <input
+              id="opt-haptics"
+              type="checkbox"
+              checked={prefs.haptics}
+              onChange={(e) => onPrefs({ ...prefs, haptics: (e.currentTarget as HTMLInputElement).checked })}
+            />
+          </label>
           <label class="row" for="opt-tutorial">
             <span>Show the tutorial again</span>
             <button id="opt-tutorial" class="btn btn--small" onClick={() => { onPrefs({ ...prefs, tutorialDone: false }); onClose(); }}>Replay</button>

@@ -20,7 +20,9 @@ import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
 import { canDo, doAction, fieldOpen, type ActionJob } from './sim/hunt';
 import { GROUND_JOBS, type GroundId } from './data/economy';
-import { buildLodge, buyRung } from './sim/progression';
+import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
+import { buzz, setHaptics } from './app/haptics';
+import { installState } from './app/pwa';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
@@ -196,6 +198,7 @@ function onEvent(e: SimEvent, at: Point | null): void {
       pushMoment({ kind: 'feature', id: e.feature });
       break;
     case 'lodgeBuilt':
+      buzz('big');
       pushMoment({ kind: 'lodge', level: e.level });
       shake(0.5);
       break;
@@ -264,7 +267,11 @@ function onEvent(e: SimEvent, at: Point | null): void {
     case 'flockFlared':
       if (at) feedback.float('Flared off', at.x, at.y, 'info');
       break;
+    case 'shot':
+      if (e.source === 'manual') buzz('tap');
+      break;
     case 'goldenShot':
+      buzz('big');
       if (lastTapAt) feedback.float(`+${formatNumber(e.coins, n)} golden bonus!`, lastTapAt.x, lastTapAt.y - 50, 'coins');
       feedback.toast(`Golden flock! +${formatNumber(e.coins, n)} coins and ${e.feathers} feathers.`, 'celebrate', 3500);
       shake(0.4);
@@ -354,6 +361,34 @@ function checkDailyBonus(): void {
   claimDailyBonus(state, localDayKey(), runner.sink);
 }
 setInterval(checkDailyBonus, 60_000);
+
+/**
+ * Nudges: a toast (and the app-icon badge, where supported) when the next
+ * lodge level can be built, and a one-time "add to home screen" tip on iPhone.
+ */
+let toldLodge = 0;
+setHaptics(prefs.get().haptics);
+setInterval(() => {
+  const next = nextLodge(state);
+  const ready = !!next && canBuildLodge(state);
+  if (ready && next && toldLodge !== next.level) {
+    toldLodge = next.level;
+    feedback.toast(`The ${next.name} is ready to build! It's on the Marsh tab.`, 'celebrate', 5000);
+  }
+  try {
+    const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+    if (ready) void nav.setAppBadge?.(1);
+    else void nav.clearAppBadge?.();
+  } catch {
+    /* badges unsupported */
+  }
+  const p = prefs.get();
+  const ios = installState.get().ios && !installState.get().installed;
+  if (ios && !p.installTip && state.lodge >= 2) {
+    updatePrefs({ ...p, installTip: true });
+    feedback.toast('Tip: in Safari, tap Share, then "Add to Home Screen" to play full-screen, like an app.', 'info', 7000);
+  }
+}, 2000);
 const UPGRADE_NAMES = Object.fromEntries(Object.entries(UPGRADES).map(([k, v]) => [k, v.name])) as Record<keyof typeof UPGRADES, string>;
 void SPECIES;
 void FLYWAYS;
@@ -491,6 +526,7 @@ const controls: GameControls = {
 function updatePrefs(p: Prefs): void {
   prefs.set(p);
   savePrefs(p);
+  setHaptics(p.haptics);
   audio.setLevels({ music: p.music, ambience: p.ambience, effects: p.effects, muted: p.muted });
   feedback.reducedMotion = p.reducedMotion;
 }

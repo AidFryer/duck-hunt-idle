@@ -17,6 +17,10 @@ export interface Prefs {
   tutorialDone: boolean;
   /** Which hunting ground was on screen last. */
   ground: 'marsh' | 'field';
+  /** Vibration ticks on shots and big moments. */
+  haptics: boolean;
+  /** The "add to home screen" tip has been shown. */
+  installTip: boolean;
 }
 
 const KEY = 'duck-hunt-idle.prefs';
@@ -34,6 +38,8 @@ export function loadPrefs(): Prefs {
     screenShake: !reduced,
     tutorialDone: false,
     ground: 'marsh',
+    haptics: true,
+    installTip: false,
   };
   try {
     const raw = localStorage.getItem(KEY);

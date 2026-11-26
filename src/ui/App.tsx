@@ -83,7 +83,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <nav class="tabs" role="tablist" aria-label="Lodge sections">
           {TABS.map((t) => {
             const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
-            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'legacy' && legacyAlert);
+            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'legacy' && legacyAlert) || (t.id === 'marsh' && !!hud.lodge.next?.affordable);
             return (
               <button
                 role="tab"
