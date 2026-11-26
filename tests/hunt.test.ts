@@ -19,13 +19,10 @@ function rich(): GameState {
 }
 
 describe('manual hunt pipeline', () => {
-  it('runs Set Decoys → Call → Shoot → Retrieve and pays out', () => {
-    const s = opened(createInitialState(3));
+  it('runs Call → Shoot → Retrieve and pays out', () => {
+    const s = createInitialState(3);
     const ev: SimEvent[] = [];
     expect(canDo(s, 'call')).toBe(false);
-    for (let i = 0; i < HUNT.baseSpreadSize; i++) expect(doAction(s, 'decoys', 'manual', ev)).toBe(true);
-    expect(doAction(s, 'decoys', 'manual', ev)).toBe(false); // spread is full
-
     s.hunt.incoming.push({ id: 99, species: 'mallard', size: 6, age: 0 });
     expect(doAction(s, 'call', 'manual', ev)).toBe(true);
     expect(s.hunt.committed).toHaveLength(1);
@@ -74,11 +71,19 @@ describe('manual hunt pipeline', () => {
     expect(s.stats.flocksFlared).toBe(1);
   });
 
-  it('decoys drift loose over time', () => {
+  it('the spread stays out, and buying decoys grows it and draws more flocks', async () => {
+    const { buyDecoyBag, flockDraw, spreadSize } = await import('../src/sim/economy');
     const s = opened(createInitialState(2));
-    s.hunt.decoys = 3;
-    advance(s, HUNT.decoyDriftSeconds * 1.2, TICK_SECONDS);
-    expect(s.hunt.decoys).toBeLessThan(3);
+    advance(s, 300, TICK_SECONDS);
+    expect(s.hunt.decoys).toBe(spreadSize(s));
+    expect(canDo(s, 'decoys')).toBe(false);
+    s.currencies.coins = new Decimal(1e6);
+    s.currencies.feathers = new Decimal(1e6);
+    s.unlocks.upgrades = 1;
+    const before = flockDraw(s);
+    for (let i = 0; i < 5; i++) expect(buyDecoyBag(s)).toBe(true);
+    expect(spreadSize(s)).toBe(HUNT.baseSpreadSize + 10);
+    expect(flockDraw(s)).toBeGreaterThan(before * 1.5);
   });
 
   it('bag resets at the start of each day and records the best', () => {

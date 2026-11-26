@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
-import { BOT_MILESTONES, BOT_ORDER, BOTS, type BotId } from '../../data/economy';
+import { BOT_MILESTONES, BOTS, WORKSHOP_ORDER, type BotId } from '../../data/economy';
+import { PLANS } from '../../data/progression';
 import { botPrice } from '../../sim/economy';
 import { formatRate, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
@@ -29,15 +30,21 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
       <p class={`crew-note ${hud.crewNote ? 'is-busy' : ''}`}>
         {hud.crewNote ?? 'The crew is keeping up. Every job is moving.'}
       </p>
-      {BOT_ORDER.map((id) => (
+      {WORKSHOP_ORDER.filter((id) => showBot(hud, id)).map((id) => (
         <>
-          {id === 'staker' && <h4 class="group-head">Goose field crew</h4>}
-          {id === 'foreman' && <h4 class="group-head">Lodge crew</h4>}
+          {id === 'flagger' && <h4 class="group-head">Goose field crew</h4>}
+          {id === 'tinker' && <h4 class="group-head">Lodge crew</h4>}
           <BotCard id={id} hud={hud} controls={controls} notation={notation} mode={mode} />
         </>
       ))}
     </div>
   );
+}
+
+/** Show bots you have, can earn now, or will be able to earn with the next lodge. */
+function showBot(hud: HudSnapshot, id: BotId): boolean {
+  const p = hud.plans[id];
+  return p.earned || p.open || PLANS[id].lodge <= hud.lodge.level + 1;
 }
 
 function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSnapshot; controls: GameControls; notation: Notation; mode: BuyMode }) {
@@ -81,7 +88,7 @@ function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSna
         <h4>
           {def.name} <span class="bot-card__lvl">Lv {b.level}</span>
         </h4>
-        <p>{def.blurb}</p>
+        {b.owned === 0 && <p>{def.blurb}</p>}
         <dl class="stats">
           {id !== 'foreman' && <div><dt>Speed</dt><dd>{formatRate(b.unitSpeed)} each</dd></div>}
           {id !== 'foreman' && <div><dt>Working</dt><dd>{formatRate(b.rate)}</dd></div>}

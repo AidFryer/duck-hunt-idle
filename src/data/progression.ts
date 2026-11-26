@@ -64,7 +64,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 2, name: "Trapper's Cabin",
     gus: "Four real walls and a workbench. Now we can start carving help.",
-    birds: 150, species: 2, coins: 600, feathers: 80, opens: ['bots', 'upgrades'],
+    birds: 150, species: 2, coins: 400, feathers: 60, opens: ['bots', 'upgrades'],
     points: [
       'The Workshop: do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins.',
       'Your first food plot: plant millet and more on the far bank. What grows depends on the flyway.',
@@ -74,7 +74,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 3, name: 'Marsh Lodge',
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
-    birds: 500, species: 4, coins: 5_000, feathers: 500, opens: [],
+    birds: 1_000, species: 4, coins: 3_000, feathers: 300, opens: [],
     points: [
       'Ledger Bot plans, so Gus gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
@@ -84,7 +84,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 2_500, species: 7, coins: 25_000, feathers: 1_200, opens: ['field', 'workflows'],
+    birds: 7_000, species: 7, coins: 30_000, feathers: 2_000, opens: ['field', 'workflows'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch to it from the marsh.',
       'Workflows: tie the jobs together with rope for big crew bonuses.',
@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 10_000, species: 10, coins: 250_000, feathers: 6_000, opens: ['legacy'],
+    birds: 40_000, species: 10, coins: 300_000, feathers: 12_000, opens: ['legacy'],
     points: [
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',
       'Tinker Bot plans.',
@@ -170,6 +170,8 @@ export interface RungEffect {
 
 export interface RungDef {
   id: RungId;
+  /** A spread rig: bought in Upgrades, needs no bots. */
+  rig?: boolean;
   /** Which hunt its marsh-wide effects apply to (default: the marsh). */
   ground?: 'field';
   job: JobId;
@@ -191,6 +193,8 @@ export interface RungDef {
 }
 
 const T2 = { lodge: 3, owned: 10, coins: 5_000, feathers: 300 } as const;
+/** Spread rigs need no crew. */
+const RIG = { owned: 0 } as const;
 const T3 = { lodge: 4, owned: 25, coins: 80_000, feathers: 3_000 } as const;
 const T4 = { lodge: 5, owned: 50, coins: 400_000, feathers: 15_000 } as const;
 /** Field rungs: the field opens at lodge 4, so its ladder is shorter and pricier. */
@@ -199,19 +203,19 @@ const F3 = { ground: 'field', tier: 3, lodge: 5, owned: 25, coins: 900_000, feat
 
 export const RUNGS: Record<RungId, RungDef> = {
   spinningWing: {
-    id: 'spinningWing', job: 'decoys', bot: 'setter', tier: 2, ...T2, counter: 'birds', count: 1_500,
+    id: 'spinningWing', rig: true, job: 'decoys', bot: 'setter', tier: 2, ...T2, ...RIG, counter: 'birds', count: 1_500,
     name: 'Spinning-wing Decoys', blurb: 'A few decoys with wings that flicker in the sun. Flocks see the spread from miles off.',
-    effect: 'Setters ×2 · +15% flocks', fx: { mult: 2, draw: 1.15 },
+    effect: '+15% flocks', fx: { mult: 2, draw: 1.15 },
   },
   decoySkiff: {
-    id: 'decoySkiff', job: 'decoys', bot: 'setter', tier: 3, ...T3, counter: 'birds', count: 8_000,
+    id: 'decoySkiff', rig: true, job: 'decoys', bot: 'setter', tier: 3, ...T3, ...RIG, counter: 'birds', count: 8_000,
     name: 'Decoy Skiff', blurb: 'A little flat-bottomed boat that tows a diver spread out to open water.',
-    effect: 'Setters ×2 · +4 decoys · scaup & buffleheads', fx: { mult: 2, spread: 4 },
+    effect: '+4 decoys · scaup & buffleheads', fx: { mult: 2, spread: 4 },
   },
   floatingRig: {
-    id: 'floatingRig', job: 'decoys', bot: 'setter', tier: 4, ...T4, counter: 'birds', count: 40_000,
+    id: 'floatingRig', rig: true, job: 'decoys', bot: 'setter', tier: 4, ...T4, ...RIG, counter: 'birds', count: 40_000,
     name: 'Floating Rig', blurb: 'A great long line of hand-carved sea ducks, bobbing on the swell.',
-    effect: 'Setters ×3 · +25% flocks · draws the King Eider', fx: { mult: 3, draw: 1.25 },
+    effect: '+25% flocks · draws the King Eider', fx: { mult: 3, draw: 1.25 },
   },
   duetCallers: {
     id: 'duetCallers', job: 'call', bot: 'caller', tier: 2, ...T2, counter: 'flocksCalled', count: 800,
@@ -274,14 +278,14 @@ export const RUNGS: Record<RungId, RungDef> = {
     effect: 'Scouts ×3 · +10% flocks', fx: { mult: 3, draw: 1.1 },
   },
   silhouetteSpread: {
-    id: 'silhouetteSpread', job: 'fDecoys', bot: 'staker', ...F2, counter: 'geese', count: 800,
+    id: 'silhouetteSpread', rig: true, job: 'fDecoys', bot: 'staker', ...F2, ...RIG, counter: 'geese', count: 800,
     name: 'Silhouette Spread', blurb: 'Dozens of flat, painted silhouettes fan out behind the full-bodies. From the air it looks like a whole field of geese.',
-    effect: 'Stakers ×2 · +6 decoys · Ross\'s geese', fx: { mult: 2, spread: 6 },
+    effect: '+6 decoys · Ross\'s geese', fx: { mult: 2, spread: 6 },
   },
   fullBodyFleet: {
-    id: 'fullBodyFleet', job: 'fDecoys', bot: 'staker', ...F3, counter: 'geese', count: 5_000,
+    id: 'fullBodyFleet', rig: true, job: 'fDecoys', bot: 'staker', ...F3, ...RIG, counter: 'geese', count: 5_000,
     name: 'Full-body Fleet', blurb: 'A trailer of hand-flocked full-bodies, feeders and sentries and sleepers.',
-    effect: 'Stakers ×3 · +25% goose flocks · blue geese', fx: { mult: 3, draw: 1.25 },
+    effect: '+25% goose flocks · blue geese', fx: { mult: 3, draw: 1.25 },
   },
   kiteFlag: {
     id: 'kiteFlag', job: 'flag', bot: 'flagger', ...F2, counter: 'geese', count: 800,

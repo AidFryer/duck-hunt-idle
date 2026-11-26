@@ -14,7 +14,7 @@ import { applyCssTokens } from './data/palette';
 import { Renderer } from './render/Renderer';
 import type { Point } from './render/types';
 import { jumpToPhase } from './sim/actions';
-import { buyAcre, buyBot, levelUpBot } from './sim/economy';
+import { buyAcre, buyBot, buyDecoyBag, levelUpBot } from './sim/economy';
 import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
@@ -332,21 +332,20 @@ function onSceneTap(t: TapTarget): void {
     if (g === 'marsh') view?.fx.ripple(t.at.x, t.at.y, big ? 0.7 : 0.5, big ? 1.4 : 1.2);
     else view?.fx.featherPuff(t.at.x, t.at.y, (view?.layout.scale ?? 1) * 0.35, 2);
   };
-  // A tap on the water (or field) when the spread is full fetches a bird if
-  // there is one; otherwise it's just a splash, no nagging.
-  if (step === 'decoys' && !canDo(state, jobs.decoys)) {
+  // A tap on open water (or stubble) fetches a bird if there is one;
+  // otherwise it's just a splash. Decoys stay out on their own now.
+  if (step === 'decoys') {
     if (canDo(state, jobs.retrieve)) step = 'retrieve';
     else return splash(false);
   }
   if (step === 'call' && !canDo(state, jobs.call)) return tapNote(g === 'field' ? 'Shoot the geese over the spread first' : 'Shoot the low flock first', t.at);
   if (step === 'retrieve' && t.floater) view?.ducks.prefer(t.floater);
-  if (step === 'decoys') splash(true);
   doAction(state, jobs[step] as ActionJob, 'manual', runner.sink, t.flockId);
   hud.set(snapshot(state));
 }
 
 /** Keyboard: D decoys, C call, S shoot, R retrieve. */
-const KEYS: Record<string, Exclude<HuntStage, 'log'>> = { d: 'decoys', c: 'call', s: 'shoot', r: 'retrieve' };
+const KEYS: Record<string, Exclude<HuntStage, 'log'>> = { c: 'call', s: 'shoot', r: 'retrieve' };
 window.addEventListener('keydown', (e) => {
   if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
   const el = e.target as HTMLElement | null;
@@ -431,6 +430,11 @@ const controls: GameControls = {
     updatePrefs({ ...prefs.get(), ground: next });
     renderer?.setGround(next);
     hud.set(snapshot(state));
+  },
+  buyDecoys(g) {
+    const ok = buyDecoyBag(state, g, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
   },
   plantCrop(plot, crop) {
     const ok = plantCrop(state, plot, crop, runner.sink);

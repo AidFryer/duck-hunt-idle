@@ -131,6 +131,8 @@ export class Renderer {
 
     this.app.ticker.add((ticker) => this.frame(Math.min(ticker.deltaMS / 1000, 0.1)));
     this.ready = true;
+    // Fonts settle the top bar's height a moment later; re-measure once.
+    setTimeout(() => this.handleResize(), 1500);
   }
 
   // ---- screen shake
@@ -168,10 +170,22 @@ export class Renderer {
 
   private lastW = 0;
   private lastH = 0;
+  /** Where the HUD's top bar ends, in canvas pixels (flocks stay below it). */
+  private measureSkyTop(): number {
+    const bar = document.querySelector('.topbar');
+    if (!bar) return 0;
+    const top = this.app.canvas.getBoundingClientRect().top;
+    return Math.max(0, bar.getBoundingClientRect().bottom - top + 8);
+  }
+
   private handleResize(): void {
     const w = this.app.screen.width;
     const h = this.app.screen.height;
-    if (w === this.lastW && h === this.lastH) return;
+    const skyTop = this.measureSkyTop();
+    const topMoved = Math.abs((this.scene.layout.skyTop ?? 0) - skyTop) > 1;
+    this.scene.layout.skyTop = skyTop;
+    if (this.field) this.field.layout.skyTop = skyTop;
+    if (w === this.lastW && h === this.lastH && !topMoved) return;
     this.lastW = w;
     this.lastH = h;
     this.scene.resize(w, h);
@@ -220,6 +234,7 @@ export class Renderer {
   setGround(g: GroundId): void {
     if (g === 'field' && !this.field && this.ready) {
       this.field = new FieldScene(this.scene.tex);
+      this.field.layout.skyTop = this.scene.layout.skyTop;
       this.field.resize(this.app.screen.width, this.app.screen.height);
       this.app.stage.addChildAt(this.field.root, 0);
     }

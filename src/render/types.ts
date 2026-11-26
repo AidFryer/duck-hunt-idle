@@ -9,6 +9,8 @@ export interface SceneLayout {
   horizon: number;
   /** Overall size multiplier for scene art (1 ≈ a 520px tall scene). */
   scale: number;
+  /** y just below the HUD's top bar: flocks you can tap stay below this. */
+  skyTop?: number;
   /** Named anchor points layers share (chimney top, decoy spread, …). */
   anchors: SceneAnchors;
 }

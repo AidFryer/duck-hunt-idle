@@ -24,7 +24,7 @@ interface Decoy {
   from: { x: number; y: number };
 }
 
-const MAX_DECOY_SLOTS = 12;
+const MAX_DECOY_SLOTS = 48;
 const TOSS_TIME = 0.7;
 const DRIFT_TIME = 3.5;
 

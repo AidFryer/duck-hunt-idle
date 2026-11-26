@@ -23,12 +23,6 @@ export const KEEPER_NAME = 'Gus Marlow';
 
 export const GOALS: readonly GoalDef[] = [
   {
-    id: 'decoys',
-    title: 'Set out 3 decoys',
-    gus: 'First things first. Tap the water to toss a few decoys out, so passing ducks figure this is a safe spot to land.',
-    done: (s) => s.hunt.decoys >= 3 || s.stats.flocksCalled > 0,
-  },
-  {
     id: 'call',
     title: 'Call in a circling flock',
     gus: "Hear that? There's a flock circling up high. Tap it to give 'em a call and bring 'em down to the spread.",
@@ -83,10 +77,10 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => speciesCount(s) >= 3,
   },
   {
-    id: 'setter',
-    title: 'Carve a Decoy Setter',
-    gus: "Set 30 decoys by hand and you'll know the spread well enough to teach it. Then a Setter keeps it full for you.",
-    done: (s) => s.bots.setter.owned > 0,
+    id: 'spread',
+    title: 'Grow your decoy spread',
+    gus: 'A bigger spread pulls in more flocks. Buy a bag of decoys in the Upgrades tab and we\'ll set them out.',
+    done: (s) => s.decoyBags.marsh > 0 || s.stats.seasonsClosed > 0,
   },
   {
     id: 'acre',
@@ -115,7 +109,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'rung',
     title: 'Climb a rung on the automation ladder',
-    gus: 'Own ten of a kind and their ladder opens up in the Workshop: spinning-wing decoys, duet callers, a steady blind. Each rung is a big step.',
+    gus: 'Own ten of a kind and their ladder opens up in the Workshop: duet callers, a steady blind, a kennel pack. Each rung is a big step.',
     done: (s) => Object.keys(s.rungs).length > 0 || s.stats.seasonsClosed > 0,
   },
   {

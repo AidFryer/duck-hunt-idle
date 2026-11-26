@@ -17,14 +17,14 @@ describe('balance: hours of play', () => {
     expect(min(r.firstBot)).toBeGreaterThan(5); // earned by hand first…
     expect(min(r.firstBot)).toBeLessThan(15); // …but not a slog
     expect(min(r.lodge[2])).toBeLessThan(12);
-    expect(min(r.lodge[3])).toBeGreaterThan(30);
-    expect(min(r.lodge[3])).toBeLessThan(70);
-    expect(min(r.lodge[4])).toBeGreaterThan(90);
-    expect(min(r.lodge[4])).toBeLessThan(180);
-    expect(min(r.lodge[5])).toBeGreaterThan(150);
-    expect(min(r.lodge[5])).toBeLessThan(260);
-    expect(min(r.firstStar)).toBeGreaterThan(150);
-    expect(min(r.firstStar)).toBeLessThan(260);
+    expect(min(r.lodge[3])).toBeGreaterThan(25);
+    expect(min(r.lodge[3])).toBeLessThan(60);
+    expect(min(r.lodge[4])).toBeGreaterThan(70);
+    expect(min(r.lodge[4])).toBeLessThan(150);
+    expect(min(r.lodge[5])).toBeGreaterThan(110);
+    expect(min(r.lodge[5])).toBeLessThan(220);
+    expect(min(r.firstStar)).toBeGreaterThan(110);
+    expect(min(r.firstStar)).toBeLessThan(220);
     expect(r.species).toBeGreaterThanOrEqual(9);
   }, 120_000);
 

@@ -38,6 +38,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [tab, setTab] = useState<TabId>('marsh');
   const [settings, setSettings] = useState(false);
   const [problems, setProblems] = useState(false);
+  const [guide, setGuide] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
   const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
   const tStep = tutorialStep(hud, welcomed);
@@ -70,8 +71,14 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
-        <Moments greetName={hud.profile.name} onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
+        <Moments greetName={hud.profile.name} onOpen={(f) => (f === 'guide' ? setGuide(true) : setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId))} />
         <RhythmMeter hud={hud} />
+        {hud.unlocks.guide && (
+          <button class="guide-btn" onClick={() => setGuide(true)} aria-label={`Field Guide: ${hud.speciesFound} of ${hud.guide.length} birds found`} title="Field Guide">
+            <Icon name="book" size={20} />
+            <span>{hud.speciesFound}/{hud.guide.length}</span>
+          </button>
+        )}
         {hud.field.open && (
           <button class="ground-switch" onClick={() => controls.setGround(ground === 'field' ? 'marsh' : 'field')}>
             {ground === 'field' ? '‹ Back to the marsh' : 'To the goose field ›'}
@@ -122,7 +129,6 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           )}
           {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
-          {activeOpen && tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
           {activeOpen && tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
           {activeOpen && tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
         </div>
@@ -131,6 +137,17 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       <OfflineCard notation={n} />
       <SeasonCeremony />
       {problems && <ProblemLog hud={hud} controls={controls} onClose={() => setProblems(false)} />}
+      {guide && (
+        <div class="drawer-backdrop" onClick={(e) => e.target === e.currentTarget && setGuide(false)}>
+          <div class="drawer guide-drawer" role="dialog" aria-label="Field Guide" aria-modal="true">
+            <header class="drawer__head">
+              <h3>Field Guide</h3>
+              <button class="icon-btn icon-btn--dark" onClick={() => setGuide(false)} aria-label="Close the Field Guide">✕</button>
+            </header>
+            <FieldGuide hud={hud} notation={n} />
+          </div>
+        </div>
+      )}
       {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} profile={hud.profile} />}
     </div>
   );

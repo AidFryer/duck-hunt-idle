@@ -20,6 +20,7 @@ export interface GameControls {
   buildLodge(): boolean;
   setProfile(name: string, avatar: string): void;
   plantCrop(plot: number, crop: CropId): boolean;
+  buyDecoys(g: GroundId): boolean;
   buyRung(id: RungId): boolean;
   addCard(kind: NodeKind): boolean;
   removeCard(id: number): boolean;

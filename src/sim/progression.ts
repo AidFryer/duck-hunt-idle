@@ -3,7 +3,7 @@
  * Pure state transitions plus read helpers the economy uses for effects.
  */
 import Decimal from 'break_infinity.js';
-import { BOT_ORDER, type BotId, type GroundId, type JobId } from '../data/economy';
+import { BOT_ORDER, RETIRED_BOTS, type BotId, type GroundId, type JobId } from '../data/economy';
 import { FEATURES, type FeatureId } from '../data/features';
 import {
   LODGE_LEVELS, MAX_LODGE, PLANS, RUNG_ORDER, RUNGS, SPECIES_DRAW,
@@ -95,7 +95,7 @@ export function hasPlans(s: GameState, bot: BotId): boolean {
 /** Mark any plans the player has just earned. Cheap; called about once a second. */
 export function checkPlans(s: GameState, events?: EventSink): void {
   for (const bot of BOT_ORDER) {
-    if (s.plans[bot]) continue;
+    if (s.plans[bot] || RETIRED_BOTS.includes(bot)) continue;
     const p = PLANS[bot];
     if (s.lodge < p.lodge) continue;
     if (counter(s, p.counter) < p.count) continue;
@@ -113,7 +113,7 @@ export function hasRung(s: GameState, id: RungId): boolean {
 /** Lodge level reached and the rung below is owned: worth showing. */
 export function rungVisible(s: GameState, id: RungId): boolean {
   const r = RUNGS[id];
-  if (!hasPlans(s, r.bot)) return false;
+  if (!r.rig && !hasPlans(s, r.bot)) return false;
   const below = RUNG_ORDER.map((x) => RUNGS[x]).find((x) => x.bot === r.bot && x.tier === r.tier - 1);
   return !below || hasRung(s, below.id) || s.lodge >= r.lodge;
 }
@@ -124,7 +124,7 @@ export function rungReady(s: GameState, id: RungId): boolean {
   const below = RUNG_ORDER.map((x) => RUNGS[x]).find((x) => x.bot === r.bot && x.tier === r.tier - 1);
   return (
     !hasRung(s, id) &&
-    hasPlans(s, r.bot) &&
+    (r.rig || hasPlans(s, r.bot)) &&
     (!below || hasRung(s, below.id)) &&
     s.lodge >= r.lodge &&
     s.bots[r.bot].owned >= r.owned &&

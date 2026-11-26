@@ -224,6 +224,12 @@ export class MarshScene {
       case 'planEarned':
       case 'goldenShot':
         return null;
+      case 'decoysBought': {
+        if (e.ground === 'field') return null;
+        const a = this.layout.anchors.decoyCenter;
+        this.fx.sparkle(a.x, a.y, this.layout.scale, 10);
+        return a;
+      }
       case 'cropPlanted': {
         const at = { x: this.layout.w * (0.3 + e.plot * 0.19), y: this.layout.horizon };
         this.fx.confetti(at.x, at.y, this.layout.scale * 0.8, 20);

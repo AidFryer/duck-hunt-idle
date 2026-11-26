@@ -1,7 +1,7 @@
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
-  BOT_ORDER, BOTS, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
+  BOT_ORDER, BOTS, DECOYS, FIELD, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
 import { STREAK } from '../data/economy';
@@ -19,7 +19,7 @@ import { canBuyPerk, coinsForNextStar, nextFlyway, starsFor } from '../sim/prest
 import { ALL_CARDS, cardUnlocked, linkKey, workflowEval, workflowUnlocked } from '../sim/workflow';
 import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
-  acrePrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
+  acrePrice, decoyBagPrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
   milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, maxCommitted, botPriceMult, type Price,
 } from '../sim/economy';
 import { canDo, fieldOpen } from '../sim/hunt';
@@ -183,10 +183,11 @@ export interface HudSnapshot {
   speciesFound: number;
   achievements: { id: string; unlocked: boolean }[];
   patches: number;
-  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string }[];
+  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string; lodge: number }[];
   lodge: LodgeSnapshot;
   profile: { name: string; avatar: string };
   maxCircling: number;
+  spreads: Record<'marsh' | 'field', { decoys: number; draw: number; price: Price; affordable: boolean }>;
   plots: {
     open: number;
     /** Lodge that opens the next plot (null when all four are open). */
@@ -241,7 +242,7 @@ function queueFor(state: GameState, job: JobId): { text: string; backedUp: boole
     case 'scout':
       return { text: `${h.incoming.length}/${maxIncoming(state)} circling`, backedUp: false };
     case 'decoys':
-      return { text: `${h.decoys}/${spreadSize(state)} set`, backedUp: h.decoys < spreadSize(state) / 2 };
+      return { text: `${spreadSize(state)} decoys out`, backedUp: false };
     case 'call':
       return { text: `${h.incoming.length} waiting`, backedUp: h.incoming.length >= maxIncoming(state) };
     case 'shoot':
@@ -251,7 +252,7 @@ function queueFor(state: GameState, job: JobId): { text: string; backedUp: boole
     case 'log':
       return { text: `${h.ledger.length} unlogged`, backedUp: h.ledger.length >= 10 };
     case 'fDecoys':
-      return { text: `${state.field.decoys}/${spreadSize(state, 'field')} staked`, backedUp: state.field.decoys < spreadSize(state, 'field') / 2 };
+      return { text: `${spreadSize(state, 'field')} decoys out`, backedUp: false };
     case 'flag':
       return { text: `${state.field.incoming.length} circling`, backedUp: state.field.incoming.length >= maxIncoming(state, 'field') };
     case 'fShoot':
@@ -313,12 +314,19 @@ function planSnap(state: GameState, id: BotId): PlanSnapshot {
   return { earned: !!state.plans[id], open: state.lodge >= p.lodge, lodgeName: lodgeDef(p.lodge).name, req: req(state, p.counter, p.count) };
 }
 
+function spreadSnap(state: GameState, g: 'marsh' | 'field'): HudSnapshot['spreads']['marsh'] {
+  const decoys = spreadSize(state, g);
+  const base = g === 'field' ? FIELD.baseSpreadSize : HUNT.baseSpreadSize;
+  const price = decoyBagPrice(state, g);
+  return { decoys, draw: Math.pow(decoys / base, DECOYS.drawExponent), price, affordable: canAfford(state, price) && (g === 'marsh' || state.lodge >= 4) };
+}
+
 function rungSnap(state: GameState, id: RungId): RungSnapshot {
   const r = RUNGS[id];
   const price = rungPrice(id);
   const reqs: Req[] = [
     { label: `Build the ${lodgeDef(r.lodge).name}`, cur: Math.min(state.lodge, r.lodge), goal: r.lodge },
-    { label: `Own ${r.owned} ${BOTS[r.bot].name}s`, cur: Math.min(state.bots[r.bot].owned, r.owned), goal: r.owned },
+    ...(r.rig ? [] : [{ label: `Own ${r.owned} ${BOTS[r.bot].name}s`, cur: Math.min(state.bots[r.bot].owned, r.owned), goal: r.owned }]),
     req(state, r.counter, r.count),
   ];
   const built = !!state.rungs[id];
@@ -516,11 +524,16 @@ export function snapshot(state: GameState): HudSnapshot {
         affordable: level < max && state.lodge >= UPGRADES[id].lodge && canAfford(state, price),
         revealed: level > 0 || state.lodge >= UPGRADES[id].lodge,
         lodgeName: lodgeDef(UPGRADES[id].lodge).name,
+        lodge: UPGRADES[id].lodge,
       };
     }),
     lodge: lodgeSnap(state),
     profile: { ...state.profile },
     maxCircling: maxIncoming(state),
+    spreads: {
+      marsh: spreadSnap(state, 'marsh'),
+      field: spreadSnap(state, 'field'),
+    },
     plots: {
       open: plotCount(state.lodge),
       nextLodgeName: plotCount(state.lodge) < 4 ? lodgeDef(Math.max(2, state.lodge + 1)).name : null,

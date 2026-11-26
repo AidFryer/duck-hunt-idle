@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TICK_SECONDS } from '../src/config';
-import { HUNT, STREAK } from '../src/data/economy';
+import { STREAK } from '../src/data/economy';
 import type { SimEvent } from '../src/sim/events';
 import { doAction } from '../src/sim/hunt';
 import { claimDailyBonus } from '../src/sim/daily';
@@ -40,12 +40,13 @@ describe("Hunter's Rhythm", () => {
   it('builds with quick taps, caps, and fades after a pause', () => {
     const s = createInitialState(9);
     const ev: SimEvent[] = [];
-    for (let i = 0; i < 3; i++) doAction(s, 'decoys', 'manual', ev);
+    const fetch = () => {
+      s.hunt.downed.push('mallard');
+      doAction(s, 'retrieve', 'manual', ev);
+    };
+    for (let i = 0; i < 3; i++) fetch();
     expect(s.hunt.streak).toBe(3);
-    for (let i = 0; i < 20; i++) {
-      s.hunt.decoys = 0;
-      doAction(s, 'decoys', 'manual', ev);
-    }
+    for (let i = 0; i < 20; i++) fetch();
     expect(s.hunt.streak).toBe(STREAK.max);
     advance(s, STREAK.window + 1, TICK_SECONDS, []);
     expect(s.hunt.streak).toBe(0);
@@ -53,17 +54,17 @@ describe("Hunter's Rhythm", () => {
 
   it('bots and Gus never build it', () => {
     const s = createInitialState(9);
-    doAction(s, 'decoys', 'setter', []);
-    doAction(s, 'decoys', 'setter', []);
+    s.hunt.downed.push('mallard', 'mallard');
+    doAction(s, 'retrieve', 'retriever', []);
+    doAction(s, 'retrieve', 'retriever', []);
     expect(s.hunt.streak).toBe(0);
   });
 
   it('pays a bonus on birds fetched by hand during a streak', () => {
     const s = createInitialState(9);
-    s.hunt.decoys = HUNT.baseSpreadSize - 2;
-    doAction(s, 'decoys', 'manual', []);
-    doAction(s, 'decoys', 'manual', []);
-    s.hunt.downed.push('mallard');
+    s.hunt.downed.push('mallard', 'mallard', 'mallard');
+    doAction(s, 'retrieve', 'manual', []);
+    doAction(s, 'retrieve', 'manual', []);
     const ev: SimEvent[] = [];
     doAction(s, 'retrieve', 'manual', ev);
     const bonus = ev.find((e) => e.type === 'streak' && e.bonus > 0);

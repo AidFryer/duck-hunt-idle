@@ -77,7 +77,7 @@ export function canDo(state: GameState, job: ActionJob): boolean {
   const h = ground(state, js.g);
   switch (js.step) {
     case 'decoys':
-      return h.decoys < spreadSize(state, js.g);
+      return false; // decoys stay out; the spread grows by buying decoys
     case 'call':
       return h.incoming.length > 0 && h.committed.length < maxCommitted(state, js.g);
     case 'shoot':
@@ -322,19 +322,9 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
   const P = field ? FIELD : HUNT;
   const nextId = () => state.hunt.nextFlockId++;
 
-  // Decoys slowly drift loose (or blow over in the field), faster in wind.
-  if (h.decoys > 0) {
-    const drift = WEATHER[state.environment.weather].decoyDrift;
-    const vane = field ? 1 : 1 + UPGRADE_EFFECTS.weathervaneDrift * (state.upgrades.weathervane ?? 0);
-    h.decoyDrift += (dt * drift * (1 + state.environment.wind * P.decoyDriftWind)) / (P.decoyDriftSeconds * vane);
-    if (h.decoyDrift >= 1) {
-      h.decoyDrift -= 1;
-      h.decoys -= 1;
-      events.push({ type: 'decoyDrift', decoys: h.decoys, ...tag(g) });
-    }
-  } else {
-    h.decoyDrift = 0;
-  }
+  // The spread is always out (decoys no longer drift loose).
+  h.decoys = spreadSize(state, g);
+  h.decoyDrift = 0;
 
   // Flock arrivals: an exponential countdown scaled by draw × activity.
   // Lantern posts keep a few marsh flocks coming after dark.

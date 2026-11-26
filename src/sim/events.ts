@@ -43,6 +43,7 @@ export type SimEvent =
   | { type: 'featureUnlocked'; feature: FeatureId }
   | { type: 'streak'; level: number; bonus: number }
   | { type: 'lodgeBuilt'; level: number }
+  | { type: 'decoysBought'; ground: 'marsh' | 'field'; decoys: number }
   | { type: 'cropPlanted'; plot: number; crop: CropId }
   | { type: 'planEarned'; bot: BotId }
   | { type: 'rungBuilt'; rung: RungId }

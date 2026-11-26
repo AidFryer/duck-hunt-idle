@@ -80,6 +80,20 @@ export const GOLDEN = {
   fieldShare: 0.35,
 } as const;
 
+/**
+ * Decoy spreads: always out, grown by buying bags of decoys. Every decoy
+ * beyond the starting spread draws more flocks.
+ */
+export const DECOYS = {
+  /** Flock draw ∝ (spread ÷ starting spread) ^ this. */
+  drawExponent: 0.5,
+  marsh: { perBag: 2, costCoins: 60, costFeathers: 4, costGrowth: 1.45 },
+  field: { perBag: 4, costCoins: 2_000, costFeathers: 120, costGrowth: 1.45 },
+} as const;
+
+/** Bots that no longer have work now that decoys stay out (kept for old saves). */
+export const RETIRED_BOTS: readonly BotId[] = ['setter', 'staker'];
+
 /** Where you can hunt. */
 export type GroundId = 'marsh' | 'field';
 
@@ -271,6 +285,8 @@ export const BOTS: Record<BotId, BotDef> = {
 };
 
 export const BOT_ORDER: readonly BotId[] = ['setter', 'caller', 'blind', 'retriever', 'ledger', 'scout', 'staker', 'flagger', 'layout', 'fieldDog', 'foreman', 'tinker'];
+/** Workshop order: roughly when each bot's plans arrive. */
+export const WORKSHOP_ORDER: readonly BotId[] = ['caller', 'blind', 'retriever', 'ledger', 'scout', 'foreman', 'flagger', 'layout', 'fieldDog', 'tinker'];
 /** Bots that work the goose field. */
 export const FIELD_BOTS: readonly BotId[] = ['staker', 'flagger', 'layout', 'fieldDog'];
 

@@ -39,7 +39,6 @@ describe('the goose field', () => {
   it('the field pipeline works by hand and logs geese at the lodge', () => {
     const s = opened(createInitialState(4));
     const ev: SimEvent[] = [];
-    for (let i = 0; i < 3; i++) expect(doAction(s, 'fDecoys', 'manual', ev)).toBe(true);
     s.field.incoming.push({ id: 900, species: 'canadaGoose', size: 10, age: 0 });
     expect(doAction(s, 'flag', 'manual', ev)).toBe(true);
     expect(doAction(s, 'fShoot', 'manual', ev)).toBe(true);

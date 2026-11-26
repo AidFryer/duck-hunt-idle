@@ -174,7 +174,8 @@ export class DuckLayer implements Layer {
     f.golden = golden;
     f.state = 'approach';
     f.lx = f.dir > 0 ? -60 * l.scale : l.w + 60 * l.scale;
-    f.ly = l.horizon * (0.2 + this.rnd() * 0.25);
+    const top = l.skyTop ?? 0;
+    f.ly = top + (l.horizon - top) * (0.3 + this.rnd() * 0.3);
     f.speed = 120 * l.scale * (species === 'teal' ? 1.25 : 1);
     f.species = species;
     this.setTargets(f);
@@ -533,9 +534,13 @@ export class DuckLayer implements Layer {
       f.tsquash = 0.3;
       f.tdepth = 1.0;
     } else {
-      f.tcy = l.horizon * (0.38 + slot * 0.1);
+      // Circle in the band between the HUD and the horizon, so every flock
+      // stays in sight and tappable.
+      const top = l.skyTop ?? 0;
+      const band = Math.max(60, l.horizon - top);
+      f.tcy = top + band * (0.45 + slot * 0.14);
       f.tradius = Math.min(l.w * 0.34, 300 * l.scale) * (1 - slot * 0.12);
-      f.tsquash = 0.22;
+      f.tsquash = Math.min(0.22, (band * 0.32) / Math.max(1, f.tradius));
       f.tdepth = 0.62 - slot * 0.08;
     }
   }

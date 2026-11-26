@@ -1,6 +1,6 @@
 import Decimal from 'break_infinity.js';
 import {
-  ACRES, BOT_MILESTONES, BOTS, FIELD, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
+  ACRES, BOT_MILESTONES, BOTS, DECOYS, FIELD, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
   type BotId, type GroundId, type SpeciesId,
 } from '../data/economy';
 import type { EventSink } from './events';
@@ -149,8 +149,26 @@ export function buyAcre(state: GameState, events?: EventSink): boolean {
 const isField = (g: GroundId) => g === 'field';
 
 export function spreadSize(state: GameState, g: GroundId = 'marsh'): number {
-  if (isField(g)) return FIELD.baseSpreadSize + rungFx(state, 'field').spread;
-  return HUNT.baseSpreadSize + UPGRADE_EFFECTS.decoyQualitySpread * (state.upgrades.decoyQuality ?? 0) + rungFx(state).spread;
+  if (isField(g)) return FIELD.baseSpreadSize + DECOYS.field.perBag * state.decoyBags.field + rungFx(state, 'field').spread;
+  return HUNT.baseSpreadSize + DECOYS.marsh.perBag * state.decoyBags.marsh + UPGRADE_EFFECTS.decoyQualitySpread * (state.upgrades.decoyQuality ?? 0) + rungFx(state).spread;
+}
+
+/** Price of the next bag of decoys for a spread. */
+export function decoyBagPrice(state: GameState, g: GroundId = 'marsh'): Price {
+  const d = DECOYS[g];
+  const k = Math.pow(d.costGrowth, state.decoyBags[g]);
+  return { coins: new Decimal(d.costCoins * k).ceil(), feathers: new Decimal(d.costFeathers * k).ceil() };
+}
+
+/** Buy a bag of decoys: the spread grows right away. */
+export function buyDecoyBag(state: GameState, g: GroundId = 'marsh', events?: EventSink): boolean {
+  if (g === 'field' ? state.lodge < 4 : state.unlocks.upgrades === undefined && state.lodge < 2) return false;
+  const price = decoyBagPrice(state, g);
+  if (!canAfford(state, price)) return false;
+  pay(state, price);
+  state.decoyBags[g] += 1;
+  events?.push({ type: 'decoysBought', ground: g, decoys: spreadSize(state, g) });
+  return true;
 }
 
 /** Seconds a circling flock waits for a call. */
@@ -194,8 +212,8 @@ export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number 
 /** Flocks per second right now, before the activity curve. */
 export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
   const P = isField(g) ? FIELD : HUNT;
-  const fill = (isField(g) ? state.field.decoys : state.hunt.decoys) / spreadSize(state, g);
-  const spread = P.emptySpreadFloor + (1 - P.emptySpreadFloor) * Math.pow(fill, P.spreadExponent);
+  // A bigger spread draws more flocks.
+  const spread = Math.pow(spreadSize(state, g) / P.baseSpreadSize, DECOYS.drawExponent);
   const u = state.upgrades;
   if (isField(g)) {
     const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));

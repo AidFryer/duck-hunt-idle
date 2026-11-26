@@ -7,7 +7,7 @@
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
-import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, canAfford, levelPrice, levelUpBot, spreadSize, type Price } from './economy';
+import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price } from './economy';
 import type { SimEvent } from './events';
 import { doAction, canDo, fieldOpen, type ActionJob } from './hunt';
 import { fixAll } from './problems';
@@ -65,14 +65,12 @@ function wanted(s: GameState): BotId[] {
   if (h.downed.length > 3) out.push('retriever');
   if (h.committed.length >= 2) out.push('blind');
   if (h.incoming.length >= 2) out.push('caller');
-  if (h.decoys < spreadSize(s) - 1) out.push('setter');
   if (h.incoming.length === 0) out.push('scout');
   // Keep a balanced crew underneath the bottleneck buys.
   const own = (id: BotId) => s.bots[id].owned;
   if (own('caller') < 1) out.push('caller');
   if (own('blind') < own('caller')) out.push('blind');
   if (own('retriever') < own('blind')) out.push('retriever');
-  if (own('setter') < Math.ceil(own('caller') / 4)) out.push('setter');
   if (own('ledger') < Math.ceil(own('retriever') / 2)) out.push('ledger');
   if (own('scout') < Math.ceil(own('caller') / 2)) out.push('scout');
   if (s.problems.total > 3 && own('foreman') < Math.ceil(totalBots(s) / 40)) out.push('foreman');
@@ -82,7 +80,6 @@ function wanted(s: GameState): BotId[] {
     if (f.downed.length > 3 || own('fieldDog') < own('layout')) out.push('fieldDog');
     if (f.committed.length >= 1 || own('layout') < own('flagger')) out.push('layout');
     if (f.incoming.length >= 2 || own('flagger') < 1) out.push('flagger');
-    if (f.decoys < spreadSize(s, 'field') - 2 || own('staker') < Math.ceil(own('flagger') / 4)) out.push('staker');
   }
   return out.filter((id) => !!s.plans[id]);
 }
@@ -131,6 +128,8 @@ function options(s: GameState): Option[] {
   }
   if (s.unlocks.upgrades === undefined) return opts;
   opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
+  opts.push({ price: decoyBagPrice(s), buy: () => buyDecoyBag(s) });
+  if (s.lodge >= 4) opts.push({ price: decoyBagPrice(s, 'field'), buy: () => buyDecoyBag(s, 'field') });
   for (const u of UPGRADE_ORDER) {
     const lvl = s.upgrades[u] ?? 0;
     if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;
@@ -170,8 +169,8 @@ function buildChain(s: GameState): void {
   for (let i = 0; i + 1 < ids.length; i++) connect(s, ids[i]!, ids[i + 1]!);
 }
 
-const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve', 'decoys'];
-const FIELD_TAPS: ActionJob[] = ['fShoot', 'flag', 'fRetrieve', 'fDecoys'];
+const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve'];
+const FIELD_TAPS: ActionJob[] = ['fShoot', 'flag', 'fRetrieve'];
 
 export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
   const dt = opts.dt ?? 0.5;

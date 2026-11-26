@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { KEEPER_NAME, LAB_NAME } from '../../data/goals';
 import type { HudSnapshot } from '../hudState';
 
-export type TutorialStep = 'welcome' | 'decoys' | 'call' | 'shoot' | 'retrieve' | 'done';
+export type TutorialStep = 'welcome' | 'call' | 'shoot' | 'retrieve' | 'done';
 
 /** Which step the player is on, from what they've done so far. */
 export function tutorialStep(hud: HudSnapshot, welcomed: boolean): TutorialStep {
@@ -10,14 +10,12 @@ export function tutorialStep(hud: HudSnapshot, welcomed: boolean): TutorialStep 
   if (hud.lifetimeBirds > 0) return 'done';
   if (hud.downed > 0) return 'retrieve';
   if (hud.committed > 0) return 'shoot';
-  if (hud.decoys < 3 && hud.incoming === 0) return 'decoys';
   return 'call';
 }
 
 const TEXT: Record<TutorialStep, string> = {
   welcome: `Morning! I'm ${KEEPER_NAME}. This old marsh is yours now. Let me show you how we hunt it, then we'll get some help carved.`,
-  decoys: 'First, toss out a few decoys. Tap the water up there until at least three are bobbing.',
-  call: "Now we wait for a flock to circle. When one's up there, tap it to call it down to the spread. The ring around it is how long they'll wait.",
+  call: "The decoys are out and bobbing. Now we wait for a flock to circle. When one's up there, tap it to call it down to the spread. The ring around it is how long they'll wait.",
   shoot: "They've cupped their wings over the decoys. Tap them to shoot. One soft pop is all it takes.",
   retrieve: `Birds on the water. Tap one and ${LAB_NAME} will swim out for it.`,
   done: "That's the whole hunt. I log every bird at the lodge myself, and guests pay coins for 'em. Tap quick, one after another, and you'll find your rhythm: extra coins. Save up to build a proper cabin, and we'll start carving bots that learn from you.",

@@ -1,98 +1,143 @@
 import { ACRES } from '../../data/economy';
-import { UPGRADES } from '../../data/upgrades';
 import { CROPS } from '../../data/crops';
+import { UPGRADES } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
-import type { HudSnapshot } from '../hudState';
+import type { HudSnapshot, RungSnapshot } from '../hudState';
 import { pulse } from './BotsTab';
 import { Cost } from './Cost';
-import { Icon } from './Icon';
+import { ReqBar } from './Lodge';
+
+type Up = HudSnapshot['upgrades'][number];
+
+/** Sooner things first: by the lodge level that opens them, then by price. */
+const byWhen = (a: Up, b: Up) => a.lodge - b.lodge || a.price.coins.cmp(b.price.coins);
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const acresRevealed = hud.acres > ACRES.start || hud.unlocks.upgrades;
+  const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field);
+  const field = hud.upgrades.filter((u) => UPGRADES[u.id].field);
+  const open = marsh.filter((u) => u.revealed).sort(byWhen);
+  const ready = open.filter((u) => u.level < u.max);
+  const maxed = open.filter((u) => u.level >= u.max);
+  const soon = marsh.filter((u) => !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
   return (
-    <div class="tab-body">
-      <div class="tab-head">
-        <h3>Marsh & lodge</h3>
-      </div>
-      {acresRevealed ? (
-        <div class="bot-card">
-          <div class="bot-card__portrait" aria-hidden="true">
-            <Icon name="marsh" size={28} />
-            <span class="bot-card__owned">{hud.acres}</span>
-          </div>
-          <div class="bot-card__info">
-            <h4>Wetland Acres</h4>
-            <p>Restore another acre of marsh. Every acre multiplies the flocks that come in, makes them bigger, and lets more circle at once.</p>
-            <dl class="stats">
-              <div><dt>Flocks</dt><dd>×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)}</dd></div>
-              <div><dt>Circling at once</dt><dd>{hud.maxCircling}</dd></div>
-              <div><dt>Flock size</dt><dd>+{formatNumber(ACRES.flockSizePerAcre * (hud.acres - 1), notation)}</dd></div>
-            </dl>
-            <div class="btn-row">
-              <button class="btn btn--primary btn--buy" aria-disabled={!hud.acreAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyAcre())}>
-                <span>Restore an acre</span>
-                <Cost price={hud.acrePrice} notation={notation} />
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <Locked name="Wetland Acres" text="Opens with the Trapper's Cabin." />
-      )}
+    <div class="tab-body upgrades-tab">
+      <SpreadCard ground="marsh" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.setter} />
       <FoodPlots hud={hud} controls={controls} notation={notation} />
-      {hud.upgrades.map((u) => {
-        const d = UPGRADES[u.id];
-        const head = u.id === 'cornStubble' && d.lodge <= hud.lodge.level + 1 ? <h4 class="group-head">Goose field</h4> : null;
-        if (!u.revealed) {
-          // Only tease what the next lodge level brings, not the whole list.
-          if (d.lodge > hud.lodge.level + 1) return null;
-          return <>{head}<Locked name={d.name} text={`${d.effect}. Opens with the ${u.lodgeName}.`} /></>;
-        }
-        const maxed = u.level >= u.max;
-        return (
-          <>
-          {head}
-          <div class="bot-card">
-            <div class="bot-card__portrait" aria-hidden="true">
-              <Icon name="hammer" size={26} />
-              <span class="bot-card__owned">{u.level}/{u.max}</span>
-            </div>
-            <div class="bot-card__info">
-              <h4>{d.name}</h4>
-              <p>{d.blurb}</p>
-              <p class="upgrade-effect">Each level: {d.effect}{u.id === 'cot' ? ` (now ${hud.offlineHours}h)` : ''}</p>
-              <div class="level-pips" aria-label={`Level ${u.level} of ${u.max}`}>
-                {Array.from({ length: u.max }, (_, i) => <span class={i < u.level ? 'is-on' : ''} />)}
-              </div>
-              <div class="btn-row">
-                {maxed ? (
-                  <span class="maxed">Fully upgraded</span>
-                ) : (
-                  <button class="btn btn--primary btn--buy" aria-disabled={!u.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyUpgrade(u.id))}>
-                    <span>{u.level === 0 ? 'Build' : 'Upgrade'}</span>
-                    <Cost price={u.price} notation={notation} />
-                  </button>
-                )}
-              </div>
-            </div>
+
+      <h4 class="group-head">Marsh & lodge</h4>
+      <ul class="up-list">
+        <li class="up-row">
+          <div class="up-row__text">
+            <strong>Wetland Acres <span class="up-row__lvl">{hud.acres}</span></strong>
+            <span>
+              Flocks ×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)} · {hud.maxCircling} can circle at once
+            </span>
           </div>
-          </>
-        );
-      })}
+          <button class="btn btn--primary btn--buy btn--small" aria-disabled={!hud.acreAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyAcre())}>
+            <Cost price={hud.acrePrice} notation={notation} />
+          </button>
+        </li>
+        {ready.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+        {maxed.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+      </ul>
+
+      {soon.length > 0 && (
+        <>
+          <h4 class="group-head">Coming with the {soon[0]!.lodgeName}</h4>
+          <ul class="up-list is-soon">
+            {soon.map((u) => (
+              <li class="up-row is-locked">
+                <div class="up-row__text">
+                  <strong>{UPGRADES[u.id].name}</strong>
+                  <span>{UPGRADES[u.id].effect}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {hud.field.open && (
+        <>
+          <h4 class="group-head">Goose field</h4>
+          <SpreadCard ground="field" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.staker} />
+          <ul class="up-list">
+            {field.filter((u) => u.revealed).sort(byWhen).map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
 
-function Locked({ name, text }: { name: string; text: string }) {
+function UpRow({ u, controls, notation, offline }: { u: Up; controls: GameControls; notation: Notation; offline: number }) {
+  const d = UPGRADES[u.id];
+  const maxed = u.level >= u.max;
   return (
-    <div class="bot-card is-locked">
-      <div class="bot-card__portrait"><Icon name="hammer" size={24} /></div>
-      <div class="bot-card__info">
-        <h4>{name}</h4>
-        <p>{text}</p>
+    <li class={`up-row ${maxed ? 'is-maxed' : ''}`} title={d.blurb}>
+      <div class="up-row__text">
+        <strong>
+          {d.name} <span class="up-row__lvl">{u.level}/{u.max}</span>
+        </strong>
+        <span>
+          {d.effect}
+          {u.id === 'cot' ? ` (now ${offline}h)` : ''}
+        </span>
       </div>
-    </div>
+      {maxed ? (
+        <span class="maxed">Max</span>
+      ) : (
+        <button class="btn btn--primary btn--buy btn--small" aria-disabled={!u.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyUpgrade(u.id))}>
+          <Cost price={u.price} notation={notation} />
+        </button>
+      )}
+    </li>
+  );
+}
+
+/** The decoy spread: always out; buy bags of decoys and build bigger rigs. */
+function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: 'marsh' | 'field'; hud: HudSnapshot; controls: GameControls; notation: Notation; rigs: RungSnapshot[] }) {
+  const sp = hud.spreads[ground];
+  const next = rigs.find((r) => !r.built);
+  const per = ground === 'field' ? 4 : 2;
+  return (
+    <section class="spread-card" aria-label={ground === 'field' ? 'Goose decoy spread' : 'Decoy spread'}>
+      <div class="spread-card__head">
+        <div>
+          <h4>{ground === 'field' ? 'Goose spread' : 'Decoy spread'}</h4>
+          <p>
+            {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)}
+          </p>
+        </div>
+        <button class="btn btn--primary btn--buy btn--small" aria-disabled={!sp.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyDecoys(ground))}>
+          <span>+{per} decoys</span>
+          <Cost price={sp.price} notation={notation} />
+        </button>
+      </div>
+      {rigs.length > 0 && (
+        <ol class="ladder__rungs spread-card__rigs">
+          {rigs.map((r) => (
+            <li class={`rung ${r.built ? 'is-built' : r === next ? 'is-next' : 'is-later'}`}>
+              <span class="rung__tick" aria-hidden="true">{r.built ? '✓' : ''}</span>
+              <span class="rung__name">{r.name}</span>
+              <span class="rung__effect">{r.effect}</span>
+              {r === next && (
+                <div class="rung__next">
+                  <div class="reqs">
+                    {r.reqs.map((q) => <ReqBar r={q} notation={notation} />)}
+                  </div>
+                  <button class="btn btn--primary btn--buy" aria-disabled={!r.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyRung(r.id))}>
+                    <span>{r.ready ? 'Build it' : 'Not ready yet'}</span>
+                    <Cost price={r.price} notation={notation} />
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 
@@ -100,43 +145,38 @@ function Locked({ name, text }: { name: string; text: string }) {
 function FoodPlots({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const p = hud.plots;
   if (p.open === 0) {
-    return <Locked name="Food plots" text={`Plant crops on the far bank to bring new ducks. Your first plot opens with the ${p.nextLodgeName ?? "Trapper's Cabin"}.`} />;
+    return (
+      <section class="spread-card is-locked">
+        <h4>Food plots</h4>
+        <p>Plant crops on the far bank to bring new ducks. Your first plot opens with the {p.nextLodgeName ?? "Trapper's Cabin"}.</p>
+      </section>
+    );
   }
   return (
     <section class="plots" aria-label="Food plots">
       <h4 class="group-head">Food plots</h4>
       {p.list.map((plot, i) => (
-        <div class="bot-card plot-card">
-          <div class="plot-card__info">
-            <h4>
-              Plot {i + 1}: {plot.crop ? CROPS[plot.crop].name : 'empty'}
-            </h4>
-            {plot.crop ? (
-              <>
-                <p>{CROPS[plot.crop].effect}</p>
-                <div class="req">
-                  <span class="req__label">{plot.growth >= 1 ? 'Fully grown' : 'Growing'}</span>
-                  <span class="req__count">{Math.round(plot.growth * 100)}%</span>
-                  <span class="req__bar"><span style={{ width: `${Math.round(plot.growth * 100)}%` }} /></span>
-                </div>
-              </>
-            ) : (
-              <p>Pick a crop. It grows in over a few minutes.</p>
-            )}
-            <div class="crop-row">
-              {plot.options.map((o) => (
-                <button
-                  class={`crop-btn ${plot.crop === o.crop ? 'is-on' : ''}`}
-                  aria-disabled={!o.affordable}
-                  title={CROPS[o.crop].effect}
-                  onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.plantCrop(i, o.crop))}
-                >
-                  <strong>{CROPS[o.crop].name}</strong>
-                  <span>{CROPS[o.crop].effect}</span>
-                  {plot.crop !== o.crop && <Cost price={o.price} notation={notation} />}
-                </button>
-              ))}
-            </div>
+        <div class="spread-card plot-card">
+          <h4>
+            Plot {i + 1}: {plot.crop ? CROPS[plot.crop].name : 'empty'}
+            {plot.crop && <span class="up-row__lvl"> {plot.growth >= 1 ? 'grown' : `${Math.round(plot.growth * 100)}%`}</span>}
+          </h4>
+          {plot.crop && plot.growth < 1 && (
+            <span class="req__bar"><span style={{ width: `${Math.round(plot.growth * 100)}%` }} /></span>
+          )}
+          <div class="crop-row">
+            {plot.options.map((o) => (
+              <button
+                class={`crop-btn ${plot.crop === o.crop ? 'is-on' : ''}`}
+                aria-disabled={!o.affordable && plot.crop !== o.crop}
+                title={CROPS[o.crop].blurb}
+                onClick={(e) => plot.crop !== o.crop && pulse(e.currentTarget as HTMLElement, controls.plantCrop(i, o.crop))}
+              >
+                <strong>{CROPS[o.crop].name}</strong>
+                <span>{CROPS[o.crop].effect}</span>
+                {plot.crop !== o.crop && <Cost price={o.price} notation={notation} />}
+              </button>
+            ))}
           </div>
         </div>
       ))}

@@ -13,11 +13,11 @@ export function HuntPanel({ hud, ground = 'marsh' }: { hud: HudSnapshot; ground?
     <p class="hunt-status__how">
       {field ? (
         <>
-          <strong>The goose field.</strong> Tap the stubble to stake decoys, circling geese to flag them in, geese over the spread to shoot, and a goose on the ground to pick it up.
+          <strong>The goose field.</strong> Tap circling geese to flag them in, geese over the spread to shoot, and a goose on the ground to pick it up. Grow the spread in Upgrades.
         </>
       ) : (
         <>
-          <strong>Tap the marsh to hunt.</strong> Water sets decoys, a circling flock gets called in, ducks over the decoys get shot, and a floating bird sends {LAB_NAME}.
+          <strong>Tap the marsh to hunt.</strong> Tap a circling flock to call it in, ducks over the decoys to shoot, and a floating bird to send {LAB_NAME}. Grow your decoy spread in Upgrades.
         </>
       )}
     </p>

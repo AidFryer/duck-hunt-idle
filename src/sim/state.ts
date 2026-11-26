@@ -5,7 +5,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -141,6 +141,8 @@ export interface GameState {
   goldenTimer: number;
   /** The player's name and picture. */
   profile: { name: string; avatar: string };
+  /** Bags of decoys bought for each spread. */
+  decoyBags: { marsh: number; field: number };
   /** Food plots on the far bank (how many are usable depends on the lodge). */
   plots: { crop: CropId | null; growth: number }[];
   bots: Record<BotId, BotState>;
@@ -299,6 +301,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     goldenTimer: 200,
     profile: { name: '', avatar: 'hunter' },
     plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
+    decoyBags: { marsh: 0, field: 0 },
     bots: createBotStates(),
     assign: createAssignments(),
     jobs: createJobs(),

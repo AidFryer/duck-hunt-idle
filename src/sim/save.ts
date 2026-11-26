@@ -84,6 +84,17 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     for (const c of ['millet', 'rice']) if ((up[c] ?? 0) > 0 && i < 4) plots[i++] = { crop: c, growth: 1 };
     return { ...s, plots, version: 12 };
   },
+  // v12 → v13: decoys stay out now. Decoy Setters and Stakers retire and
+  // become bags of decoys for the spread they kept.
+  12: (s) => {
+    const bots = (s.bots ?? {}) as Record<string, { owned?: number; level?: number }>;
+    const setters = bots.setter?.owned ?? 0;
+    const stakers = bots.staker?.owned ?? 0;
+    for (const id of ['setter', 'staker']) if (bots[id]) bots[id] = { owned: 0, level: 1 };
+    const { assign: _gone, ...rest } = s;
+    void _gone;
+    return { ...rest, bots, decoyBags: { marsh: setters, field: stakers }, version: 13 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [
