@@ -3,7 +3,9 @@ import { SPECIES } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements } from './achievements';
 import { clockAt } from './clock';
-import { birdValue, botReliability, extraFlockSize, flockDraw, incomingPatience, shotFraction, spreadSize } from './economy';
+import { birdValue, botReliability, extraFlockSize, flockDraw, incomingPatience, maxIncoming, shotFraction, spreadSize } from './economy';
+import { FLYWAYS } from '../data/flyways';
+import { workflowEval } from './workflow';
 import { pickSpecies } from './species';
 import type { ActionSource, EventSink } from './events';
 import { pickFrom, rateTable, type RateTable } from './jobs';
@@ -22,7 +24,7 @@ export function canDo(state: GameState, job: ActionJob): boolean {
   const h = state.hunt;
   switch (job) {
     case 'scout':
-      return h.incoming.length < HUNT.maxIncoming;
+      return h.incoming.length < maxIncoming(state);
     case 'decoys':
       return h.decoys < spreadSize(state);
     case 'call':
@@ -43,7 +45,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
   const src = source === 'keeper' ? 'manual' : source;
   switch (job) {
     case 'scout': {
-      h.flockCountdown = Math.max(-HUNT.maxIncoming, h.flockCountdown - SCOUT.spotPower);
+      h.flockCountdown = Math.max(-maxIncoming(state), h.flockCountdown - SCOUT.spotPower * FLYWAYS[state.flyway].scoutPower);
       events.push({ type: 'scouted', source: src });
       break;
     }
@@ -131,6 +133,7 @@ export function doMany(state: GameState, job: 'retrieve' | 'log', count: number,
   for (const species of birds) coins += birdValue(state, species).coins;
   state.currencies.coins = state.currencies.coins.add(coins);
   state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(coins);
+  state.season.coins = state.season.coins.add(coins);
   state.stats.lifetimeLogged += n;
   events.push({ type: 'logged', coins, count: n, source });
   recordJobMany(state, 'log', n);
@@ -167,15 +170,15 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   // Flock arrivals: an exponential countdown scaled by draw × activity.
   h.flockCountdown -= dt * flockDraw(state) * activity;
   // Never let a big batch of scouting queue up more arrivals than can matter.
-  if (h.flockCountdown < -HUNT.maxIncoming) h.flockCountdown = -HUNT.maxIncoming;
+  if (h.flockCountdown < -maxIncoming(state)) h.flockCountdown = -maxIncoming(state);
   let arrivals = 0;
-  while (h.flockCountdown <= 0 && arrivals++ <= HUNT.maxIncoming + 2) {
+  while (h.flockCountdown <= 0 && arrivals++ <= maxIncoming(state) + 2) {
     h.flockCountdown += Math.min(2.5, Math.max(0.3, -Math.log(1 - rand(state) * 0.999)));
     const species = pickSpecies(state, clockAt(state.clock.dayTime).hour);
     const extra = ACRES.flockSizePerAcre * (state.acres - ACRES.start) + extraFlockSize(state);
     const raw = HUNT.flockSizeMin + rand(state) * (HUNT.flockSizeMax - HUNT.flockSizeMin + extra);
     const size = Math.max(1, Math.round(raw * SPECIES[species].flockSize));
-    if (h.incoming.length < HUNT.maxIncoming) {
+    if (h.incoming.length < maxIncoming(state)) {
       const flock = { id: h.nextFlockId++, species, size, age: 0 };
       h.incoming.push(flock);
       events.push({ type: 'flockArrived', flockId: flock.id, size, species: flock.species });
@@ -189,8 +192,20 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   for (const f of h.incoming) f.age += dt;
   for (const f of h.committed) f.age += dt;
   while (h.incoming.length > 0 && h.incoming[0]!.age > incomingPatience(state)) {
-    state.stats.lostToday += 1;
-    events.push({ type: 'flockLeft', flockId: h.incoming.shift()!.id });
+    const left = h.incoming.shift()!;
+    events.push({ type: 'flockLeft', flockId: left.id });
+    // Big-sky flyways: some flocks circle back for another look.
+    if (rand(state) < FLYWAYS[state.flyway].returnChance) {
+      state.returning.push({ flock: { ...left, age: 0 }, at: state.elapsed + 15 + rand(state) * 20 });
+    } else {
+      state.stats.lostToday += 1;
+    }
+  }
+  while (state.returning.length > 0 && state.returning[0]!.at <= state.elapsed && h.incoming.length < maxIncoming(state)) {
+    const back = state.returning.shift()!.flock;
+    h.incoming.push(back);
+    events.push({ type: 'flockArrived', flockId: back.id, size: back.size, species: back.species });
+    events.push({ type: 'flockReturned', flockId: back.id });
   }
   while (h.committed.length > 0 && h.committed[0]!.age > HUNT.committedPatience) {
     state.stats.flocksFlared += 1;
@@ -214,8 +229,8 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 }
 
 /** Problem chance is softened by Tinker Bots on duty. */
-function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[number]): number {
-  const base = (1 - botReliability(bot, state.bots[bot].level)) * WEATHER[state.environment.weather].problems;
+function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[number], job?: JobId): number {
+  const base = (1 - botReliability(bot, state.bots[bot].level)) * WEATHER[state.environment.weather].problems * (job ? workflowEval(state).problemMult[job] ?? 1 : 1);
   return base / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0));
 }
 
@@ -240,7 +255,7 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
     j.progress -= 1;
     const bot = pickFrom(t, job, rand(state));
     if (!bot) return;
-    if (rand(state) < problemChance(state, t, bot) && raiseProblem(state, bot, job, events)) {
+    if (rand(state) < problemChance(state, t, bot, job) && raiseProblem(state, bot, job, events)) {
       recordJob(state, job, false);
       continue;
     }
@@ -254,7 +269,7 @@ function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'log' | 'sco
   const want = Math.floor(j.progress);
   if (want <= 0) return;
   const h = state.hunt;
-  const avail = job === 'retrieve' ? h.downed.length : job === 'log' ? h.ledger.length : h.incoming.length < HUNT.maxIncoming ? want : 0;
+  const avail = job === 'retrieve' ? h.downed.length : job === 'log' ? h.ledger.length : h.incoming.length < maxIncoming(state) ? want : 0;
   const k = Math.min(want, avail);
   j.progress -= k;
   if (k < want) j.progress = Math.min(j.progress, 1);
@@ -262,7 +277,7 @@ function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'log' | 'sco
   // Problems: roll per action for small batches, use the expected count for big ones.
   const lead = pickFrom(t, job, rand(state));
   if (!lead) return;
-  const p = problemChance(state, t, lead);
+  const p = problemChance(state, t, lead, job);
   let problems = 0;
   if (k <= 12) {
     for (let i = 0; i < k; i++) if (rand(state) < p) problems++;
@@ -281,7 +296,7 @@ function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'log' | 'sco
   const done = k - raised;
   if (done <= 0) return;
   if (job === 'scout') {
-    h.flockCountdown = Math.max(-HUNT.maxIncoming, h.flockCountdown - SCOUT.spotPower * done);
+    h.flockCountdown = Math.max(-maxIncoming(state), h.flockCountdown - SCOUT.spotPower * FLYWAYS[state.flyway].scoutPower * done);
     events.push({ type: 'scouted', source: lead });
     recordJobMany(state, 'scout', done);
   } else {

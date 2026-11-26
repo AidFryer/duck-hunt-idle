@@ -2,6 +2,7 @@ import { BOTS, FOREMAN, JOB_PROBLEMS, type BotId, type JobId } from '../data/eco
 import { jobRate, working } from './jobs';
 import type { EventSink } from './events';
 import { rand, type GameState, type Problem } from './state';
+import { workflowEval } from './workflow';
 
 /**
  * Problems ("exceptions"): a bot hits a snag, stops working, and waits for
@@ -11,7 +12,8 @@ import { rand, type GameState, type Problem } from './state';
 /** A bot of this type at this job gets stuck. Returns false if none can. */
 export function raiseProblem(state: GameState, bot: BotId, job: JobId, events: EventSink): boolean {
   if (working(state, bot, job) <= 0) return false;
-  const kinds = JOB_PROBLEMS[job].filter((k) => k !== 'ice' || state.environment.weather === 'coldFront');
+  const noIce = workflowEval(state).noIce;
+  const kinds = JOB_PROBLEMS[job].filter((k) => k !== 'ice' || (state.environment.weather === 'coldFront' && !noIce));
   if (kinds.length === 0) return false;
   const kind = kinds[Math.floor(rand(state) * kinds.length)]!;
   const p: Problem = {

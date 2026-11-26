@@ -3,11 +3,14 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
 import { UPGRADE_ORDER, type UpgradeId } from '../data/upgrades';
+import type { FlywayId } from '../data/flyways';
+import type { PerkId } from '../data/legacy';
+import type { NodeKind } from '../data/workflows';
 
 /** A flock of ducks moving through the hunt pipeline. */
 export interface FlockState {
@@ -38,6 +41,16 @@ export interface Problem {
   status: 'open' | 'retrying' | 'escalated' | 'fixed';
   fixedBy?: 'you' | 'foreman';
   closedAt?: number;
+}
+
+export interface WorkflowNode {
+  id: number;
+  kind: NodeKind;
+}
+
+export interface WorkflowLink {
+  from: number;
+  to: number;
 }
 
 export interface JobMetrics {
@@ -139,6 +152,28 @@ export interface GameState {
   guide: Partial<Record<SpeciesId, { count: number; firstAt: number }>>;
   /** Unlocked achievement ids → sim time unlocked. */
   achievements: Record<string, number>;
+  /** Which flyway (map) this season is in. */
+  flyway: FlywayId;
+  season: {
+    /** 1 for the first season. */
+    number: number;
+    /** Coins earned this season (drives Flyway Stars). */
+    coins: Decimal;
+  };
+  legacy: {
+    /** Unspent Flyway Stars. */
+    stars: number;
+    /** Every star ever earned (each gives a permanent production bonus). */
+    earned: number;
+    perks: Partial<Record<PerkId, boolean>>;
+  };
+  workflow: {
+    nextId: number;
+    nodes: WorkflowNode[];
+    links: WorkflowLink[];
+  };
+  /** Flocks that left but may circle back (Central Flyway). */
+  returning: { flock: FlockState; at: number }[];
   stats: {
     lifetimeCoins: Decimal;
     lifetimeFeathers: Decimal;
@@ -157,6 +192,7 @@ export interface GameState {
     nightBirds: number;
     /** Longest offline gap (seconds) the player came back from. */
     longestAway: number;
+    seasonsClosed: number;
   };
   meta: {
     /** Wall-clock ms when this save was created / last written. */
@@ -225,6 +261,11 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     upgrades: Object.fromEntries(UPGRADE_ORDER.map((u) => [u, 0])) as Record<UpgradeId, number>,
     guide: {},
     achievements: {},
+    flyway: 'mississippi',
+    season: { number: 1, coins: new Decimal(0) },
+    legacy: { stars: 0, earned: 0, perks: {} },
+    workflow: { nextId: 1, nodes: [], links: [] },
+    returning: [],
     stats: {
       lifetimeCoins: new Decimal(0),
       lifetimeFeathers: new Decimal(0),
@@ -240,6 +281,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       birdsByWeather: {},
       nightBirds: 0,
       longestAway: 0,
+      seasonsClosed: 0,
     },
     meta: { createdAt: now, lastSaved: now },
   };

@@ -61,6 +61,6 @@ Rules the code follows:
 - [x] Phase 2: core loop (manual hunt, currencies, saves, first bots)
 - [x] Phase 3: automation (job board, flock queue, exceptions, foremen)
 - [x] Phase 4: species, weather, upgrades, achievements, offline progress
-- [ ] Phase 5: workflows and prestige
+- [x] Phase 5: workflows and prestige (Central Flyway)
 - [ ] Phase 6: polish, audio, tutorial, balancing
 - [ ] Phase 7: PWA, GitHub Pages deploy, Capacitor

@@ -1,4 +1,5 @@
 import type { SpeciesId } from '../data/species';
+import type { FlywayId } from '../data/flyways';
 import type { OfflineSummary } from '../sim/offline';
 import { Store } from './store';
 
@@ -23,3 +24,6 @@ export type OfflineView =
   | { phase: 'summary'; summary: OfflineSummary };
 
 export const offlineView = new Store<OfflineView>({ phase: 'idle' });
+
+/** Shown after Close the Season. */
+export const seasonView = new Store<{ season: number; stars: number; flyway: FlywayId } | null>(null);

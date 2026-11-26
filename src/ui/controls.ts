@@ -2,6 +2,9 @@ import type { DayPhaseId } from '../data/dayCycle';
 import type { BotId, HuntStage, Slot } from '../data/economy';
 import type { Notation } from '../util/format';
 import type { UpgradeId } from '../data/upgrades';
+import type { NodeKind } from '../data/workflows';
+import type { PerkId } from '../data/legacy';
+import type { FlywayId } from '../data/flyways';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
@@ -10,6 +13,12 @@ export interface GameControls {
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;
   buyUpgrade(id: UpgradeId): boolean;
+  addCard(kind: NodeKind): boolean;
+  removeCard(id: number): boolean;
+  connectCards(from: number, to: number): boolean;
+  cutRope(from: number): boolean;
+  buyPerk(id: PerkId): boolean;
+  closeSeason(flyway: FlywayId): number;
   moveBot(bot: BotId, from: Slot, to: Slot): boolean;
   fixProblem(id: number): boolean;
   fixBot(bot: BotId): boolean;

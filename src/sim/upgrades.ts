@@ -34,5 +34,6 @@ export function coinMultiplier(s: GameState): number {
 }
 
 export function offlineCapSeconds(s: GameState): number {
-  return (OFFLINE.baseHours + UPGRADE_EFFECTS.cotHours * level(s, 'cot')) * 3600;
+  const perks = (s.legacy.perks.longNights ? 2 : 0) + (s.legacy.perks.longerNights ? 4 : 0);
+  return (OFFLINE.baseHours + UPGRADE_EFFECTS.cotHours * level(s, 'cot') + perks) * 3600;
 }

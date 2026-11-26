@@ -1,4 +1,7 @@
 import type { GameState } from '../sim/state';
+import { workflowEval } from '../sim/workflow';
+
+const completeChain = (s: GameState) => workflowEval(s).complete;
 
 /**
  * The always-visible "next goal" track, voiced by Gus the lodge keeper.
@@ -11,6 +14,8 @@ export interface GoalDef {
   /** What Gus says while this goal is active. */
   gus: string;
   done: (s: GameState) => boolean;
+  /** Only shown after the first season is closed. */
+  later?: boolean;
 }
 
 export const LAB_NAME = 'Biscuit';
@@ -132,10 +137,29 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => Object.values(s.guide).filter((g) => (g?.count ?? 0) > 0).length >= 5,
   },
   {
+    id: 'workflow',
+    title: 'Tie a complete workflow chain',
+    gus: "Open Workflows and tie the jobs together with rope: Scout, Call, Shoot, Retrieve, Log. When the whole crew knows the order, everything runs faster.",
+    done: (s) => s.stats.seasonsClosed > 0 || completeChain(s),
+  },
+  {
     id: 'tinker',
     title: 'Hire a Tinker Bot',
     gus: 'A Tinker keeps the whole crew in good repair and tunes them up while you sleep.',
     done: (s) => s.bots.tinker.owned > 0,
+  },
+  {
+    id: 'season',
+    title: 'Close your first season',
+    gus: "Earn a million coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
+    done: (s) => s.stats.seasonsClosed > 0,
+  },
+  {
+    id: 'nextStar',
+    title: 'Earn your next Flyway Star',
+    gus: "New marsh, same old crew-building. Rebuild fast, tie your chain again, and spend your stars in the Legacy tab. Every season goes quicker than the last.",
+    done: () => false,
+    later: true,
   },
   {
     id: 'more',
@@ -146,8 +170,13 @@ export const GOALS: readonly GoalDef[] = [
 ];
 
 export function currentGoal(s: GameState): { goal: GoalDef; index: number } {
+  const veteran = s.stats.seasonsClosed > 0;
   for (let i = 0; i < GOALS.length; i++) {
-    if (!GOALS[i]!.done(s)) return { goal: GOALS[i]!, index: i };
+    const g = GOALS[i]!;
+    // Veterans skip the first-season tutorial; newcomers skip later goals.
+    if (veteran && !g.later && g.id !== 'more') continue;
+    if (!veteran && g.later) continue;
+    if (!g.done(s)) return { goal: g, index: i };
   }
   return { goal: GOALS[GOALS.length - 1]!, index: GOALS.length - 1 };
 }

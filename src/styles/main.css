@@ -2189,3 +2189,509 @@ button {
     display: none !important;
   }
 }
+
+/* ============================================================ Phase 5 */
+
+/* ------------------------------------------------------------ workflows */
+
+.wf-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--c-cream);
+  border: 2px solid var(--ui-panelShade);
+}
+
+.wf-status div {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wf-status strong {
+  font-family: var(--ui-fontHeading);
+  font-size: 16px;
+}
+
+.wf-status div span {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ui-textSoft);
+  font-weight: 600;
+}
+
+.wf-status__bonus {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--c-sageDark);
+}
+
+.wf-status.is-complete {
+  border-color: var(--c-sageDark);
+  background: linear-gradient(#f4f7ec, var(--c-cream));
+}
+
+.wf-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 26px 14px;
+  min-height: 160px;
+  padding: 20px 12px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(90, 55, 25, 0.22) 0 1.5px, transparent 2px) 0 0 / 11px 13px,
+    linear-gradient(160deg, #b98c56, #9c6f3e);
+  box-shadow:
+    inset 0 0 0 6px var(--c-wood),
+    inset 0 0 0 8px var(--c-woodDark),
+    inset 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.wf-ropes {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+
+.rope__body {
+  fill: none;
+  stroke: #7a5232;
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.rope__twist {
+  fill: none;
+  stroke: #c9a06a;
+  stroke-width: 2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+}
+
+.rope__knot {
+  fill: #7a5232;
+  stroke: #c9a06a;
+  stroke-width: 1.5;
+}
+
+.rope--tangled .rope__body {
+  stroke: var(--c-rust);
+  stroke-dasharray: 2 6;
+  opacity: 0.85;
+}
+
+.rope--tangled .rope__twist,
+.rope--tangled .rope__knot {
+  opacity: 0;
+}
+
+.wf-empty {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--c-cream);
+  font-weight: 700;
+  text-align: center;
+}
+
+.wf-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 2px;
+  min-height: 70px;
+  padding: 12px 8px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: linear-gradient(#fbf4e4, #efe0c0);
+  box-shadow: 0 6px 10px rgba(40, 24, 10, 0.35);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.3, 0.7, 0.4, 1.5), box-shadow 0.2s;
+}
+
+.wf-card strong {
+  font-family: var(--ui-fontHeading);
+  font-size: 15px;
+}
+
+.wf-card__note {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--ui-textSoft);
+}
+
+.wf-card.is-active {
+  box-shadow: 0 6px 10px rgba(40, 24, 10, 0.35), 0 0 0 3px var(--c-sageDark);
+}
+
+.wf-card--special {
+  background: linear-gradient(#f4efe0, #e2d6ee);
+}
+
+.wf-card--special.is-active {
+  box-shadow: 0 6px 10px rgba(40, 24, 10, 0.35), 0 0 0 3px #6a5a9a;
+}
+
+.wf-card.is-selected {
+  transform: translateY(-4px) rotate(-2deg) scale(1.06);
+  box-shadow: 0 12px 18px rgba(40, 24, 10, 0.4), 0 0 0 3px var(--c-amber);
+}
+
+.wf-actions {
+  margin-top: 0;
+}
+
+.wf-palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+.wf-chip {
+  display: grid;
+  gap: 1px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border: 2px solid var(--ui-panelEdge);
+  border-radius: 10px;
+  background: #fffaf0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wf-chip strong {
+  font-size: 13.5px;
+}
+
+.wf-chip span {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--ui-textSoft);
+}
+
+.wf-chip--special {
+  border-color: #8a7ab0;
+}
+
+.wf-chip[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ------------------------------------------------------------ legacy */
+
+.season-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(242, 196, 109, 0.35), transparent 60%),
+    var(--c-cream);
+  box-shadow: 0 2px 0 var(--ui-panelShade);
+}
+
+.season-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.season-card__head h3 {
+  margin: 4px 0 0;
+  font-family: var(--ui-fontHeading);
+  font-size: 20px;
+}
+
+.season-card .card__hint {
+  margin: 0;
+}
+
+.season-card__close {
+  width: 100%;
+}
+
+.star-badge {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #fff3c4, var(--c-amber));
+  box-shadow: 0 3px 0 #a8722a;
+  line-height: 1;
+}
+
+.star-badge span {
+  font-size: 16px;
+  color: #7a4a10;
+}
+
+.star-badge strong {
+  font-size: 20px;
+}
+
+.legacy-head {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.legacy-head div {
+  display: grid;
+  justify-items: center;
+  padding: 8px 4px;
+  border-radius: 10px;
+  background: var(--c-woodDark);
+  color: var(--c-cream);
+}
+
+.legacy-head strong {
+  font-size: 18px;
+  color: var(--c-gold);
+}
+
+.legacy-head span {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.perk-tree {
+  display: grid;
+  gap: 10px;
+}
+
+.perk-tier {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  position: relative;
+}
+
+.perk-tier + .perk-tier::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 2px;
+  height: 10px;
+  background: var(--ui-panelEdge);
+}
+
+.perk {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 10px;
+  border: 2px solid var(--ui-panelEdge);
+  border-radius: 12px;
+  background: #fffaf0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.perk strong {
+  font-family: var(--ui-fontHeading);
+  font-size: 14.5px;
+}
+
+.perk span {
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--ui-textSoft);
+}
+
+.perk em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 800;
+  color: #a8722a;
+}
+
+.perk.is-buyable {
+  border-color: var(--c-amber);
+  box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.3);
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+
+.perk.is-owned {
+  border-color: var(--c-sageDark);
+  background: linear-gradient(#f4f7ec, #e6edd8);
+}
+
+.perk.is-owned em {
+  color: var(--c-sageDark);
+}
+
+.perk.is-locked {
+  opacity: 0.55;
+}
+
+.flyway-map {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: fly;
+}
+
+.flyway {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 8px 12px;
+  border-radius: 10px;
+  border-left: 4px solid var(--ui-panelEdge);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.flyway strong {
+  font-family: var(--ui-fontHeading);
+}
+
+.flyway span {
+  font-size: 12px;
+  color: var(--ui-textSoft);
+}
+
+.flyway em {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.flyway__twist {
+  font-style: italic;
+}
+
+.flyway--current {
+  border-left-color: var(--c-sageDark);
+  background: #f4f7ec;
+}
+
+.flyway--next {
+  border-left-color: var(--c-amber);
+}
+
+.flyway--soon {
+  opacity: 0.55;
+}
+
+.season-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.season-summary__gain {
+  padding: 8px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 0%, #fff3c4, var(--c-amber));
+  text-align: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #5a3a0a;
+}
+
+.season-summary__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.season-summary h4 {
+  margin: 0 0 4px;
+  font-family: var(--ui-fontHeading);
+}
+
+.season-summary ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.flyway-choice {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+}
+
+.flyway-choice legend {
+  margin-bottom: 4px;
+  font-weight: 800;
+}
+
+.flyway-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 2px solid var(--ui-panelShade);
+  border-radius: 10px;
+  background: var(--c-cream);
+  cursor: pointer;
+}
+
+.flyway-option input {
+  grid-row: span 2;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--c-sageDark);
+}
+
+.flyway-option span {
+  font-size: 12px;
+  color: var(--ui-textSoft);
+}
+
+.flyway-option.is-on {
+  border-color: var(--c-sageDark);
+}
+
+/* ------------------------------------------------------------ ceremony */
+
+.ceremony__card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.ceremony__card p {
+  margin: 0;
+}
+
+.ceremony__stars {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  font-size: 34px;
+  color: var(--c-amber);
+  text-shadow: 0 2px 0 #a8722a, 0 0 18px rgba(242, 196, 109, 0.8);
+}
+
+.ceremony__stars span {
+  animation: star-in 0.7s cubic-bezier(0.3, 0.7, 0.4, 1.6) both;
+}
+
+@keyframes star-in {
+  from {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.3) rotate(-90deg);
+  }
+}

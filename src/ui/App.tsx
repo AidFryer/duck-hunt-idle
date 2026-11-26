@@ -18,6 +18,9 @@ import { UpgradesTab } from './components/UpgradesTab';
 import { FieldGuide } from './components/FieldGuide';
 import { Moments } from './components/Moments';
 import { OfflineCard } from './components/OfflineCard';
+import { WorkflowEditor } from './components/WorkflowEditor';
+import { LegacyTab } from './components/LegacyTab';
+import { SeasonCeremony } from './components/SeasonCeremony';
 
 interface AppProps {
   hud: Store<HudSnapshot>;
@@ -27,7 +30,7 @@ interface AppProps {
   onSceneHost: (el: HTMLElement) => void;
 }
 
-const BUILT_THROUGH_PHASE = 4;
+const BUILT_THROUGH_PHASE = 5;
 
 export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSceneHost }: AppProps) {
   const hud = useStore(hudStore);
@@ -63,7 +66,8 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <nav class="tabs" role="tablist" aria-label="Lodge sections">
           {TABS.map((t) => {
             const jobsAlert = Object.values(hud.jobs).some((j) => j.backedUp && j.tokens.length > 0);
-            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'jobs' && jobsAlert);
+            const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
+            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'jobs' && jobsAlert) || (t.id === 'legacy' && legacyAlert);
             return (
               <button
                 role="tab"
@@ -84,11 +88,14 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           {tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
           {tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
           {tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
+          {tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
+          {tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
           {active.phase > BUILT_THROUGH_PHASE && <ComingSoon tab={active} />}
         </div>
       </aside>
 
       <OfflineCard notation={n} />
+      <SeasonCeremony />
       {problems && <ProblemLog hud={hud} controls={controls} onClose={() => setProblems(false)} />}
       {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} />}
     </div>

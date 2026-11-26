@@ -3,6 +3,8 @@ import { botUnitSpeed, milestoneMultiplier } from './economy';
 import type { EventSink } from './events';
 import type { GameState } from './state';
 import { botSpeedMultiplier } from './upgrades';
+import { workflowEval } from './workflow';
+import { clockAt } from './clock';
 
 /** Bots of a type currently placed in a slot (job or bench). */
 export function assigned(state: GameState, bot: BotId, slot: Slot): number {
@@ -37,7 +39,15 @@ export function contribution(state: GameState, bot: BotId, job: JobId): number {
   const w = working(state, bot, job);
   if (w === 0) return 0;
   const b = state.bots[bot];
-  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job) * botSpeedMultiplier(state);
+  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job) * botSpeedMultiplier(state) * pipelineBoost(state, job);
+}
+
+/** Workflow chain bonus (and Dawn Rush) for hunt jobs. */
+export function pipelineBoost(state: GameState, job: JobId): number {
+  if (job === 'foreman' || job === 'tinker') return 1;
+  const wf = workflowEval(state);
+  const dawn = wf.dawnSpeed > 0 && clockAt(state.clock.dayTime).phase.id === 'sunrise' ? 1 + wf.dawnSpeed : 1;
+  return wf.speed * dawn;
 }
 
 /** Total actions per second for a job across every bot assigned to it. */
@@ -121,6 +131,8 @@ export function rateTable(state: GameState): RateTable {
   const stuckBy = new Map<string, number>();
   for (const p of state.problems.open) stuckBy.set(`${p.bot}|${p.job}`, (stuckBy.get(`${p.bot}|${p.job}`) ?? 0) + 1);
   const speed = botSpeedMultiplier(state);
+  const wf = workflowEval(state);
+  const dawn = wf.dawnSpeed > 0 && clockAt(state.clock.dayTime).phase.id === 'sunrise' ? 1 + wf.dawnSpeed : 1;
   for (const bot of BOT_ORDER) {
     const b = state.bots[bot];
     if (b.owned === 0) continue;
@@ -130,7 +142,8 @@ export function rateTable(state: GameState): RateTable {
       const job = slot as JobId;
       const w = n - (stuckBy.get(`${bot}|${job}`) ?? 0);
       if (w <= 0) continue;
-      const c = w * unit * efficiency(bot, job);
+      const pipeline = job !== 'foreman' && job !== 'tinker';
+      const c = w * unit * efficiency(bot, job) * (pipeline ? wf.speed * dawn : 1);
       if (c <= 0) continue;
       (parts[job] ??= []).push([bot, c]);
       total[job] = (total[job] ?? 0) + c;

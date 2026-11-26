@@ -7,6 +7,8 @@ import type { EventSink } from './events';
 import type { GameState } from './state';
 import { UPGRADE_EFFECTS } from '../data/upgrades';
 import { WEATHER } from '../data/weather';
+import { starMultiplier } from './prestige';
+import { workflowEval } from './workflow';
 
 export interface Price {
   coins: Decimal;
@@ -42,24 +44,30 @@ export function botReliability(id: BotId, level: number): number {
 }
 
 /** Price of buying `count` more bots, given how many are owned. */
-export function botPrice(id: BotId, owned: number, count = 1): Price {
+export function botPrice(id: BotId, owned: number, count = 1, mult = 1): Price {
   const d = BOTS[id];
   return {
     // Rounded up so balances stay whole numbers.
-    coins: Decimal.sumGeometricSeries(count, d.costCoins, d.costGrowth, owned).ceil(),
-    feathers: Decimal.sumGeometricSeries(count, d.costFeathers, d.costGrowth, owned).ceil(),
+    coins: Decimal.sumGeometricSeries(count, d.costCoins * mult, d.costGrowth, owned).ceil(),
+    feathers: Decimal.sumGeometricSeries(count, d.costFeathers * mult, d.costGrowth, owned).ceil(),
   };
+}
+
+/** Price multiplier for a bot type from Legacy perks. */
+export function botPriceMult(state: GameState, id: BotId): number {
+  return id === 'foreman' && state.legacy.perks.unionRates ? 0.5 : 1;
 }
 
 /** How many bots the player can afford right now (limited by both currencies). */
 export function maxAffordableBots(state: GameState, id: BotId): number {
   const d = BOTS[id];
   const owned = state.bots[id].owned;
-  const byCoins = Decimal.affordGeometricSeries(state.currencies.coins, d.costCoins, d.costGrowth, owned).toNumber();
-  const byFeathers = Decimal.affordGeometricSeries(state.currencies.feathers, d.costFeathers, d.costGrowth, owned).toNumber();
+  const m = botPriceMult(state, id);
+  const byCoins = Decimal.affordGeometricSeries(state.currencies.coins, d.costCoins * m, d.costGrowth, owned).toNumber();
+  const byFeathers = Decimal.affordGeometricSeries(state.currencies.feathers, d.costFeathers * m, d.costGrowth, owned).toNumber();
   let n = Math.max(0, Math.floor(Math.min(byCoins, byFeathers)));
   // Prices are rounded up, so trim if the rounding tipped the last one over.
-  while (n > 0 && !canAfford(state, botPrice(id, owned, n))) n--;
+  while (n > 0 && !canAfford(state, botPrice(id, owned, n, m))) n--;
   return n;
 }
 
@@ -76,7 +84,7 @@ function pay(state: GameState, price: Price): void {
 export function buyBot(state: GameState, id: BotId, count: number, events?: EventSink): number {
   if (count <= 0) return 0;
   const b = state.bots[id];
-  const price = botPrice(id, b.owned, count);
+  const price = botPrice(id, b.owned, count, botPriceMult(state, id));
   if (!canAfford(state, price)) return 0;
   pay(state, price);
   const before = b.owned;
@@ -138,7 +146,12 @@ export function spreadSize(state: GameState): number {
 
 /** Seconds a circling flock waits for a call. */
 export function incomingPatience(state: GameState): number {
-  return HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0);
+  return HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0) + (state.legacy.perks.keenEyes ? 5 : 0);
+}
+
+/** How many flocks can circle at once. */
+export function maxIncoming(state: GameState): number {
+  return HUNT.maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0);
 }
 
 /** Fraction of a flock taken by one shot. */
@@ -148,7 +161,8 @@ export function shotFraction(state: GameState): number {
 
 /** Extra birds per flock from food plots and weather. */
 export function extraFlockSize(state: GameState): number {
-  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize;
+  const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
+  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize + cold;
 }
 
 /** Flocks per second right now, before the activity curve. */
@@ -159,7 +173,9 @@ export function flockDraw(state: GameState): number {
   const marsh =
     (1 + UPGRADE_EFFECTS.timberFlockRate * (state.upgrades.timber ?? 0)) *
     (1 + UPGRADE_EFFECTS.milletFlockRate * (state.upgrades.millet ?? 0));
-  return HUNT.baseFlockRate * spread * acreBonus * marsh * WEATHER[state.environment.weather].flockRate;
+  const wf = workflowEval(state);
+  const fog = state.environment.weather === 'fog' ? wf.fogFlockRate : 1;
+  return HUNT.baseFlockRate * spread * acreBonus * marsh * WEATHER[state.environment.weather].flockRate * wf.flockRate * fog;
 }
 
 /** Lodge reputation: more birds logged, better-paying guests. */
@@ -171,5 +187,9 @@ export function reputationMultiplier(state: GameState): number {
 export function birdValue(state: GameState, species: SpeciesId): { coins: number; feathers: number } {
   const s = SPECIES[species];
   const rooms = 1 + UPGRADE_EFFECTS.lodgeRoomsCoins * (state.upgrades.lodgeRooms ?? 0);
-  return { coins: Math.round(s.coins * reputationMultiplier(state) * rooms * 100) / 100, feathers: s.feathers };
+  const stars = starMultiplier(state);
+  return {
+    coins: Math.round(s.coins * reputationMultiplier(state) * rooms * stars * 100) / 100,
+    feathers: Math.round(s.feathers * stars * 100) / 100,
+  };
 }

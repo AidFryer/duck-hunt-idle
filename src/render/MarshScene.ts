@@ -15,6 +15,8 @@ import { WaterLayer } from './layers/WaterLayer';
 import { WeatherLayer } from './layers/WeatherLayer';
 import { PlotsLayer, TimberLayer } from './layers/MarshUpgradeLayer';
 import { WEATHER } from '../data/weather';
+import { FLYWAYS, type FlywayId } from '../data/flyways';
+import { lerpColor } from '../util/color';
 import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from './types';
@@ -37,6 +39,9 @@ export class MarshScene {
   private readonly fogs: FogLayer[];
   private readonly plots: PlotsLayer;
   private readonly timber: TimberLayer;
+  private readonly land: LandLayer;
+  /** Current flyway; changing it re-lays out the scene. */
+  flyway: FlywayId = 'mississippi';
   private readonly layers: Layer[];
   private readonly layoutOrder: Layer[];
   layout: SceneLayout = {
@@ -53,7 +58,7 @@ export class MarshScene {
     this.sky = new SkyLayer(tex);
     const clouds = (this.clouds = new CloudLayer(tex));
     const farFog = new FogLayer(tex, [{ at: -0.02, speed: 6, alpha: 0.85, height: 0.6 }]);
-    const land = new LandLayer();
+    const land = (this.land = new LandLayer());
     this.water = new WaterLayer(tex);
     this.fx = new EffectsLayer(tex);
     const shore = new ShoreLayer(tex);
@@ -93,7 +98,9 @@ export class MarshScene {
     const l = this.layout;
     l.w = w;
     l.h = h;
-    l.horizon = Math.round(h * (w / h < 1 ? 0.46 : 0.52));
+    const fh = FLYWAYS[this.flyway].horizon;
+    l.horizon = Math.round(h * (w / h < 1 ? fh - 0.06 : fh));
+    this.land.land = FLYWAYS[this.flyway].land;
     l.scale = Math.max(0.45, Math.min(h, w * 0.8) / 520);
     for (const layer of this.layoutOrder) layer.layout(l);
   }
@@ -162,7 +169,13 @@ export class MarshScene {
       case 'weatherChanged':
       case 'newSpecies':
       case 'achievement':
+      case 'workflowChanged':
+      case 'perkBought':
+      case 'flockReturned':
         return null;
+      case 'seasonClosed':
+        this.fx.confetti(this.layout.w / 2, this.layout.h * 0.4, this.layout.scale * 1.3, 60);
+        return { x: this.layout.w / 2, y: this.layout.h * 0.4 };
       case 'upgradeBought': {
         const a = this.layout.anchors;
         const at = e.upgrade === 'timber' ? { x: a.lodge.x + 80 * this.layout.scale, y: a.decoyCenter.y - 40 * this.layout.scale }
@@ -180,6 +193,10 @@ export class MarshScene {
   sync(state: GameState): void {
     this.blind.reconcile(state.hunt.decoys);
     this.ducks.reconcile(state);
+    if (state.flyway !== this.flyway) {
+      this.flyway = state.flyway;
+      this.resize(this.layout.w, this.layout.h);
+    }
     this.crew.sync(state);
     const w = state.environment.weather;
     this.weather.weather = w;
@@ -196,6 +213,11 @@ export class MarshScene {
     this.water.sunX = this.sky.celestialPos(f.sky.sunProgress, 0).x;
     this.water.moonX = this.sky.celestialPos(f.sky.moonProgress, 0).x;
     this.clouds.overcast = this.weather.overcast;
+    const fw = FLYWAYS[this.flyway];
+    if (fw.tintAmount > 0) {
+      f.sky.farLand = lerpColor(f.sky.farLand, fw.farLandTint, fw.tintAmount * (1 - f.sky.darkness * 0.7));
+      f.sky.nearLand = lerpColor(f.sky.nearLand, fw.nearLandTint, fw.tintAmount * (1 - f.sky.darkness * 0.7));
+    }
     for (const layer of this.layers) layer.update(frame);
   }
 }

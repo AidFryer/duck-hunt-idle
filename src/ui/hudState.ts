@@ -1,4 +1,4 @@
-import type Decimal from 'break_infinity.js';
+import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
   BOT_ORDER, BOTS, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER,
@@ -10,10 +10,15 @@ import { SPECIES, SPECIES_ORDER, type SpeciesId } from '../data/species';
 import { UPGRADE_ORDER, UPGRADES, type UpgradeId } from '../data/upgrades';
 import { WEATHER, type WeatherId } from '../data/weather';
 import { offlineCapSeconds, upgradePrice } from '../sim/upgrades';
+import { FLYWAYS, FLYWAY_ORDER, type FlywayId } from '../data/flyways';
+import { PERK_ORDER, PERKS, PRESTIGE, type PerkId } from '../data/legacy';
+import { SPECIALS, WORKFLOW, type NodeKind } from '../data/workflows';
+import { canBuyPerk, coinsForNextStar, nextFlyway, starsFor } from '../sim/prestige';
+import { ALL_CARDS, cardUnlocked, linkKey, workflowEval, workflowUnlocked } from '../sim/workflow';
 import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
-  milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, type Price,
+  milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, botPriceMult, type Price,
 } from '../sim/economy';
 import { canDo } from '../sim/hunt';
 import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
@@ -116,6 +121,33 @@ export interface HudSnapshot {
   patches: number;
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean }[];
   offlineHours: number;
+  workflow: {
+    unlocked: boolean;
+    unlockCoins: number;
+    nodes: { id: number; kind: NodeKind; active: boolean }[];
+    links: { from: number; to: number; state: 'good' | 'tangled' }[];
+    palette: { kind: NodeKind; unlocked: boolean; placed: boolean; hint: string }[];
+    bonus: number;
+    complete: boolean;
+    goodLinks: number;
+    effects: string[];
+  };
+  season: {
+    number: number;
+    coins: Decimal;
+    starsNow: number;
+    nextStarAt: Decimal;
+    progress: number;
+    flyway: FlywayId;
+    nextFlyway: FlywayId;
+  };
+  legacy: {
+    stars: number;
+    earned: number;
+    bonus: number;
+    perks: { id: PerkId; owned: boolean; canBuy: boolean; prereqsMet: boolean }[];
+  };
+  flyways: { id: FlywayId; status: 'current' | 'visited' | 'next' | 'locked' | 'soon' }[];
   acres: number;
   acrePrice: Price;
   acreAffordable: boolean;
@@ -130,11 +162,11 @@ function queueFor(state: GameState, job: JobId): { text: string; backedUp: boole
   const h = state.hunt;
   switch (job) {
     case 'scout':
-      return { text: `${h.incoming.length}/${HUNT.maxIncoming} circling`, backedUp: false };
+      return { text: `${h.incoming.length}/${maxIncoming(state)} circling`, backedUp: false };
     case 'decoys':
       return { text: `${h.decoys}/${spreadSize(state)} set`, backedUp: h.decoys < spreadSize(state) / 2 };
     case 'call':
-      return { text: `${h.incoming.length} waiting`, backedUp: h.incoming.length >= HUNT.maxIncoming };
+      return { text: `${h.incoming.length} waiting`, backedUp: h.incoming.length >= maxIncoming(state) };
     case 'shoot':
       return { text: `${h.committed.length} in range`, backedUp: h.committed.length >= HUNT.maxCommitted };
     case 'retrieve':
@@ -172,7 +204,7 @@ export function snapshot(state: GameState): HudSnapshot {
   const bots = {} as Record<BotId, BotSnapshot>;
   for (const id of BOT_ORDER) {
     const b = state.bots[id];
-    const price = botPrice(id, b.owned, 1);
+    const price = botPrice(id, b.owned, 1, botPriceMult(state, id));
     const lp = levelPrice(id, b.level);
     let rate = 0;
     let st = 0;
@@ -313,6 +345,39 @@ export function snapshot(state: GameState): HudSnapshot {
       };
     }),
     offlineHours: offlineCapSeconds(state) / 3600,
+    workflow: workflowSnap(state),
+    season: (() => {
+      const starsNow = starsFor(state.season.coins);
+      const next = coinsForNextStar(state.season.coins);
+      const prev = new Decimal(PRESTIGE.divisor).mul(starsNow * starsNow);
+      const span = next.sub(prev);
+      return {
+        number: state.season.number,
+        coins: state.season.coins,
+        starsNow,
+        nextStarAt: next,
+        progress: Math.max(0, Math.min(1, state.season.coins.sub(prev).div(span).toNumber())),
+        flyway: state.flyway,
+        nextFlyway: nextFlyway(state),
+      };
+    })(),
+    legacy: {
+      stars: state.legacy.stars,
+      earned: state.legacy.earned,
+      bonus: PRESTIGE.bonusPerStar * state.legacy.earned,
+      perks: PERK_ORDER.map((id) => ({
+        id,
+        owned: !!state.legacy.perks[id],
+        canBuy: canBuyPerk(state, id),
+        prereqsMet: PERKS[id].requires.every((q) => !!state.legacy.perks[q]),
+      })),
+    },
+    flyways: FLYWAY_ORDER.map((id) => {
+      const i = FLYWAY_ORDER.indexOf(id);
+      const cur = FLYWAY_ORDER.indexOf(state.flyway);
+      const status = id === state.flyway ? 'current' : !FLYWAYS[id].available ? 'soon' : i < cur ? 'visited' : id === nextFlyway(state) ? 'next' : 'locked';
+      return { id, status } as const;
+    }),
     acres: state.acres,
     acrePrice: ap,
     acreAffordable: canAfford(state, ap),
@@ -353,4 +418,32 @@ export function windLabel(w: number): string {
   if (w > 0.45) return 'Breezy';
   if (w > 0.25) return 'Light breeze';
   return 'Calm';
+}
+
+function workflowSnap(state: GameState): HudSnapshot['workflow'] {
+  const ev = workflowEval(state);
+  const placed = new Set(state.workflow.nodes.map((n) => n.kind));
+  const effects: string[] = [];
+  if (ev.bonus > 0) effects.push(`+${Math.round(ev.bonus * 100)}% speed for every hunt job`);
+  if (ev.fogFlockRate > 1) effects.push(`+${Math.round((ev.fogFlockRate - 1) * 100)}% flocks in fog`);
+  if (ev.rareMult > 1) effects.push(`Rare birds ×${ev.rareMult}`);
+  if (ev.flockRate < 1) effects.push(`${Math.round((ev.flockRate - 1) * 100)}% flocks`);
+  for (const [j, m] of Object.entries(ev.problemMult)) effects.push(`${Math.round((1 - (m ?? 1)) * 100)}% fewer problems at ${j}`);
+  if (ev.dawnSpeed > 0) effects.push(`+${Math.round(ev.dawnSpeed * 100)}% speed at sunrise`);
+  if (ev.noIce) effects.push('No icy calls; +1 bird per flock in cold fronts');
+  return {
+    unlocked: workflowUnlocked(state),
+    unlockCoins: WORKFLOW.unlockCoins,
+    nodes: state.workflow.nodes.map((n) => ({ id: n.id, kind: n.kind, active: !!ev.active[n.id] })),
+    links: state.workflow.links.map((l) => ({ from: l.from, to: l.to, state: ev.linkState[linkKey(l)] ?? 'tangled' })),
+    palette: ALL_CARDS.map((kind) => {
+      const sp = kind in SPECIALS ? SPECIALS[kind as keyof typeof SPECIALS] : null;
+      const hint = sp ? (sp.unlockSeasons > 0 ? 'Close a season to unlock' : `Earn ${sp.unlockCoins.toLocaleString()} coins`) : '';
+      return { kind, unlocked: cardUnlocked(state, kind), placed: placed.has(kind), hint };
+    }),
+    bonus: ev.bonus,
+    complete: ev.complete,
+    goodLinks: ev.goodLinks,
+    effects,
+  };
 }

@@ -1,6 +1,8 @@
 import type { BotId, JobId, ProblemKind, Slot, SpeciesId } from '../data/economy';
 import type { UpgradeId } from '../data/upgrades';
 import type { WeatherId } from '../data/weather';
+import type { FlywayId } from '../data/flyways';
+import type { PerkId } from '../data/legacy';
 
 export type ActionSource = 'manual' | BotId;
 
@@ -33,6 +35,10 @@ export type SimEvent =
   | { type: 'weatherChanged'; from: WeatherId; to: WeatherId }
   | { type: 'newSpecies'; species: SpeciesId }
   | { type: 'achievement'; id: string }
+  | { type: 'workflowChanged' }
+  | { type: 'perkBought'; perk: PerkId }
+  | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }
+  | { type: 'flockReturned'; flockId: number }
   | { type: 'dayEnded'; day: number; bag: number; best: boolean };
 
 export type EventSink = SimEvent[];

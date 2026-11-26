@@ -16,8 +16,8 @@ export const TABS: readonly TabDef[] = [
   { id: 'marsh', label: 'Marsh', icon: 'marsh', comingSoon: '', phase: 1 },
   { id: 'bots', label: 'Bots', icon: 'bot', comingSoon: '', phase: 2 },
   { id: 'jobs', label: 'Job Board', icon: 'board', comingSoon: '', phase: 3 },
-  { id: 'workflows', label: 'Workflows', icon: 'rope', comingSoon: 'A coil of rope for linking jobs into chains. Unlocks mid-season.', phase: 5 },
+  { id: 'workflows', label: 'Workflows', icon: 'rope', comingSoon: '', phase: 5 },
   { id: 'upgrades', label: 'Upgrades', icon: 'hammer', comingSoon: '', phase: 2 },
   { id: 'guide', label: 'Field Guide', icon: 'book', comingSoon: '', phase: 4 },
-  { id: 'legacy', label: 'Legacy', icon: 'star', comingSoon: "The lodge's legacy wall. Close your first season to hang something here.", phase: 5 },
+  { id: 'legacy', label: 'Legacy', icon: 'star', comingSoon: '', phase: 5 },
 ];

@@ -23,11 +23,15 @@ import { SimRunner } from './sim/runner';
 import { exportSave, importSave } from './sim/save';
 import { runOffline } from './sim/offline';
 import { buyUpgrade } from './sim/upgrades';
+import { addNode, connect, cut, removeNode } from './sim/workflow';
+import { buyPerk, closeSeason } from './sim/prestige';
+import { FLYWAYS } from './data/flyways';
+import { PERKS } from './data/legacy';
 import { OFFLINE, UPGRADES } from './data/upgrades';
 import { SPECIES } from './data/species';
 import { WEATHER } from './data/weather';
 import { ACHIEVEMENTS } from './data/achievements';
-import { offlineView, pushMoment } from './ui/moments';
+import { offlineView, pushMoment, seasonView } from './ui/moments';
 import { createInitialState, type GameState } from './sim/state';
 import { App } from './ui/App';
 import type { GameControls } from './ui/controls';
@@ -131,6 +135,15 @@ function onEvent(e: SimEvent, at: Point | null): void {
     case 'weatherChanged':
       feedback.toast(`${WEATHER[e.to].name}: ${WEATHER[e.to].blurb}`, e.to === 'clear' ? 'info' : 'good', 4000);
       break;
+    case 'seasonClosed':
+      seasonView.set({ season: e.season, stars: e.stars, flyway: e.flyway });
+      break;
+    case 'perkBought':
+      feedback.toast(`Legacy perk: ${PERKS[e.perk].name}.`, 'celebrate');
+      break;
+    case 'flockReturned':
+      feedback.toast('A flock circled back for another look.', 'info', 2500);
+      break;
     case 'upgradeBought':
       feedback.toast(`${UPGRADE_NAMES[e.upgrade]} upgraded to level ${e.level}.`, 'good');
       break;
@@ -198,6 +211,7 @@ function replaceState(next: GameState): void {
 let lastNudge = 0;
 const UPGRADE_NAMES = Object.fromEntries(Object.entries(UPGRADES).map(([k, v]) => [k, v.name])) as Record<keyof typeof UPGRADES, string>;
 void SPECIES;
+void FLYWAYS;
 
 const controls: GameControls = {
   act(stage) {
@@ -228,6 +242,37 @@ const controls: GameControls = {
     const ok = buyUpgrade(state, id, runner.sink);
     hud.set(snapshot(state));
     return ok;
+  },
+  addCard(kind) {
+    const ok = addNode(state, kind, runner.sink) !== null;
+    hud.set(snapshot(state));
+    return ok;
+  },
+  removeCard(id) {
+    const ok = removeNode(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  connectCards(from, to) {
+    const ok = connect(state, from, to, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  cutRope(from) {
+    const ok = cut(state, from, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  buyPerk(id) {
+    const ok = buyPerk(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  closeSeason(flyway) {
+    const stars = closeSeason(state, flyway, runner.sink);
+    hud.set(snapshot(state));
+    save();
+    return stars;
   },
   moveBot(bot, from, to) {
     const ok = moveBots(state, bot, from, to, 1, runner.sink) > 0;

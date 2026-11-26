@@ -33,9 +33,16 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     const guide = birds > 0 ? { mallard: { count: birds, firstAt: 0 } } : {};
     return { ...s, guide, version: 4 };
   },
+  // v4 (Phase 4) → v5 adds seasons, legacy, flyways and workflows.
+  // Coins earned so far count toward the first season.
+  4: (s) => {
+    const stats = (s.stats ?? {}) as Json;
+    return { ...s, season: { number: 1, coins: stats.lifetimeCoins ?? '0' }, version: 5 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [
+  ['season', 'coins'],
   ['currencies', 'coins'],
   ['currencies', 'feathers'],
   ['stats', 'lifetimeCoins'],
