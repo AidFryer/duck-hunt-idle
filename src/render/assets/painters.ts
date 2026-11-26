@@ -1753,3 +1753,98 @@ export function paintRainStreak(): Canvas {
   t.ctx.fillRect(0.4, 0, 1.2, 26);
   return t.canvas;
 }
+
+// ---------------------------------------------------------------- lodge folk
+
+export type PersonKind = 'gus' | 'guest0' | 'guest1' | 'guest2' | 'guest3' | 'angler';
+
+const FOLK: Record<Exclude<PersonKind, 'gus'>, { coat: number; hat: number; pants: number }> = {
+  guest0: { coat: 0x7a3a22, hat: 0x3e3226, pants: 0x4a4038 },
+  guest1: { coat: 0x5e7352, hat: 0xb5562b, pants: 0x3a3632 },
+  guest2: { coat: 0x9a8a5a, hat: 0x2a2622, pants: 0x5a4a3a },
+  guest3: { coat: 0x4a5a6e, hat: 0x8a5a3b, pants: 0x3a3632 },
+  angler: { coat: 0x6b4a2f, hat: 0xd8be82, pants: 0x3a4a38 },
+};
+
+/** A little standing person (24×36, feet at the bottom). Gus sits in his rocker. */
+export function paintPerson(kind: PersonKind): Canvas {
+  const t = createPaintTarget(24, 36);
+  const { ctx } = t;
+  if (kind === 'gus') {
+    // Rocking chair
+    ctx.strokeStyle = css(palette.woodDark);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(3, 35);
+    ctx.quadraticCurveTo(12, 37, 21, 33);
+    ctx.moveTo(5, 34);
+    ctx.lineTo(6, 14);
+    ctx.moveTo(17, 34);
+    ctx.lineTo(17, 24);
+    ctx.stroke();
+    ctx.fillStyle = css(palette.wood);
+    ctx.fillRect(5, 23, 13, 2);
+    // Gus: red flannel, grey beard, brown hat
+    ctx.fillStyle = css(0x3a3632);
+    ctx.fillRect(11, 25, 3, 8);
+    ctx.fillRect(15, 25, 3, 8);
+    ctx.fillStyle = css(0xa8402a);
+    ctx.beginPath();
+    ctx.roundRect(7, 13, 10, 12, 3);
+    ctx.fill();
+    ctx.fillStyle = css(0xe8c8a0);
+    ctx.beginPath();
+    ctx.arc(12, 10, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(0xd8d4cc);
+    ctx.beginPath();
+    ctx.ellipse(12.5, 13, 3.2, 2.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(0x6b4a2f);
+    ctx.beginPath();
+    ctx.ellipse(12, 7, 5.6, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(9, 3.5, 6, 3.5);
+    // Mug in hand
+    ctx.fillStyle = css(palette.cream);
+    ctx.fillRect(16, 17, 3, 3);
+    return t.canvas;
+  }
+  const f = FOLK[kind];
+  // Legs
+  ctx.fillStyle = css(f.pants);
+  ctx.fillRect(9, 24, 2.6, 11);
+  ctx.fillRect(12.6, 24, 2.6, 11);
+  ctx.fillStyle = css(0x2a2622);
+  ctx.fillRect(8.5, 34, 3.5, 2);
+  ctx.fillRect(12.4, 34, 3.5, 2);
+  // Coat
+  ctx.fillStyle = css(f.coat);
+  ctx.beginPath();
+  ctx.roundRect(7, 12, 10, 14, 3);
+  ctx.fill();
+  ctx.fillStyle = css(shadeHex(f.coat, 0.8));
+  ctx.fillRect(11.6, 13, 0.9, 12);
+  // Head and hat
+  ctx.fillStyle = css(0xe8c8a0);
+  ctx.beginPath();
+  ctx.arc(12, 8.5, 3.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(f.hat);
+  ctx.beginPath();
+  ctx.ellipse(12, 6, 5.2, 1.3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(9.2, 2.2, 5.6, 4, 1.5);
+  ctx.fill();
+  if (kind === 'angler') {
+    // Fishing rod over the shoulder
+    ctx.strokeStyle = css(palette.woodDark);
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(15, 20);
+    ctx.lineTo(23.5, 4);
+    ctx.stroke();
+  }
+  return t.canvas;
+}

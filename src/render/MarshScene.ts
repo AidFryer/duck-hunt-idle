@@ -14,6 +14,7 @@ import { OverlayLayer } from './layers/OverlayLayer';
 import { ReedLayer, type ReedClump } from './layers/ReedLayer';
 import { ShoreLayer } from './layers/ShoreLayer';
 import { PropsLayer } from './layers/PropsLayer';
+import { LodgeLifeLayer } from './layers/LodgeLifeLayer';
 import { SkyLayer } from './layers/SkyLayer';
 import { WaterLayer } from './layers/WaterLayer';
 import { WeatherLayer } from './layers/WeatherLayer';
@@ -52,6 +53,7 @@ export class MarshScene {
   readonly hint: HintLayer;
   private readonly shore: ShoreLayer;
   private readonly props: PropsLayer;
+  private readonly life: LodgeLifeLayer;
   /** Show words next to the hint ring (new players). */
   hintLabels = true;
   private readonly clouds: CloudLayer;
@@ -82,6 +84,7 @@ export class MarshScene {
     this.fx = new EffectsLayer(tex);
     const shore = (this.shore = new ShoreLayer(tex));
     this.props = new PropsLayer(tex);
+    this.life = new LodgeLifeLayer(tex);
     const blind = (this.blind = new BlindLayer(tex, this.fx));
     const midReeds = new ReedLayer(tex, 21, midReedClumps, 0.9);
     this.ducks = new DuckLayer(tex, this.fx);
@@ -104,13 +107,13 @@ export class MarshScene {
     // Back-to-front draw order.
     this.hint = new HintLayer(this.ducks);
     this.layers = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, this.props, midReeds, blind,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.life, this.timber, this.props, midReeds, blind,
       this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, this.props, midReeds,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, this.props, this.life, midReeds,
       this.ducks, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
   }
@@ -256,6 +259,7 @@ export class MarshScene {
     }
     this.crew.sync(state);
     this.shore.setLevel(state.lodge);
+    this.life.setLevel(state.lodge);
     this.props.sync(state);
     this.hint.target = chooseHint(state, 'marsh', this.ducks, this.hintLabels);
     const w = state.environment.weather;
