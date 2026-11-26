@@ -22,6 +22,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'firstBird', name: 'First Bird', desc: 'Bring in your first bird.', shape: 'round', icon: 'duck', colors: [0x5e7352, 0xf4e9d4], done: (s) => s.stats.lifetimeBirds >= 1 },
   { id: 'birds100', name: 'Century', desc: 'Bring in 100 birds.', shape: 'round', icon: 'duck', colors: [0x6b4a2f, 0xe8a33d], done: (s) => s.stats.lifetimeBirds >= 100 },
   { id: 'birds1000', name: 'Marsh Legend', desc: 'Bring in 1,000 birds.', shape: 'shield', icon: 'duck', colors: [0x2d2520, 0xf2c46d], done: (s) => s.stats.lifetimeBirds >= 1000 },
+  { id: 'golden10', name: 'Golden Hour', desc: 'Shoot 10 golden flocks yourself.', shape: 'diamond', icon: 'sun', colors: [0x6b4a2f, 0xf2c46d], done: (s) => s.stats.goldenShot >= 10 },
   { id: 'bag50', name: 'Full Strap', desc: 'Bring in 50 birds in a single day.', shape: 'banner', icon: 'sun', colors: [0xb5562b, 0xf4e9d4], done: (s) => s.stats.bestBag >= 50 },
   { id: 'firstBot', name: 'Whittler', desc: 'Carve your first decoy-bot.', shape: 'round', icon: 'bot', colors: [0x8a5a3b, 0xf4e9d4], done: (s) => owned(s) >= 1 },
   { id: 'bots25', name: 'Workshop', desc: 'Own 25 bots.', shape: 'diamond', icon: 'gear', colors: [0x5a3a26, 0xc9a04e], done: (s) => owned(s) >= 25 },

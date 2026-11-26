@@ -1,4 +1,4 @@
-import { ACRES, BOTS, FIELD, FIELD_JOBS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -11,9 +11,9 @@ import { workflowEval } from './workflow';
 import { pickSpecies } from './species';
 import type { ActionSource, EventSink } from './events';
 import { pickFrom, rateTable, type RateTable } from './jobs';
-import { advanceMetrics, recordJob } from './metrics';
+import { advanceMetrics, recordJob, throughput } from './metrics';
 import { raiseProblem, stepForemen } from './problems';
-import { rand, type GameState, type GroundState } from './state';
+import { rand, type FlockState, type GameState, type GroundState } from './state';
 
 /**
  * The hunt pipeline: Scout → Set Decoys → Call → Shoot → Retrieve → Log.
@@ -43,6 +43,28 @@ export function fieldOpen(state: GameState): boolean {
   return state.unlocks.field !== undefined || state.lodge >= 4;
 }
 
+/** Can a bot do this job? Bots never touch golden flocks. */
+export function botCanDo(state: GameState, job: ActionJob): boolean {
+  if (!canDo(state, job)) return false;
+  const js = JOB_STEP[job as JobId];
+  if (!js || (js.step !== 'call' && js.step !== 'shoot')) return true;
+  const h = ground(state, js.g);
+  return (js.step === 'call' ? h.incoming : h.committed).some((f) => !f.golden);
+}
+
+/** Coins a golden flock pays when you shoot it yourself. */
+export function goldenBonus(state: GameState): number {
+  const perSecond = throughput(state, 'log') * birdValue(state, 'mallard').coins;
+  return Math.round(Math.max(GOLDEN.minBonus, perSecond * GOLDEN.bonusSeconds));
+}
+
+/** Which flock an action takes: the tapped one, else the oldest (bots skip golden ones). */
+function pickIndex(list: FlockState[], targetId: number | undefined, source: ActionSource | 'keeper'): number {
+  if (targetId !== undefined) return Math.max(0, list.findIndex((f) => f.id === targetId));
+  if (source === 'manual') return 0;
+  return Math.max(0, list.findIndex((f) => !f.golden));
+}
+
 /** Tag events from the field so the right scene animates them. */
 const tag = (g: GroundId) => (g === 'field' ? { ground: 'field' as const } : {});
 
@@ -70,6 +92,7 @@ export function canDo(state: GameState, job: ActionJob): boolean {
  */
 export function doAction(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink, targetId?: number): boolean {
   if (!canDo(state, job)) return false;
+  if (source !== 'manual' && !botCanDo(state, job)) return false;
   if (source === 'manual') {
     state.stats.manualActions += 1;
     state.stats.manualByJob[job] = (state.stats.manualByJob[job] ?? 0) + 1;
@@ -93,7 +116,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       break;
     }
     case 'call': {
-      const idx = targetId !== undefined ? Math.max(0, h.incoming.findIndex((f) => f.id === targetId)) : 0;
+      const idx = pickIndex(h.incoming, targetId, source);
       const flock = h.incoming.splice(idx, 1)[0]!;
       flock.age = 0;
       h.committed.push(flock);
@@ -102,8 +125,17 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       break;
     }
     case 'shoot': {
-      const idx = targetId !== undefined ? Math.max(0, h.committed.findIndex((f) => f.id === targetId)) : 0;
+      const idx = pickIndex(h.committed, targetId, source);
       const flock = h.committed.splice(idx, 1)[0]!;
+      if (flock.golden && source === 'manual') {
+        const coins = goldenBonus(state);
+        state.currencies.coins = state.currencies.coins.add(coins);
+        state.currencies.feathers = state.currencies.feathers.add(GOLDEN.feathers);
+        state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(coins);
+        state.season.coins = state.season.coins.add(coins);
+        state.stats.goldenShot += 1;
+        events.push({ type: 'goldenShot', coins, feathers: GOLDEN.feathers, ...tag(g) });
+      }
       const room = (g === 'field' ? FIELD.maxDowned : HUNT.maxDowned) - h.downed.length;
       const downed = Math.max(0, Math.min(room, Math.max(1, Math.ceil(flock.size * shotFraction(state, g)))));
       for (let i = 0; i < downed; i++) h.downed.push(flock.species);
@@ -241,6 +273,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 
   stepGround(state, 'marsh', dt, activity, events);
   if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
+  stepGolden(state, dt, activity, events);
 
   // Gus keeps the ledger himself at a gentle pace.
   h.keeperProgress = Math.min(1, h.keeperProgress + LEDGER.keeperRate * dt);
@@ -260,6 +293,24 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
     checkUnlocks(state, events);
     checkPlans(state, events);
   }
+}
+
+/** Now and then, a golden flock (only while ducks are flying). */
+function stepGolden(state: GameState, dt: number, activity: number, events: EventSink): void {
+  if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
+  state.goldenTimer -= dt * activity;
+  if (state.goldenTimer > 0) return;
+  state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
+  const g: GroundId = fieldOpen(state) && rand(state) < GOLDEN.fieldShare ? 'field' : 'marsh';
+  const h = ground(state, g);
+  if (h.incoming.some((f) => f.golden) || h.committed.some((f) => f.golden)) return;
+  const P = g === 'field' ? FIELD : HUNT;
+  const species = pickSpecies(state, clockAt(state.clock.dayTime).hour, g);
+  const raw = P.flockSizeMin + rand(state) * (P.flockSizeMax - P.flockSizeMin);
+  const size = Math.max(2, Math.round(raw * SPECIES[species].flockSize * GOLDEN.sizeMult));
+  const flock: FlockState = { id: state.hunt.nextFlockId++, species, size, age: 0, golden: true };
+  h.incoming.push(flock);
+  events.push({ type: 'flockArrived', flockId: flock.id, size, species, golden: true, ...tag(g) });
 }
 
 /** Decoy drift, arrivals and patience for one hunting ground. */
@@ -311,11 +362,11 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
   for (const f of h.incoming) f.age += dt;
   for (const f of h.committed) f.age += dt;
   const wait = incomingPatience(state, g);
-  while (h.incoming.length > 0 && h.incoming[0]!.age > wait) {
-    const left = h.incoming.shift()!;
+  for (const left of h.incoming.filter((f) => f.age > (f.golden ? GOLDEN.incomingPatience : wait))) {
+    h.incoming.splice(h.incoming.indexOf(left), 1);
     events.push({ type: 'flockLeft', flockId: left.id, ...tag(g) });
     // Big-sky flyways: some marsh flocks circle back for another look.
-    if (!field && rand(state) < FLYWAYS[state.flyway].returnChance) {
+    if (!field && !left.golden && rand(state) < FLYWAYS[state.flyway].returnChance) {
       state.returning.push({ flock: { ...left, age: 0 }, at: state.elapsed + 15 + rand(state) * 20 });
     } else {
       state.stats.lostToday += 1;
@@ -328,10 +379,11 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
     events.push({ type: 'flockReturned', flockId: back.id });
   }
   const hold = committedPatience(state, g);
-  while (h.committed.length > 0 && h.committed[0]!.age > hold) {
+  for (const fl of h.committed.filter((f) => f.age > (f.golden ? GOLDEN.committedPatience : hold))) {
+    h.committed.splice(h.committed.indexOf(fl), 1);
     state.stats.flocksFlared += 1;
-    state.stats.lostToday += 1;
-    events.push({ type: 'flockFlared', flockId: h.committed.shift()!.id, ...tag(g) });
+    if (!fl.golden) state.stats.lostToday += 1;
+    events.push({ type: 'flockFlared', flockId: fl.id, ...tag(g) });
   }
 }
 
@@ -354,7 +406,7 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
     return;
   }
   while (j.progress >= 1) {
-    if (!canDo(state, job as ActionJob)) {
+    if (!botCanDo(state, job as ActionJob)) {
       // Nothing to do: idle bots don't bank more than one ready action.
       j.progress = 1;
       return;

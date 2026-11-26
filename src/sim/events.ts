@@ -15,7 +15,8 @@ export type ActionSource = 'manual' | BotId;
 export type SimEvent =
   | { type: 'decoySet'; decoys: number; source: ActionSource; ground?: 'field' }
   | { type: 'decoyDrift'; decoys: number; ground?: 'field' }
-  | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field' }
+  | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field'; golden?: boolean }
+  | { type: 'goldenShot'; coins: number; feathers: number; ground?: 'field' }
   | { type: 'flockPassed'; size: number; ground?: 'field' }
   | { type: 'flockLeft'; flockId: number; ground?: 'field' }
   | { type: 'flockCalled'; flockId: number; source: ActionSource; ground?: 'field' }

@@ -55,6 +55,8 @@ interface Flock {
   called: boolean;
   age: number;
   species: SpeciesId;
+  /** A golden flock: shimmers and leaves a sparkle trail. */
+  golden: boolean;
   // flyover
   lx: number; ly: number; speed: number; depth: number; spacing: number;
   // hunt circling
@@ -109,6 +111,7 @@ export class DuckLayer implements Layer {
   private preferred: Floater | null = null;
   private l!: SceneLayout;
   private time = 0;
+  private goldenSparkle = 0;
   private flyoverTimer = 3;
   private readonly rnd = seededRandom(2718);
   ambient = true;
@@ -161,13 +164,14 @@ export class DuckLayer implements Layer {
   }
 
   /** A sim flock arrived: fly in and circle high, waiting for a call. */
-  arrive(id: number, size: number, species: SpeciesId = 'mallard'): void {
+  arrive(id: number, size: number, species: SpeciesId = 'mallard', golden = false): void {
     if (this.findHunt(id)) return;
     const ducks = this.take(Math.min(size, MAX_VISIBLE_PER_FLOCK));
     if (ducks.length === 0) return;
     const l = this.l;
     const f = this.newFlock('hunt', ducks, this.rnd() > 0.5 ? 1 : -1);
     f.id = id;
+    f.golden = golden;
     f.state = 'approach';
     f.lx = f.dir > 0 ? -60 * l.scale : l.w + 60 * l.scale;
     f.ly = l.horizon * (0.2 + this.rnd() * 0.25);
@@ -262,13 +266,13 @@ export class DuckLayer implements Layer {
     const live = new Set<number>();
     for (const fl of h.incoming) {
       live.add(fl.id);
-      if (!this.findHunt(fl.id)) this.arrive(fl.id, fl.size, fl.species);
+      if (!this.findHunt(fl.id)) this.arrive(fl.id, fl.size, fl.species, !!fl.golden);
     }
     for (const fl of h.committed) {
       live.add(fl.id);
       const f = this.findHunt(fl.id);
       if (!f) {
-        this.arrive(fl.id, fl.size, fl.species);
+        this.arrive(fl.id, fl.size, fl.species, !!fl.golden);
         this.call(fl.id);
       } else if (f.state === 'circle') this.call(fl.id);
     }
@@ -456,13 +460,14 @@ export class DuckLayer implements Layer {
       const b = this.bounds(f);
       if (!b) continue;
       const r = b.r;
+      if (f.golden) g.circle(b.x, b.y, r + 4 * s).stroke({ width: w * 0.8, color: 0xf2c46d, alpha: 0.6 });
       g.circle(b.x, b.y, r).stroke({ width: w, color: 0x2d2520, alpha: 0.28 });
       if (frac > 0.005) {
         const a0 = -Math.PI / 2;
         const a1 = a0 + Math.PI * 2 * frac;
         g.moveTo(b.x + Math.cos(a0) * r, b.y + Math.sin(a0) * r)
           .arc(b.x, b.y, r, a0, a1)
-          .stroke({ width: w, color: frac < 0.3 ? 0xd2693a : f.called ? 0xf6c56e : 0xf4e9d4, alpha: 0.9, cap: 'round' });
+          .stroke({ width: w, color: f.golden ? 0xf2c46d : frac < 0.3 ? 0xd2693a : f.called ? 0xf6c56e : 0xf4e9d4, alpha: 0.9, cap: 'round' });
       }
     }
   }
@@ -509,7 +514,7 @@ export class DuckLayer implements Layer {
 
   private newFlock(kind: Flock['kind'], ducks: Duck[], dir: number): Flock {
     return {
-      kind, id: -1, ducks, dir, state: 'approach', called: false, age: 0, species: 'mallard',
+      kind, id: -1, ducks, dir, state: 'approach', called: false, age: 0, species: 'mallard', golden: false,
       lx: 0, ly: 0, speed: 0, depth: 1, spacing: 0,
       theta: 0, cx: 0, cy: 0, radius: 0, squash: 0.25, baseDepth: 0.7,
       tcx: 0, tcy: 0, tradius: 0, tsquash: 0.25, tdepth: 0.7, history: [],
@@ -641,7 +646,7 @@ export class DuckLayer implements Layer {
         if (d.mode === 'fly') d.root.rotation = lerp(d.root.rotation, 0, Math.min(1, dt * 4));
       }
       const silK = clamp((1 - d.depth) * 0.8 + lowSun * 0.45 + f.sky.darkness * 0.5, 0, 0.9);
-      d.root.tint = lerpColor(f.sky.light, sil, silK);
+      d.root.tint = d.flock?.golden ? lerpColor(0xffd36a, 0xfff3c8, (Math.sin(this.time * 6 + d.seed * 9) + 1) / 2) : lerpColor(f.sky.light, sil, silK);
       d.root.position.set(d.x, d.y);
     }
 
@@ -663,6 +668,16 @@ export class DuckLayer implements Layer {
       fl.s.alpha = fl.fade > 0 ? fl.fade : 1;
     }
     this.drawRings();
+    this.goldenSparkle -= dt;
+    if (this.goldenSparkle <= 0) {
+      this.goldenSparkle = 0.14;
+      for (const fl of this.flocks) {
+        if (!fl.golden || fl.kind !== 'hunt') continue;
+        const live = fl.ducks.filter((d) => d.flock === fl && d.mode === 'fly');
+        const d = live[Math.floor(this.rnd() * live.length)];
+        if (d) this.fx.sparkle(d.x, d.y, l.scale * 0.45, 2);
+      }
+    }
     const ch = this.waterView.children;
     if (ch.length > 1) ch.sort((a, b) => a.y - b.y);
   }

@@ -17,6 +17,8 @@ import type { FeatureId } from '../data/features';
 /** A flock of ducks moving through the hunt pipeline. */
 export interface FlockState {
   id: number;
+  /** A golden flock: bots leave it alone; shoot it yourself for a bonus. */
+  golden?: boolean;
   species: SpeciesId;
   size: number;
   /** Seconds spent in its current queue (for patience timeouts). */
@@ -134,6 +136,8 @@ export interface GameState {
   };
   /** The goose field (opens with the Sporting Club). Flock ids share hunt.nextFlockId. */
   field: GroundState;
+  /** Sim seconds until the next golden flock. */
+  goldenTimer: number;
   bots: Record<BotId, BotState>;
   /** How many of each bot type work each job (or rest on the bench). */
   assign: Record<BotId, Partial<Record<Slot, number>>>;
@@ -214,6 +218,8 @@ export interface GameState {
     manualActions: number;
     /** Geese and cranes brought in from the field. */
     geese: number;
+    /** Golden flocks shot by hand. */
+    goldenShot: number;
     /** Hand actions per hunt step (the on-marsh hints stop after a couple each). */
     manualByJob: Partial<Record<string, number>>;
     /** Times the player moved a bot on the Job Board. */
@@ -285,6 +291,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       lastManualAt: -999,
     },
     field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
+    goldenTimer: 200,
     bots: createBotStates(),
     assign: createAssignments(),
     jobs: createJobs(),
@@ -317,6 +324,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       shots: 0,
       manualActions: 0,
       geese: 0,
+      goldenShot: 0,
       manualByJob: {},
       botMoves: 0,
       birdsByWeather: {},

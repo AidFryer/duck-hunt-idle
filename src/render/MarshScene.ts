@@ -160,7 +160,7 @@ export class MarshScene {
         this.blind.driftDecoy();
         return null;
       case 'flockArrived':
-        this.ducks.arrive(e.flockId, e.size, e.species);
+        this.ducks.arrive(e.flockId, e.size, e.species, !!e.golden);
         return null;
       case 'flockPassed':
         this.ducks.spawnFlyover(Math.min(e.size, 6), 0.35, true);
@@ -218,6 +218,7 @@ export class MarshScene {
       case 'streak':
       case 'dailyBonus':
       case 'planEarned':
+      case 'goldenShot':
         return null;
       case 'lodgeBuilt': {
         const a = this.layout.anchors.lodge;

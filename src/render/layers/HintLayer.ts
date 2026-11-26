@@ -77,6 +77,12 @@ const HINT_TAPS = 2;
 
 /** What the hint ring should point at next on a ground (null once the player knows the ropes). */
 export function chooseHint(state: GameState, g: GroundId, ducks: DuckLayer, words: boolean): HintTarget | null {
+  // A golden flock is always worth pointing out.
+  const gh = ground(state, g);
+  const goldLow = gh.committed.find((f) => f.golden);
+  if (goldLow) return { kind: 'flock', id: goldLow.id, label: 'Shoot the golden flock!' };
+  const goldHigh = gh.incoming.find((f) => f.golden);
+  if (goldHigh) return { kind: 'flock', id: goldHigh.id, label: 'Golden flock! Tap to call it in' };
   const jobs = GROUND_JOBS[g];
   const done = state.stats.manualByJob;
   const fresh = (j: string) => (done[j] ?? 0) < HINT_TAPS;

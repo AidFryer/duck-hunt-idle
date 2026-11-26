@@ -448,7 +448,7 @@ export class FieldScene {
         }
         return null;
       case 'flockArrived':
-        this.ducks.arrive(e.flockId, e.size, e.species);
+        this.ducks.arrive(e.flockId, e.size, e.species, !!e.golden);
         return null;
       case 'flockPassed':
         this.ducks.spawnFlyover(Math.min(e.size, 8), 0.35, true, 'canadaGoose');

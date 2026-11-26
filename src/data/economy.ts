@@ -58,6 +58,28 @@ export const FIELD = {
   maxDowned: 40,
 } as const;
 
+/**
+ * Golden flocks: now and then a shimmering flock arrives that the bots leave
+ * alone. Call it in and shoot it yourself for a big bonus.
+ */
+export const GOLDEN = {
+  /** Lodge level before they start showing up. */
+  fromLodge: 2,
+  /** Sim seconds between golden flocks (random in this range, at good activity). */
+  minGap: 150,
+  maxGap: 330,
+  /** Golden flocks don't wait around. */
+  incomingPatience: 16,
+  committedPatience: 10,
+  sizeMult: 1.5,
+  /** Bonus is this many seconds of current income (at least minBonus coins). */
+  bonusSeconds: 90,
+  minBonus: 150,
+  feathers: 20,
+  /** Share of golden flocks that go to the goose field once it's open. */
+  fieldShare: 0.35,
+} as const;
+
 /** Where you can hunt. */
 export type GroundId = 'marsh' | 'field';
 

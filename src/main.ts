@@ -160,6 +160,7 @@ const EVENT_SOUND: Partial<Record<SimEvent['type'], Sfx>> = {
   lodgeBuilt: 'season',
   planEarned: 'chime',
   rungBuilt: 'levelUp',
+  goldenShot: 'chime',
 };
 
 function shake(strength: number): void {
@@ -262,6 +263,18 @@ function onEvent(e: SimEvent, at: Point | null): void {
       break;
     case 'flockFlared':
       if (at) feedback.float('Flared off', at.x, at.y, 'info');
+      break;
+    case 'goldenShot':
+      if (lastTapAt) feedback.float(`+${formatNumber(e.coins, n)} golden bonus!`, lastTapAt.x, lastTapAt.y - 50, 'coins');
+      feedback.toast(`Golden flock! +${formatNumber(e.coins, n)} coins and ${e.feathers} feathers.`, 'celebrate', 3500);
+      shake(0.4);
+      break;
+    case 'flockArrived':
+      if (e.golden) {
+        const away = (e.ground === 'field') !== (prefs.get().ground === 'field' && renderer?.ground === 'field');
+        const where = e.ground === 'field' ? 'over the goose field' : 'over the marsh';
+        feedback.toast(`A golden flock is circling ${where}! Call it in and shoot it yourself before it leaves.${away ? ' (Switch over to see it.)' : ''}`, 'good', 5000);
+      }
       break;
     case 'streak':
       if (lastTapAt) {

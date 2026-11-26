@@ -68,3 +68,42 @@ describe('the goose field', () => {
     expect(speciesWeights(s, 8, 'marsh').canadaGoose).toBe(0);
   });
 });
+
+describe('golden flocks', () => {
+  it('show up once the Cabin is built, and bots leave them alone', () => {
+    const s = opened(createInitialState(8));
+    jumpToPhase(s, 'sunrise');
+    s.goldenTimer = 1;
+    const ev: SimEvent[] = [];
+    advance(s, 5, TICK_SECONDS, ev);
+    const golden = s.hunt.incoming.find((f) => f.golden) ?? s.field.incoming.find((f) => f.golden);
+    expect(golden).toBeDefined();
+    // A crew of callers ignores it.
+    s.bots.caller.owned = 20;
+    s.assign.caller = { call: 20 };
+    s.bots.flagger.owned = 20;
+    s.assign.flagger = { flag: 20 };
+    advance(s, 3, TICK_SECONDS, []);
+    const stillThere = [...s.hunt.incoming, ...s.field.incoming].some((f) => f.id === golden!.id);
+    expect(stillThere).toBe(true);
+  });
+
+  it('pays a bonus when you shoot it yourself', () => {
+    const s = opened(createInitialState(9));
+    s.hunt.committed.push({ id: 77, species: 'mallard', size: 8, age: 0, golden: true });
+    const ev: SimEvent[] = [];
+    expect(doAction(s, 'shoot', 'manual', ev, 77)).toBe(true);
+    const bonus = ev.find((e) => e.type === 'goldenShot');
+    expect(bonus).toBeDefined();
+    expect(s.currencies.coins.toNumber()).toBeGreaterThanOrEqual(150);
+    expect(s.stats.goldenShot).toBe(1);
+  });
+
+  it('leaves quickly if nobody calls it', () => {
+    const s = opened(createInitialState(10));
+    s.hunt.incoming.push({ id: 5, species: 'mallard', size: 6, age: 0, golden: true });
+    const ev: SimEvent[] = [];
+    advance(s, 20, TICK_SECONDS, ev);
+    expect(s.hunt.incoming.some((f) => f.id === 5)).toBe(false);
+  });
+});
