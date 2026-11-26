@@ -3,13 +3,17 @@ import type { Prefs } from '../../app/prefs';
 import type { GameControls } from '../controls';
 import { installState, promptInstall } from '../../app/pwa';
 import { useStore } from '../store';
+import { AVATARS, NAME_MAX } from '../../data/avatars';
+import { avatarPortrait } from '../portraits';
 
-export function Settings({ prefs, controls, onPrefs, onClose }: {
+export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
   prefs: Prefs;
   controls: GameControls;
   onPrefs: (p: Prefs) => void;
   onClose: () => void;
+  profile: { name: string; avatar: string };
 }) {
+  const [name, setName] = useState(profile.name);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ text: string; tone: 'good' | 'bad' } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -38,6 +42,36 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
           <h3>Settings</h3>
           <button class="icon-btn icon-btn--dark" onClick={onClose} aria-label="Close settings">✕</button>
         </header>
+
+        <section class="drawer__section">
+          <h4>Your hunter</h4>
+          <label class="row profile-name" for="opt-name">
+            <span>Name</span>
+            <input
+              id="opt-name"
+              type="text"
+              maxLength={NAME_MAX}
+              placeholder="What should Gus call you?"
+              value={name}
+              onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
+              onBlur={() => controls.setProfile(name, profile.avatar)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+            />
+          </label>
+          <div class="avatar-grid" role="radiogroup" aria-label="Profile picture">
+            {AVATARS.map((a) => (
+              <button
+                role="radio"
+                aria-checked={profile.avatar === a.id}
+                class={`avatar-choice ${profile.avatar === a.id ? 'is-on' : ''}`}
+                title={a.name}
+                onClick={() => controls.setProfile(name, a.id)}
+              >
+                <img src={avatarPortrait(a.id)} alt={a.name} />
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section class="drawer__section">
           <h4>Sound</h4>

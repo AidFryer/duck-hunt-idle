@@ -70,7 +70,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
-        <Moments onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
+        <Moments greetName={hud.profile.name} onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
         <RhythmMeter hud={hud} />
         {hud.field.open && (
           <button class="ground-switch" onClick={() => controls.setGround(ground === 'field' ? 'marsh' : 'field')}>
@@ -114,6 +114,8 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
                   step={tStep}
                   onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
                   onSkip={finishTutorial}
+                  name={hud.profile.name}
+                  onName={(nm) => controls.setProfile(nm, hud.profile.avatar)}
                 />
               ) : null}
             />
@@ -129,7 +131,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       <OfflineCard notation={n} />
       <SeasonCeremony />
       {problems && <ProblemLog hud={hud} controls={controls} onClose={() => setProblems(false)} />}
-      {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} />}
+      {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} profile={hud.profile} />}
     </div>
   );
 }

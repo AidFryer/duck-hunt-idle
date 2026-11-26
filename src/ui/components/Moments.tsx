@@ -14,12 +14,12 @@ import { portrait } from '../portraits';
 import { LodgeArt } from './LodgeArt';
 
 /** Shows queued "new Field Guide entry" / "patch earned" cards one at a time. */
-export function Moments({ onOpen }: { onOpen: (feature: string) => void }) {
+export function Moments({ onOpen, greetName = '' }: { onOpen: (feature: string) => void; greetName?: string }) {
   const queue = useStore(moments);
   const m = queue[0];
   useEffect(() => {
     if (!m || m.kind === 'feature' || m.kind === 'daily' || m.kind === 'lodge') return;
-    const t = setTimeout(popMoment, 4200);
+    const t = setTimeout(popMoment, m.kind === 'species' ? 2200 : 3000);
     return () => clearTimeout(t);
   }, [m]);
   if (!m) return null;
@@ -98,7 +98,7 @@ export function Moments({ onOpen }: { onOpen: (feature: string) => void }) {
           <span class="moment__tag">First Light</span>
           <h3>A new day on the marsh</h3>
           <p class="away-card__gus">
-            "Mornin'! Coffee's on, and the guests left a little something for you."
+            "Mornin'{greetName ? `, ${greetName}` : ''}! Coffee's on, and the guests left a little something for you."
             <span>— {KEEPER_NAME}</span>
           </p>
           <ul class="stage-card__points">

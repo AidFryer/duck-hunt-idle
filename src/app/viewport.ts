@@ -20,6 +20,7 @@ function isIosBrowser(): boolean {
 
 export function setupViewport(): void {
   document.documentElement.classList.toggle('ios-browser', isIosBrowser());
+  document.documentElement.classList.toggle('ios-standalone', isIosStandalone());
   const apply = () => {
     let h = window.innerHeight;
     if (isIosStandalone()) {

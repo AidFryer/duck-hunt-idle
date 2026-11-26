@@ -1,3 +1,4 @@
+import { useState } from 'preact/hooks';
 import { KEEPER_NAME, LAB_NAME } from '../../data/goals';
 import type { HudSnapshot } from '../hudState';
 
@@ -23,8 +24,9 @@ const TEXT: Record<TutorialStep, string> = {
 };
 
 /** A short, skippable first-run walkthrough voiced by Gus. */
-export function Tutorial({ step, onNext, onSkip }: { step: TutorialStep; onNext: () => void; onSkip: () => void }) {
+export function Tutorial({ step, onNext, onSkip, name = '', onName }: { step: TutorialStep; onNext: () => void; onSkip: () => void; name?: string; onName?: (n: string) => void }) {
   const waiting = step !== 'welcome' && step !== 'done';
+  const [draft, setDraft] = useState(name);
   return (
     <div class={`tutorial tutorial--inline tutorial--${step}`} role="dialog" aria-label="Tutorial">
       <div class="keeper__portrait" aria-hidden="true">
@@ -34,9 +36,20 @@ export function Tutorial({ step, onNext, onSkip }: { step: TutorialStep; onNext:
       </div>
       <div class="tutorial__bubble" key={step}>
         <p>{TEXT[step]}</p>
+        {step === 'welcome' && onName && (
+          <input
+            class="tutorial__name"
+            type="text"
+            maxLength={18}
+            placeholder="Your name (optional)"
+            value={draft}
+            onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
+            onBlur={() => onName(draft)}
+          />
+        )}
         <div class="tutorial__actions">
           {!waiting && (
-            <button class="btn btn--primary btn--small" onClick={onNext}>
+            <button class="btn btn--primary btn--small" onClick={() => { if (step === 'welcome' && onName) onName(draft); onNext(); }}>
               {step === 'done' ? "Let's go" : 'Show me'}
             </button>
           )}

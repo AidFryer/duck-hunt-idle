@@ -38,7 +38,7 @@ export function LodgePanel({ hud, controls, notation }: { hud: HudSnapshot; cont
         <LodgeArt level={l.level} size={92} />
         <div>
           <span class="goal__tag">Lodge level {l.level}</span>
-          <h3>{l.name}</h3>
+          <h3>{hud.profile.name ? `${hud.profile.name}'s ${l.name}` : l.name}</h3>
           {n && <p class="lodge-panel__next">Next: the {n.name}</p>}
           {!n && <p class="lodge-panel__next">The finest lodge on the flyway.</p>}
         </div>

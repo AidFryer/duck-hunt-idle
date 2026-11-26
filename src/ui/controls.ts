@@ -17,6 +17,7 @@ export interface GameControls {
   buyAcre(): boolean;
   buyUpgrade(id: UpgradeId): boolean;
   buildLodge(): boolean;
+  setProfile(name: string, avatar: string): void;
   buyRung(id: RungId): boolean;
   addCard(kind: NodeKind): boolean;
   removeCard(id: number): boolean;

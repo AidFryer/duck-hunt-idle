@@ -4,7 +4,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -138,6 +138,8 @@ export interface GameState {
   field: GroundState;
   /** Sim seconds until the next golden flock. */
   goldenTimer: number;
+  /** The player's name and picture. */
+  profile: { name: string; avatar: string };
   bots: Record<BotId, BotState>;
   /** How many of each bot type work each job (or rest on the bench). */
   assign: Record<BotId, Partial<Record<Slot, number>>>;
@@ -292,6 +294,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     },
     field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
     goldenTimer: 200,
+    profile: { name: '', avatar: 'hunter' },
     bots: createBotStates(),
     assign: createAssignments(),
     jobs: createJobs(),

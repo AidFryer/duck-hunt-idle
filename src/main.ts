@@ -23,6 +23,7 @@ import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
 import { installState } from './app/pwa';
+import { NAME_MAX } from './data/avatars';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
@@ -429,6 +430,11 @@ const controls: GameControls = {
     updatePrefs({ ...prefs.get(), ground: next });
     renderer?.setGround(next);
     hud.set(snapshot(state));
+  },
+  setProfile(name, avatar) {
+    state.profile = { name: name.trim().slice(0, NAME_MAX), avatar };
+    hud.set(snapshot(state));
+    save();
   },
   buildLodge() {
     const ok = buildLodge(state, runner.sink);

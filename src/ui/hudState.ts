@@ -183,6 +183,7 @@ export interface HudSnapshot {
   patches: number;
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string }[];
   lodge: LodgeSnapshot;
+  profile: { name: string; avatar: string };
   plans: Record<BotId, PlanSnapshot>;
   ladder: Record<BotId, RungSnapshot[]>;
   offlineHours: number;
@@ -508,6 +509,7 @@ export function snapshot(state: GameState): HudSnapshot {
       };
     }),
     lodge: lodgeSnap(state),
+    profile: { ...state.profile },
     plans: Object.fromEntries(BOT_ORDER.map((id) => [id, planSnap(state, id)])) as Record<BotId, PlanSnapshot>,
     ladder: Object.fromEntries(BOT_ORDER.map((id) => [id, ladderFor(id).map((r) => rungSnap(state, r.id))])) as Record<BotId, RungSnapshot[]>,
     offlineHours: offlineCapSeconds(state) / 3600,

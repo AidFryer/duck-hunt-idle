@@ -2959,18 +2959,16 @@ select {
 
 /* Phones: the marsh is the game, so it gets most of the screen on the Marsh
    tab and a little under half on the others. */
-.layout {
-  grid-template-rows: minmax(220px, 46%) minmax(0, 1fr);
-  transition: grid-template-rows 0.35s ease;
-}
-
+/* One split for every tab, so switching tabs never resizes the marsh. */
+.layout,
 .layout--marsh {
-  grid-template-rows: minmax(300px, 68%) minmax(0, 1fr);
+  grid-template-rows: minmax(240px, 56%) minmax(0, 1fr);
 }
 
 @media (max-height: 640px) {
+  .layout,
   .layout--marsh {
-    grid-template-rows: minmax(240px, 60%) minmax(0, 1fr);
+    grid-template-rows: minmax(220px, 52%) minmax(0, 1fr);
   }
 }
 
@@ -3119,7 +3117,7 @@ select {
 .rhythm {
   position: absolute;
   left: 10px;
-  bottom: 10px;
+  top: calc(var(--hud-top) + 44px);
   z-index: 3;
   display: grid;
   grid-template-columns: auto auto;
@@ -3630,7 +3628,7 @@ select {
 .ground-switch {
   position: absolute;
   right: 10px;
-  top: calc(max(8px, env(safe-area-inset-top)) + 44px);
+  top: calc(var(--hud-top) + 44px);
   z-index: 3;
   min-height: 40px;
   padding: 8px 14px;
@@ -3695,4 +3693,88 @@ select {
 .crew-note.is-busy {
   color: var(--c-wood);
   background: var(--c-cream);
+}
+
+/* Where the HUD starts. The iPhone home-screen app softens whatever sits right
+   under the status bar, so the HUD sits a little lower there. */
+:root {
+  --hud-top: max(8px, env(safe-area-inset-top));
+}
+
+.ios-standalone {
+  --hud-top: calc(env(safe-area-inset-top) + 18px);
+}
+
+.topbar {
+  padding-top: var(--hud-top);
+}
+
+.rhythm {
+  bottom: auto;
+}
+
+/* ============================================================ profile */
+
+.avatar-btn {
+  padding: 0;
+  overflow: hidden;
+  background: var(--c-cream);
+}
+
+.avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: linear-gradient(#f3dcb4, #e9c79a);
+}
+
+.profile-name input {
+  flex: 1;
+  max-width: 220px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-panelEdge);
+  border-radius: 10px;
+  background: #fffaf0;
+  font: inherit;
+  color: var(--ui-text);
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.avatar-choice {
+  aspect-ratio: 1;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: linear-gradient(#f3dcb4, #e9c79a);
+  cursor: pointer;
+}
+
+.avatar-choice img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.avatar-choice.is-on {
+  border-color: var(--c-wood);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.2);
+}
+
+.tutorial__name {
+  width: 100%;
+  min-height: 40px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-panelEdge);
+  border-radius: 10px;
+  background: #fffaf0;
+  font: inherit;
+  color: var(--ui-text);
 }

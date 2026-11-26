@@ -74,6 +74,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     void _gone;
     return { ...rest, version: 10 };
   },
+  // v10 → v11 adds the player profile (defaults fill it in).
+  10: (s) => ({ ...s, version: 11 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

@@ -4,6 +4,7 @@ import type { Notation } from '../../util/format';
 import type { HudSnapshot } from '../hudState';
 import { activityLabel, windLabel } from '../hudState';
 import { Counter } from './Counter';
+import { avatarPortrait } from '../portraits';
 import { Icon } from './Icon';
 import type { IconName } from '../tabs';
 import type { WeatherId } from '../../data/weather';
@@ -69,8 +70,8 @@ export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnap
             {hud.openProblems > 0 && <span class="problems-btn__count">{hud.openProblems}</span>}
           </button>
         )}
-        <button class="icon-btn" onClick={onSettings} aria-label="Settings" title="Settings">
-          <Icon name="gear" size={20} />
+        <button class="icon-btn avatar-btn" onClick={onSettings} aria-label={`${hud.profile.name || 'Your profile'} and settings`} title={hud.profile.name || 'Profile and settings'}>
+          <img src={avatarPortrait(hud.profile.avatar)} alt="" />
         </button>
       </div>
     </header>
@@ -84,7 +85,7 @@ export function RhythmMeter({ hud }: { hud: HudSnapshot }) {
   return (
     <div class={`rhythm ${hud.streak >= 10 ? 'is-max' : ''}`} aria-live="off" title="Tap quickly in a row to build your rhythm. Birds you fetch by hand pay extra.">
       <span class="rhythm__label">Rhythm ×{hud.streak}</span>
-      <span class="rhythm__bonus">+{pct}% on birds you fetch</span>
+      <span class="rhythm__bonus">+{pct}%</span>
       <span class="rhythm__bar"><span style={{ width: `${Math.round(hud.streakLeft * 100)}%` }} /></span>
     </div>
   );
