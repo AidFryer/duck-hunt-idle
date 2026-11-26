@@ -5,6 +5,7 @@ import {
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
 import { currentGoal } from '../data/goals';
+import { FEATURE_ORDER, FEATURES, type FeatureId } from '../data/features';
 import { ACHIEVEMENTS } from '../data/achievements';
 import { SPECIES, SPECIES_ORDER, type SpeciesId } from '../data/species';
 import { UPGRADE_ORDER, UPGRADES, type UpgradeId } from '../data/upgrades';
@@ -121,6 +122,8 @@ export interface HudSnapshot {
   patches: number;
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean }[];
   offlineHours: number;
+  unlocks: Record<FeatureId, boolean>;
+  featureProgress: Record<FeatureId, [number, number]>;
   workflow: {
     unlocked: boolean;
     unlockCoins: number;
@@ -345,6 +348,8 @@ export function snapshot(state: GameState): HudSnapshot {
       };
     }),
     offlineHours: offlineCapSeconds(state) / 3600,
+    unlocks: Object.fromEntries(FEATURE_ORDER.map((f) => [f, state.unlocks[f] !== undefined])) as Record<FeatureId, boolean>,
+    featureProgress: Object.fromEntries(FEATURE_ORDER.map((f) => [f, FEATURES[f].progress(state)])) as Record<FeatureId, [number, number]>,
     workflow: workflowSnap(state),
     season: (() => {
       const starsNow = starsFor(state.season.coins);

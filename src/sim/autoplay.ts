@@ -77,9 +77,11 @@ interface Option {
 
 function options(s: GameState): Option[] {
   const opts: Option[] = [];
+  if (s.unlocks.bots === undefined) return opts;
   for (const id of new Set(wanted(s))) {
     opts.push({ price: botPrice(id, s.bots[id].owned, 1, botPriceMult(s, id)), buy: () => buyBot(s, id, 1) > 0 });
   }
+  if (s.unlocks.upgrades === undefined) return opts;
   if (s.stats.lifetimeCoins.gte(ACRES.revealAtCoins)) opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
   for (const u of UPGRADE_ORDER) {
     const lvl = s.upgrades[u] ?? 0;
@@ -105,7 +107,7 @@ function shop(s: GameState): void {
 }
 
 function buildChain(s: GameState): void {
-  if (!workflowUnlocked(s) || workflowEval(s).complete) return;
+  if (s.unlocks.workflows === undefined || !workflowUnlocked(s) || workflowEval(s).complete) return;
   const kinds = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log'] as const;
   const ids: number[] = [];
   for (const k of kinds) {

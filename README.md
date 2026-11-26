@@ -96,8 +96,9 @@ Rules the code follows:
 
 `tests/balance.test.ts` plays two hours with a scripted attentive player
 (`src/sim/autoplay.ts`) and fails if the pace drifts: first bot within
-seconds, 1K coins in about 5 minutes, first Flyway Star in about an hour,
-later seasons in about 20 minutes.
+seconds; new stages open at about 4 minutes (Upgrades), 10 (Field Guide),
+20 (Job Board), an hour (Workflows) and two hours (Legacy); the first Flyway
+Star takes about 2–2.5 hours; later seasons go faster thanks to stars and perks.
 
 ## Build status
 

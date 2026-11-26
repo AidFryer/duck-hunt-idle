@@ -91,7 +91,7 @@ export class TextureLibrary {
     if (!tex) {
       const recipe = recipes[key] ?? speciesRecipe(key);
       if (!recipe) throw new Error(`TextureLibrary: unknown texture "${key}"`);
-      tex = Texture.from({ resource: recipe.paint(), resolution: recipe.resolution });
+      tex = Texture.from({ resource: recipe.paint(), resolution: recipe.resolution, autoGenerateMipmaps: true, scaleMode: 'linear' });
       this.cache.set(key, tex);
     }
     return tex;

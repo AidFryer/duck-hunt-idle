@@ -10,7 +10,7 @@ export class OverlayLayer implements Layer {
 
   constructor(tex: TextureLibrary) {
     this.grain = new TilingSprite({ texture: tex.get('grain'), width: 100, height: 100 });
-    this.grain.alpha = 0.26;
+    this.grain.alpha = 0.12;
     this.vignette = new Sprite(tex.get('vignette'));
     this.view.addChild(this.grain, this.vignette);
     this.view.eventMode = 'none';

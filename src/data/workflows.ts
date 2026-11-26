@@ -49,7 +49,7 @@ export const SPECIAL_ORDER: readonly SpecialNode[] = ['fogBonus', 'rareFilter', 
 
 export const WORKFLOW = {
   /** Lifetime coins before the Workflows tab opens. */
-  unlockCoins: 2500,
+  unlockCoins: 25_000,
   /** Bonus to every hunt job per correctly ordered link. */
   perLink: 0.04,
   /** Extra bonus for a complete Scout → … → Log chain. */

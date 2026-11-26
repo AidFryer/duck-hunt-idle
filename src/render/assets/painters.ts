@@ -150,7 +150,7 @@ export function paintCloud(variant: number): Canvas {
     const hump = Math.sin(p * Math.PI);
     const r = flat ? 18 + rnd() * 14 : 20 + hump * 26 + rnd() * 12;
     const y = h - 26 - hump * (flat ? 10 : 28) - rnd() * 8;
-    softBlob(ctx, x, y, r, palette.white, 0.75, 0.45);
+    softBlob(ctx, x, y, r, palette.white, 0.85, 0.72);
   }
   // Base shading: cooler underside.
   ctx.globalCompositeOperation = 'source-atop';
@@ -204,10 +204,10 @@ export function paintGrain(): Canvas {
 
 export function paintVignette(): Canvas {
   const t = createPaintTarget(256, 256, 1);
-  const g = t.ctx.createRadialGradient(128, 118, 60, 128, 128, 182);
+  const g = t.ctx.createRadialGradient(128, 150, 90, 128, 140, 200);
   g.addColorStop(0, 'rgba(20,12,6,0)');
-  g.addColorStop(0.7, 'rgba(20,12,6,0.12)');
-  g.addColorStop(1, 'rgba(20,12,6,0.5)');
+  g.addColorStop(0.75, 'rgba(20,12,6,0.06)');
+  g.addColorStop(1, 'rgba(20,12,6,0.28)');
   t.ctx.fillStyle = g;
   t.ctx.fillRect(0, 0, 256, 256);
   return t.canvas;

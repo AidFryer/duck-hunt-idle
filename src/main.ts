@@ -47,6 +47,10 @@ import { formatNumber } from './util/format';
 document.title = GAME_TITLE;
 applyCssTokens();
 setupPwa();
+// iOS ignores user-scalable=no; block pinch and double-tap zoom directly.
+for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) {
+  document.addEventListener(ev, (e) => e.preventDefault(), { passive: false });
+}
 
 // --- Preferences & save -----------------------------------------------------
 const prefs = new Store<Prefs>(loadPrefs());
@@ -170,6 +174,9 @@ function onEvent(e: SimEvent, at: Point | null): void {
     }
     case 'weatherChanged':
       feedback.toast(`${WEATHER[e.to].name}: ${WEATHER[e.to].blurb}`, e.to === 'clear' ? 'info' : 'good', 4000);
+      break;
+    case 'featureUnlocked':
+      pushMoment({ kind: 'feature', id: e.feature });
       break;
     case 'seasonClosed':
       seasonView.set({ season: e.season, stars: e.stars, flyway: e.flyway });

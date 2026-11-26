@@ -1,7 +1,7 @@
 /** Small helpers for painting procedural textures with Canvas 2D. */
 
 /** Textures are painted at this multiple of their design size for crispness. */
-export const PAINT_SCALE = 2;
+export const PAINT_SCALE = 3;
 
 export interface PaintTarget {
   canvas: HTMLCanvasElement;

@@ -10,7 +10,8 @@ html,
 body {
   margin: 0;
   height: 100%;
-  background: var(--ui-bg, #1f1a17);
+  /* Matches the panel so nothing dark shows at the screen's edges. */
+  background: var(--ui-panel, #eadbbe);
   color: var(--ui-text, #2d2520);
   font-family: var(--ui-fontBody);
   -webkit-font-smoothing: antialiased;
@@ -52,7 +53,10 @@ button {
 /* Portrait phones: scene on top, tabbed panel below. */
 .layout {
   display: grid;
-  height: 100%;
+  /* Pinned to the real screen edges: avoids iOS home-screen apps coming up
+     short by the status bar's height. */
+  position: fixed;
+  inset: 0;
   grid-template-rows: minmax(260px, 50%) minmax(0, 1fr);
   grid-template-columns: 100%;
 }
@@ -164,7 +168,6 @@ button {
   border-radius: 999px;
   background: rgba(244, 233, 212, 0.88);
   box-shadow: 0 3px 10px var(--ui-shadow);
-  backdrop-filter: blur(4px);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -196,7 +199,6 @@ button {
   border-radius: 12px;
   background: rgba(45, 37, 32, 0.62);
   color: var(--c-cream);
-  backdrop-filter: blur(4px);
   box-shadow: 0 3px 10px var(--ui-shadow);
 }
 
@@ -674,7 +676,6 @@ button {
   background: rgba(45, 37, 32, 0.62);
   color: var(--c-cream);
   cursor: pointer;
-  backdrop-filter: blur(4px);
   box-shadow: 0 3px 10px var(--ui-shadow);
   transition: transform 0.12s;
 }
@@ -940,7 +941,6 @@ button {
   font-weight: 700;
   text-align: center;
   box-shadow: 0 4px 14px var(--ui-shadow);
-  backdrop-filter: blur(4px);
 }
 
 .toast--good {
@@ -2785,4 +2785,158 @@ button {
 
 .tutorial__skip {
   margin-left: auto;
+}
+
+/* ============================================================ phone fixes & theme pass */
+
+/* No double-tap zoom, no text-selection callouts while playing. */
+html,
+body,
+button,
+.scene,
+.panel {
+  touch-action: manipulation;
+}
+
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+textarea,
+input,
+select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Opaque top-bar pills (no frosted-glass blur over the scene). */
+.chip {
+  background: rgba(244, 233, 212, 0.96);
+}
+
+.clock,
+.icon-btn {
+  background: rgba(45, 37, 32, 0.82);
+}
+
+.conditions span {
+  background: rgba(45, 37, 32, 0.72);
+}
+
+.weather-pill--fog,
+.weather-pill--drizzle,
+.weather-pill--coldFront {
+  background: rgba(45, 37, 32, 0.72) !important;
+  color: var(--c-cream) !important;
+}
+
+/* One warm wood palette for the panel instead of per-stage accent colors. */
+.hunt-btn.is-ready,
+.hunt-btn--decoys.is-ready,
+.hunt-btn--call.is-ready,
+.hunt-btn--shoot.is-ready,
+.hunt-btn--retrieve.is-ready {
+  box-shadow: 0 4px 0 var(--c-wood);
+}
+
+.hunt-btn.is-hint.is-ready::after {
+  border-color: var(--c-woodLight);
+}
+
+.hunt-btn__auto {
+  background: rgba(107, 74, 47, 0.12);
+  color: var(--c-wood);
+}
+
+.tab__dot {
+  background: var(--c-cream);
+  box-shadow: 0 0 0 2px var(--c-wood);
+}
+
+.queue-item.is-hot {
+  background: rgba(244, 233, 212, 0.14);
+  animation: none;
+}
+
+.queue-item.is-warn strong {
+  color: var(--c-cream);
+}
+
+.job-card.is-backed-up {
+  box-shadow:
+    0 6px 10px rgba(40, 24, 10, 0.3),
+    0 0 0 3px var(--c-woodLight);
+}
+
+.job-stats .is-hot dd,
+.stats .is-hot dd {
+  color: var(--c-wood);
+}
+
+.ledger-bar.is-hot {
+  border-color: var(--c-woodLight);
+}
+
+.perk.is-buyable {
+  border-color: var(--c-woodLight);
+  box-shadow: 0 0 0 3px rgba(185, 130, 79, 0.3);
+}
+
+.btn--toggle.is-on,
+.btn.is-current {
+  background: var(--c-wood);
+  box-shadow: 0 3px 0 var(--c-woodDark);
+}
+
+/* ------------------------------------------------------------ stages */
+
+.tab__lock {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  color: var(--c-cream);
+  opacity: 0.75;
+  line-height: 0;
+}
+
+.stage-progress {
+  width: min(260px, 100%);
+}
+
+.stage-card h3 {
+  margin: 6px 0 0;
+}
+
+.stage-card__points {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tab-help {
+  margin: 12px 16px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--ui-panelShade);
+  font-size: 13px;
+}
+
+.tab-help summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--c-wood);
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.tab-help ul {
+  margin: 6px 0 2px;
+  padding-left: 18px;
+  line-height: 1.45;
+  color: var(--ui-textSoft);
 }

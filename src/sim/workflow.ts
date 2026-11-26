@@ -140,7 +140,7 @@ export function workflowEval(state: GameState): WorkflowEval {
 }
 
 export function workflowUnlocked(state: GameState): boolean {
-  return state.stats.lifetimeCoins.gte(WORKFLOW.unlockCoins) || state.stats.seasonsClosed > 0;
+  return state.unlocks.workflows !== undefined || state.stats.lifetimeCoins.gte(WORKFLOW.unlockCoins) || state.stats.seasonsClosed > 0;
 }
 
 export function cardUnlocked(state: GameState, kind: NodeKind): boolean {

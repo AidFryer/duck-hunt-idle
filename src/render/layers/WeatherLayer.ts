@@ -17,7 +17,7 @@ interface Drop {
 /** Visual strengths per weather: rain, snow, tint color & alpha. */
 const LOOK: Record<WeatherId, { rain: number; snow: number; tint: number; tintAlpha: number }> = {
   clear: { rain: 0, snow: 0, tint: 0xffffff, tintAlpha: 0 },
-  fog: { rain: 0, snow: 0, tint: 0xdfe6ea, tintAlpha: 0.12 },
+  fog: { rain: 0, snow: 0, tint: 0xdfe6ea, tintAlpha: 0.05 },
   drizzle: { rain: 1, snow: 0, tint: 0x8a98a8, tintAlpha: 0.16 },
   coldFront: { rain: 0, snow: 0.8, tint: 0xc8daf0, tintAlpha: 0.14 },
   wind: { rain: 0, snow: 0, tint: 0xffffff, tintAlpha: 0 },

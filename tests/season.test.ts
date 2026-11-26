@@ -1,6 +1,7 @@
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
 import { WORKFLOW } from '../src/data/workflows';
+import { BOTS } from '../src/data/economy';
 import { buyBot, birdValue, botPrice, botPriceMult } from '../src/sim/economy';
 import type { SimEvent } from '../src/sim/events';
 import { buyPerk, closeSeason, coinsForNextStar, nextFlyway, starMultiplier, starsFor } from '../src/sim/prestige';
@@ -137,7 +138,7 @@ describe('prestige', () => {
     expect(buyPerk(s, 'unionRates')).toBe(true);
     expect(buyPerk(s, 'longNights')).toBe(true);
     expect(botPriceMult(s, 'foreman')).toBe(0.5);
-    expect(botPrice('foreman', 0, 1, botPriceMult(s, 'foreman')).coins.toNumber()).toBe(450);
+    expect(botPrice('foreman', 0, 1, botPriceMult(s, 'foreman')).coins.toNumber()).toBe(Math.ceil(BOTS.foreman.costCoins / 2));
     expect(offlineCapSeconds(s)).toBe(10 * 3600);
     s.season.coins = new Decimal(1e6);
     closeSeason(s, 'central');

@@ -3,6 +3,7 @@ import type { UpgradeId } from '../data/upgrades';
 import type { WeatherId } from '../data/weather';
 import type { FlywayId } from '../data/flyways';
 import type { PerkId } from '../data/legacy';
+import type { FeatureId } from '../data/features';
 
 export type ActionSource = 'manual' | BotId;
 
@@ -36,6 +37,7 @@ export type SimEvent =
   | { type: 'newSpecies'; species: SpeciesId }
   | { type: 'achievement'; id: string }
   | { type: 'workflowChanged' }
+  | { type: 'featureUnlocked'; feature: FeatureId }
   | { type: 'perkBought'; perk: PerkId }
   | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }
   | { type: 'flockReturned'; flockId: number }

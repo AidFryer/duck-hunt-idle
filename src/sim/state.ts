@@ -3,7 +3,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -11,6 +11,7 @@ import { UPGRADE_ORDER, type UpgradeId } from '../data/upgrades';
 import type { FlywayId } from '../data/flyways';
 import type { PerkId } from '../data/legacy';
 import type { NodeKind } from '../data/workflows';
+import type { FeatureId } from '../data/features';
 
 /** A flock of ducks moving through the hunt pipeline. */
 export interface FlockState {
@@ -172,6 +173,8 @@ export interface GameState {
     nodes: WorkflowNode[];
     links: WorkflowLink[];
   };
+  /** Tabs/features unlocked so far → sim time unlocked. Permanent. */
+  unlocks: Partial<Record<FeatureId, number>>;
   /** Flocks that left but may circle back (Central Flyway). */
   returning: { flock: FlockState; at: number }[];
   stats: {
@@ -266,6 +269,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     legacy: { stars: 0, earned: 0, perks: {} },
     workflow: { nextId: 1, nodes: [], links: [] },
     returning: [],
+    unlocks: {},
     stats: {
       lifetimeCoins: new Decimal(0),
       lifetimeFeathers: new Decimal(0),

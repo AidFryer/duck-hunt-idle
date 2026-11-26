@@ -4,7 +4,9 @@ import type { OfflineSummary } from '../sim/offline';
 import { Store } from './store';
 
 /** Big celebratory cards: a new Field Guide entry or a patch sewn on. */
-export type Moment = { kind: 'species'; id: SpeciesId } | { kind: 'patch'; id: string };
+import type { FeatureId } from '../data/features';
+
+export type Moment = { kind: 'species'; id: SpeciesId } | { kind: 'patch'; id: string } | { kind: 'feature'; id: FeatureId };
 
 export const moments = new Store<Moment[]>([]);
 

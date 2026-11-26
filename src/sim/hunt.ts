@@ -1,7 +1,7 @@
 import { ACRES, BOTS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, TINKER, BOT_ORDER, type HuntStage, type JobId } from '../data/economy';
 import { SPECIES } from '../data/species';
 import { WEATHER } from '../data/weather';
-import { checkAchievements } from './achievements';
+import { checkAchievements, checkUnlocks } from './achievements';
 import { clockAt } from './clock';
 import { birdValue, botReliability, extraFlockSize, flockDraw, incomingPatience, maxIncoming, shotFraction, spreadSize } from './economy';
 import { FLYWAYS } from '../data/flyways';
@@ -225,7 +225,10 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   stepTinkers(state, dt, events, table.total.tinker ?? 0);
 
   // Achievements: checked about once a second.
-  if (Math.floor(state.elapsed) !== Math.floor(state.elapsed - dt)) checkAchievements(state, events);
+  if (Math.floor(state.elapsed) !== Math.floor(state.elapsed - dt)) {
+    checkAchievements(state, events);
+    checkUnlocks(state, events);
+  }
 }
 
 /** Problem chance is softened by Tinker Bots on duty. */

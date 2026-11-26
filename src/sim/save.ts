@@ -1,6 +1,7 @@
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER } from '../data/economy';
 import { normalizeAssignments } from './jobs';
+import { checkUnlocks } from './achievements';
 import { createInitialState, SAVE_VERSION, type GameState } from './state';
 
 /**
@@ -39,6 +40,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     const stats = (s.stats ?? {}) as Json;
     return { ...s, season: { number: 1, coins: stats.lifetimeCoins ?? '0' }, version: 5 };
   },
+  // v5 → v6 adds feature stages. Players from before get what they've earned, quietly.
+  5: (s) => ({ ...s, silentUnlocks: true, version: 6 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [
@@ -78,6 +81,11 @@ export function fromPlain(input: Json): GameState {
     g[key] = toDecimal(g[key]);
   }
   normalizeAssignments(state);
+  const st = state as GameState & { silentUnlocks?: boolean };
+  if (st.silentUnlocks) {
+    delete st.silentUnlocks;
+    for (let i = 0; i < 10; i++) checkUnlocks(state);
+  }
   return state;
 }
 

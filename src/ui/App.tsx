@@ -5,9 +5,10 @@ import type { GameControls } from './controls';
 import { feedback } from './feedback';
 import type { HudSnapshot } from './hudState';
 import { type Store, useStore } from './store';
-import { TABS, type TabId } from './tabs';
+import { TAB_FEATURE, TABS, type TabId } from './tabs';
+import { LockedTab } from './components/LockedTab';
+import { TabHelp } from './components/TabHelp';
 import { BotsTab } from './components/BotsTab';
-import { ComingSoon } from './components/ComingSoon';
 import { Icon } from './components/Icon';
 import { JobBoard } from './components/JobBoard';
 import { MarshTab } from './components/MarshTab';
@@ -31,7 +32,6 @@ interface AppProps {
   onSceneHost: (el: HTMLElement) => void;
 }
 
-const BUILT_THROUGH_PHASE = 5;
 
 export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSceneHost }: AppProps) {
   const hud = useStore(hudStore);
@@ -53,6 +53,12 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   }, []);
 
   const active = TABS.find((t) => t.id === tab)!;
+  const isOpen = (id: TabId) => {
+    const f = TAB_FEATURE[id];
+    return f === null || hud.unlocks[f];
+  };
+  const activeFeature = TAB_FEATURE[tab];
+  const activeOpen = isOpen(tab);
   const botsAlert = BOT_ORDER.some((id) => hud.bots[id].revealed && hud.bots[id].affordable);
   const upgradesAlert = hud.acreAffordable || hud.upgrades.some((u) => u.revealed && u.affordable);
   const n = prefs.notation;
@@ -64,7 +70,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
-        <Moments />
+        <Moments onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
         {tutorialOn && tab === 'marsh' && (
           <Tutorial
             step={tStep}
@@ -84,25 +90,27 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               <button
                 role="tab"
                 aria-selected={t.id === tab}
-                class={`tab ${t.id === tab ? 'is-active' : ''} ${t.phase > BUILT_THROUGH_PHASE ? 'is-locked' : ''}`}
+                class={`tab ${t.id === tab ? 'is-active' : ''} ${isOpen(t.id) ? '' : 'is-locked'}`}
                 onClick={() => setTab(t.id)}
               >
                 <Icon name={t.icon} size={20} />
                 <span>{t.label}</span>
-                {alert && <span class="tab__dot" aria-label="Something to buy" />}
+                {alert && isOpen(t.id) && <span class="tab__dot" aria-label="Something to buy" />}
+                {!isOpen(t.id) && <span class="tab__lock" aria-label="Locked"><Icon name="lock" size={12} /></span>}
               </button>
             );
           })}
         </nav>
         <div class="panel__content" role="tabpanel" key={tab}>
+          {!activeOpen && activeFeature && <LockedTab tab={active} feature={activeFeature} hud={hud} />}
+          {activeOpen && activeFeature && <TabHelp feature={activeFeature} />}
           {tab === 'marsh' && <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} tutorial={tutorialOn && welcomed ? tStep : null} />}
-          {tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
-          {tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
-          {tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
-          {tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
-          {tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
-          {tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
-          {active.phase > BUILT_THROUGH_PHASE && <ComingSoon tab={active} />}
+          {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
+          {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
+          {activeOpen && tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
+          {activeOpen && tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
+          {activeOpen && tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
+          {activeOpen && tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
         </div>
       </aside>
 

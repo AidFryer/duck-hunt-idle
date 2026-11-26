@@ -57,7 +57,7 @@ export class MarshScene {
     const tex = this.tex;
     this.sky = new SkyLayer(tex);
     const clouds = (this.clouds = new CloudLayer(tex));
-    const farFog = new FogLayer(tex, [{ at: -0.02, speed: 6, alpha: 0.85, height: 0.6 }]);
+    const farFog = new FogLayer(tex, [{ at: -0.02, speed: 6, alpha: 0.6, height: 0.5 }]);
     const land = (this.land = new LandLayer());
     this.water = new WaterLayer(tex);
     this.fx = new EffectsLayer(tex);
@@ -67,8 +67,8 @@ export class MarshScene {
     this.ducks = new DuckLayer(tex, this.fx);
     this.crew = new CrewLayer(tex, this.fx, this.ducks);
     const nearFog = new FogLayer(tex, [
-      { at: 0.16, speed: 10, alpha: 0.6, height: 0.55 },
-      { at: 0.55, speed: 16, alpha: 0.32, height: 0.7 },
+      { at: 0.16, speed: 10, alpha: 0.4, height: 0.5 },
+      { at: 0.55, speed: 16, alpha: 0.2, height: 0.6 },
     ]);
     const fgReeds = new ReedLayer(tex, 77, foregroundClumps, 0.62);
     this.weather = new WeatherLayer(tex, this.fx);
@@ -170,6 +170,7 @@ export class MarshScene {
       case 'newSpecies':
       case 'achievement':
       case 'workflowChanged':
+      case 'featureUnlocked':
       case 'perkBought':
       case 'flockReturned':
         return null;

@@ -32,7 +32,7 @@ export const WEATHER: Record<WeatherId, WeatherDef> = {
   },
   fog: {
     id: 'fog', name: 'Fog', blurb: 'Thick fog. Ducks fly low and close.',
-    weight: 16, flockRate: 1.6, flockSize: 0.5, decoyDrift: 0.8, problems: 1.1, wind: -0.15, fog: 0.75, rare: 1.5,
+    weight: 16, flockRate: 1.6, flockSize: 0.5, decoyDrift: 0.8, problems: 1.1, wind: -0.15, fog: 0.4, rare: 1.5,
   },
   drizzle: {
     id: 'drizzle', name: 'Drizzle', blurb: 'Soft rain. Birds keep moving.',

@@ -118,10 +118,13 @@ export class Renderer {
     const fps = this.fpsFrames / this.fpsTime;
     this.fpsTime = 0;
     this.fpsFrames = 0;
-    this.slowStreak = fps < 45 ? this.slowStreak + 1 : 0;
-    if (this.slowStreak >= 2 && this.resolution > 1) {
+    // Only step down when the device is really struggling. Phones in
+    // low-power mode run at a steady 30 fps; that's fine, keep them sharp.
+    this.slowStreak = fps < 24 ? this.slowStreak + 1 : 0;
+    const floor = Math.min(2, window.devicePixelRatio || 1);
+    if (this.slowStreak >= 3 && this.resolution > floor) {
       this.slowStreak = 0;
-      this.resolution = Math.max(1, Math.round((this.resolution - 0.5) * 2) / 2);
+      this.resolution = Math.max(floor, Math.round((this.resolution - 0.5) * 2) / 2);
       this.app.renderer.resize(this.app.screen.width, this.app.screen.height, this.resolution);
     }
   }
