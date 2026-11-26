@@ -21,9 +21,9 @@ export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 
 
 export const TABS: readonly TabDef[] = [
   { id: 'marsh', label: 'Marsh', icon: 'marsh', comingSoon: '', phase: 1 },
+  { id: 'guide', label: 'Field Guide', icon: 'book', comingSoon: '', phase: 4 },
   { id: 'bots', label: 'Bots', icon: 'bot', comingSoon: '', phase: 2 },
   { id: 'upgrades', label: 'Upgrades', icon: 'hammer', comingSoon: '', phase: 2 },
-  { id: 'guide', label: 'Field Guide', icon: 'book', comingSoon: '', phase: 4 },
   { id: 'jobs', label: 'Job Board', icon: 'board', comingSoon: '', phase: 3 },
   { id: 'workflows', label: 'Workflows', icon: 'rope', comingSoon: '', phase: 5 },
   { id: 'legacy', label: 'Legacy', icon: 'star', comingSoon: '', phase: 5 },

@@ -34,7 +34,7 @@ export type SimEvent =
   | { type: 'acreRestored'; acres: number }
   | { type: 'upgradeBought'; upgrade: UpgradeId; level: number }
   | { type: 'weatherChanged'; from: WeatherId; to: WeatherId }
-  | { type: 'newSpecies'; species: SpeciesId }
+  | { type: 'newSpecies'; species: SpeciesId; coins: number; feathers: number }
   | { type: 'achievement'; id: string }
   | { type: 'workflowChanged' }
   | { type: 'featureUnlocked'; feature: FeatureId }

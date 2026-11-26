@@ -1,5 +1,5 @@
 import { ACRES, BOTS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type HuntStage, type JobId } from '../data/economy';
-import { SPECIES } from '../data/species';
+import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
 import { clockAt } from './clock';
@@ -46,6 +46,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
   if (!canDo(state, job)) return false;
   if (source === 'manual') {
     state.stats.manualActions += 1;
+    state.stats.manualByJob[job] = (state.stats.manualByJob[job] ?? 0) + 1;
     bumpStreak(state, events);
   }
   const h = state.hunt;
@@ -99,6 +100,21 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
   return true;
 }
 
+/**
+ * A first-of-its-kind bird pays a finder's bonus (the starter mallard
+ * doesn't). It's a reward, so it doesn't count toward unlocks or stars.
+ */
+function discoveryReward(state: GameState, species: SpeciesId): { coins: number; feathers: number } {
+  if (species === 'mallard') return { coins: 0, feathers: 0 };
+  const d = SPECIES[species];
+  const k = DISCOVERY.birds * DISCOVERY.rarity[d.rarity];
+  const coins = Math.round(d.coins * k);
+  const feathers = Math.round(d.feathers * k * 0.5);
+  state.currencies.coins = state.currencies.coins.add(coins);
+  state.currencies.feathers = state.currencies.feathers.add(feathers);
+  return { coins, feathers };
+}
+
 /** Manual actions in quick succession build the streak; a pause resets it. */
 function bumpStreak(state: GameState, events: EventSink): void {
   const h = state.hunt;
@@ -145,7 +161,7 @@ export function doMany(state: GameState, job: 'retrieve' | 'log', count: number,
       if (entry) entry.count += 1;
       else {
         state.guide[species] = { count: 1, firstAt: state.elapsed };
-        events.push({ type: 'newSpecies', species });
+        events.push({ type: 'newSpecies', species, ...discoveryReward(state, species) });
       }
       if (i < EVENT_CAP) events.push({ type: 'retrieved', species, feathers: v.feathers, count: 1, source: src });
       else {

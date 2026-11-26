@@ -72,6 +72,23 @@ describe("Hunter's Rhythm", () => {
   });
 });
 
+describe('discovering a species', () => {
+  it("pays a finder's bonus the first time only", () => {
+    const s = createInitialState(4);
+    s.hunt.downed.push('pintail', 'pintail', 'mallard');
+    const ev: SimEvent[] = [];
+    doAction(s, 'retrieve', 'setter', ev);
+    doAction(s, 'retrieve', 'setter', ev);
+    doAction(s, 'retrieve', 'setter', ev);
+    const found = ev.filter((e) => e.type === 'newSpecies');
+    expect(found).toHaveLength(2);
+    const pin = found.find((e) => e.type === 'newSpecies' && e.species === 'pintail');
+    expect(pin && pin.type === 'newSpecies' && pin.coins).toBeGreaterThan(0);
+    expect(s.currencies.coins.toNumber()).toBe(pin && pin.type === 'newSpecies' ? pin.coins : -1);
+    expect(s.stats.lifetimeCoins.toNumber()).toBe(0); // a reward, not earnings
+  });
+});
+
 describe('First Light daily gift', () => {
   it('skips the very first launch, then gives once per day', () => {
     const s = createInitialState(1);

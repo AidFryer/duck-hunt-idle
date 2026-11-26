@@ -6,7 +6,7 @@ import { Store } from './store';
 /** Big celebratory cards: a new Field Guide entry or a patch sewn on. */
 import type { FeatureId } from '../data/features';
 
-export type Moment = { kind: 'species'; id: SpeciesId } | { kind: 'patch'; id: string } | { kind: 'feature'; id: FeatureId }
+export type Moment = { kind: 'species'; id: SpeciesId; coins: number; feathers: number } | { kind: 'patch'; id: string } | { kind: 'feature'; id: FeatureId }
   | { kind: 'daily'; coins: number; feathers: number };
 
 export const moments = new Store<Moment[]>([]);

@@ -193,6 +193,8 @@ export interface GameState {
     lostToday: number;
     shots: number;
     manualActions: number;
+    /** Hand actions per hunt step (the on-marsh hints stop after a couple each). */
+    manualByJob: Partial<Record<string, number>>;
     /** Times the player moved a bot on the Job Board. */
     botMoves: number;
     birdsByWeather: Partial<Record<WeatherId, number>>;
@@ -289,6 +291,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       lostToday: 0,
       shots: 0,
       manualActions: 0,
+      manualByJob: {},
       botMoves: 0,
       birdsByWeather: {},
       nightBirds: 0,

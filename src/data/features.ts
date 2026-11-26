@@ -25,7 +25,7 @@ const coins = (s: GameState) => s.stats.lifetimeCoins.toNumber();
 
 export const FEATURES: Record<FeatureId, FeatureDef> = {
   bots: {
-    id: 'bots', stage: 2, name: 'Bots',
+    id: 'bots', stage: 3, name: 'Bots',
     requirement: 'Earn 20 coins from logged birds.',
     progress: (s) => [coins(s), 20],
     intro: {
@@ -39,7 +39,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   upgrades: {
-    id: 'upgrades', stage: 3, name: 'Upgrades',
+    id: 'upgrades', stage: 4, name: 'Upgrades',
     requirement: 'Earn 750 coins in total.',
     progress: (s) => [coins(s), 750],
     intro: {
@@ -67,14 +67,15 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   guide: {
-    id: 'guide', stage: 4, name: 'Field Guide',
-    requirement: 'Bring in 200 birds.',
-    progress: (s) => [s.stats.lifetimeBirds, 200],
+    id: 'guide', stage: 2, name: 'Field Guide',
+    requirement: 'Bring in your first bird.',
+    progress: (s) => [s.stats.lifetimeBirds, 1],
     intro: {
-      gus: "Not every bird is a mallard. Time to start keeping a proper record.",
+      gus: "Your first bird! Every hunter keeps a record. This book is yours now.",
       points: [
-        'Every species you bring in gets a page: what it pays, when it flies and what weather it likes.',
-        'Unfound birds show as silhouettes with a hint.',
+        'Every kind of duck you bring in gets a page: what it pays, when it flies and what weather it likes.',
+        'The first of each new kind pays a finder\'s bonus. Rarer birds pay more.',
+        'Birds you haven\'t found yet show as silhouettes with a hint.',
         'Patches are achievements, sewn on like a hunting jacket. They live here too.',
       ],
     },
@@ -109,7 +110,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
   },
 };
 
-export const FEATURE_ORDER: readonly FeatureId[] = ['bots', 'upgrades', 'guide', 'jobs', 'workflows', 'legacy'];
+export const FEATURE_ORDER: readonly FeatureId[] = ['guide', 'bots', 'upgrades', 'jobs', 'workflows', 'legacy'];
 
 export function featureReady(s: GameState, id: FeatureId): boolean {
   const [cur, goal] = FEATURES[id].progress(s);

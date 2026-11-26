@@ -205,6 +205,12 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
 
 export const RARITY_STARS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 };
 
+/** First-find bonus: worth this many of the bird, times a rarity multiplier. */
+export const DISCOVERY = {
+  birds: 20,
+  rarity: { common: 1, uncommon: 1.5, rare: 2.5, legendary: 5 } as Record<Rarity, number>,
+} as const;
+
 /** Preference multipliers on a species' weight. */
 export const SPECIES_PREFERENCE = {
   inHours: 1.8,

@@ -72,6 +72,7 @@ export function Moments({ onOpen }: { onOpen: (feature: string) => void }) {
         <img src={speciesPortrait(m.id)} alt="" />
         <strong>{d.name}</strong>
         <span class="moment__stars">{'★'.repeat(RARITY_STARS[d.rarity])} {d.rarity}</span>
+        {m.coins > 0 && <span class="moment__reward">Finder's bonus: +{formatNumber(m.coins)} coins, +{formatNumber(m.feathers)} feathers</span>}
       </button>
     );
   }

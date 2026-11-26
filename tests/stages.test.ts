@@ -27,11 +27,12 @@ describe('feature stages', () => {
 
   it('waits for an earlier stage even if a later one is ready', () => {
     const s = createInitialState(1);
+    s.stats.lifetimeBirds = 3; // Field Guide ready
     s.stats.lifetimeCoins = new Decimal(30); // Bots ready, Upgrades not
     s.bots.caller.owned = 50; // Job Board condition met, but it comes later
     const ev: SimEvent[] = [];
     for (let i = 0; i < 5; i++) checkUnlocks(s, ev);
-    expect(Object.keys(s.unlocks)).toEqual(['bots']);
+    expect(Object.keys(s.unlocks)).toEqual(['guide', 'bots']);
   });
 
   it('unlocks survive closing a season', () => {

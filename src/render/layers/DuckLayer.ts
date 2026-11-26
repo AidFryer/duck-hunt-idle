@@ -403,6 +403,21 @@ export class DuckLayer implements Layer {
     return fbest ? { kind: 'floater', floater: fbest, at: { x: fbest.x, y: fbest.y } } : null;
   }
 
+  /** Nearest unclaimed floating bird within `reach`. */
+  nearestFloater(x: number, y: number, reach: number): Floater | null {
+    let best: Floater | null = null;
+    let bd = reach;
+    for (const f of this.floaters) {
+      if (f.reserved || f.fade > 0) continue;
+      const d = Math.hypot(x - f.x, y - f.y);
+      if (d < bd) {
+        bd = d;
+        best = f;
+      }
+    }
+    return best;
+  }
+
   /** Nearest hunt flock within `reach` (for sky taps that just miss). */
   nearestFlock(x: number, y: number, reach: number): DuckPick | null {
     let best: DuckPick | null = null;

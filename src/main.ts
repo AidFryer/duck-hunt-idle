@@ -109,13 +109,13 @@ async function catchUp(away: number): Promise<void> {
   catchingUp = false;
   hud.set(snapshot(state));
   offlineView.set({ phase: 'summary', summary: r.value });
-  for (const id of r.value.newSpecies) pushMoment({ kind: 'species', id });
+  for (const id of r.value.newSpecies) if (id !== 'mallard') pushMoment({ kind: 'species', id, coins: 0, feathers: 0 });
   save();
 }
 setInterval(() => {
   hud.set(snapshot(state));
   // Words next to the hint ring until the player has the hang of it.
-  if (renderer?.scene) renderer.scene.hintLabels = state.stats.manualActions < 60;
+  if (renderer?.scene) renderer.scene.hintLabels = true;
 }, 200);
 
 // --- Autosave ---------------------------------------------------------------
@@ -174,7 +174,7 @@ function onEvent(e: SimEvent, at: Point | null): void {
       if (at && e.count === 1) feedback.float(`+${formatNumber(e.feathers, n)} feather${e.feathers === 1 ? '' : 's'}`, at.x, at.y, 'feathers');
       break;
     case 'newSpecies':
-      pushMoment({ kind: 'species', id: e.species });
+      if (e.species !== 'mallard') pushMoment({ kind: 'species', id: e.species, coins: e.coins, feathers: e.feathers });
       break;
     case 'achievement': {
       const a = ACHIEVEMENTS.find((x) => x.id === e.id);
@@ -285,10 +285,14 @@ function onSceneTap(t: TapTarget): void {
   lastTapAt = t.at;
   let job = t.job;
   if (!job) return;
-  // A tap on the water when the spread is full fetches a bird instead.
+  // A tap on the water when the spread is full fetches a bird if there is
+  // one; otherwise it's just a splash, no nagging.
   if (job === 'decoys' && !canDo(state, 'decoys')) {
     if (canDo(state, 'retrieve')) job = 'retrieve';
-    else return tapNote('Spread is full', t.at);
+    else {
+      renderer?.scene.fx.ripple(t.at.x, t.at.y, 0.5, 1.2);
+      return;
+    }
   }
   if (job === 'call' && !canDo(state, 'call')) return tapNote('Shoot the low flock first', t.at);
   if (job === 'retrieve' && t.floater) renderer?.scene.ducks.prefer(t.floater);

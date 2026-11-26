@@ -26,6 +26,9 @@ import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from './types';
 
+/** How many times each kind of tap is hinted before the hints stop. */
+const HINT_TAPS = 2;
+
 /** What a tap on the marsh means. */
 export interface TapTarget {
   job: Exclude<HuntStage, 'log'> | null;
@@ -121,6 +124,11 @@ export class MarshScene {
       if (n?.kind === 'flock') return { job: n.called ? 'shoot' : 'call', flockId: n.id, at: n.at };
       return { job: null, at: { x, y } };
     }
+    const s = this.layout.scale;
+    const low = this.ducks.nearestFlock(x, y, 60 * s);
+    if (low?.kind === 'flock' && low.called) return { job: 'shoot', flockId: low.id, at: low.at };
+    const bird = this.ducks.nearestFloater(x, y, 70 * s);
+    if (bird) return { job: 'retrieve', floater: bird, at: { x: bird.x, y: bird.y } };
     return { job: 'decoys', at: { x, y } };
   }
 
@@ -128,6 +136,18 @@ export class MarshScene {
   private chooseHint(state: GameState): HintTarget | null {
     const h = state.hunt;
     const words = this.hintLabels;
+    // Each kind of tap gets a nudge the first couple of times, then never again.
+    const done = state.stats.manualByJob;
+    const fresh = (j: string) => (done[j] ?? 0) < HINT_TAPS;
+    if (!fresh('decoys') && !fresh('call') && !fresh('shoot') && !fresh('retrieve')) return null;
+    const pick = this.pickHint(state, words);
+    if (!pick) return null;
+    const job = pick.kind === 'water' ? 'decoys' : pick.kind === 'floater' ? 'retrieve' : h.committed.some((f) => f.id === pick.id) ? 'shoot' : 'call';
+    return fresh(job) ? pick : null;
+  }
+
+  private pickHint(state: GameState, words: boolean): HintTarget | null {
+    const h = state.hunt;
     if (h.committed.length > 0) return { kind: 'flock', id: h.committed[0]!.id, label: words ? 'Tap to shoot!' : '' };
     const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < HUNT.maxCommitted;
     const callFlock = { kind: 'flock', id: h.incoming[0]?.id ?? -1, label: words ? 'Tap the flock to call it in' : '' } as const;
@@ -136,7 +156,6 @@ export class MarshScene {
     if (h.downed.length > 0 && this.ducks.firstFreeFloater()) return { kind: 'floater', label: words ? `Tap the bird for ${LAB_NAME}` : '' };
     if (canCall) return callFlock;
     if (h.decoys < Math.min(3, spreadSize(state))) return { kind: 'water', label: words ? 'Tap the water to set decoys' : '' };
-    if (h.decoys < spreadSize(state) && words) return { kind: 'water', label: 'Tap the water for more decoys' };
     return null;
   }
 
