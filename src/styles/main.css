@@ -56,7 +56,10 @@ button {
   /* Pinned to the real screen edges: avoids iOS home-screen apps coming up
      short by the status bar's height. */
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--app-h, 100dvh);
   grid-template-rows: minmax(260px, 50%) minmax(0, 1fr);
   grid-template-columns: 100%;
 }
@@ -2939,4 +2942,15 @@ select {
   padding-left: 18px;
   line-height: 1.45;
   color: var(--ui-textSoft);
+}
+
+/* Crisper top bar: tight shadows instead of soft halos. */
+.chip,
+.clock,
+.icon-btn {
+  box-shadow: 0 2px 0 rgba(30, 20, 12, 0.35);
+}
+
+.title-sign {
+  box-shadow: 0 2px 0 var(--c-woodDark), 0 3px 4px rgba(30, 20, 12, 0.3);
 }

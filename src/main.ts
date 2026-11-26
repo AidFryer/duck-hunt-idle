@@ -39,6 +39,7 @@ import { feedback } from './ui/feedback';
 import { snapshot } from './ui/hudState';
 import { Store } from './ui/store';
 import { setupPwa } from './app/pwa';
+import { setupViewport } from './app/viewport';
 import { audio, type Sfx } from './audio/AudioEngine';
 import { clockAt, duckActivityAt } from './sim/clock';
 import { computeSkyState } from './render/skyState';
@@ -46,6 +47,7 @@ import { formatNumber } from './util/format';
 
 document.title = GAME_TITLE;
 applyCssTokens();
+setupViewport();
 setupPwa();
 // iOS ignores user-scalable=no; block pinch and double-tap zoom directly.
 for (const ev of ['gesturestart', 'gesturechange', 'dblclick']) {

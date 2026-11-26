@@ -137,30 +137,54 @@ export function paintMoon(): Canvas {
 // ---------------------------------------------------------------- atmosphere
 
 export function paintCloud(variant: number): Canvas {
+  // Painterly cumulus: overlapping crisp puffs on a flat base, lit from above,
+  // painted at full resolution so they stay sharp on 3x phone screens.
   const w = 260;
   const h = 110;
-  const t = createPaintTarget(w, h, 1);
+  const t = createPaintTarget(w, h);
   const { ctx } = t;
   const rnd = seededRandom(1000 + variant * 31);
-  const flat = variant % 2 === 1; // alternate puffy cumulus / long stratus
-  const puffs = flat ? 14 : 10;
-  for (let i = 0; i < puffs; i++) {
-    const p = i / (puffs - 1);
-    const x = 30 + p * (w - 60) + (rnd() - 0.5) * 16;
+  const flat = variant % 2 === 1;
+  const puffs: { x: number; y: number; r: number }[] = [];
+  const n = flat ? 9 : 7;
+  for (let i = 0; i < n; i++) {
+    const p = i / (n - 1);
     const hump = Math.sin(p * Math.PI);
-    const r = flat ? 18 + rnd() * 14 : 20 + hump * 26 + rnd() * 12;
-    const y = h - 26 - hump * (flat ? 10 : 28) - rnd() * 8;
-    softBlob(ctx, x, y, r, palette.white, 0.85, 0.72);
+    const r = flat ? 14 + hump * 10 + rnd() * 6 : 16 + hump * 24 + rnd() * 8;
+    puffs.push({ x: 26 + p * (w - 52) + (rnd() - 0.5) * 10, y: h - 20 - r * 0.55 - hump * (flat ? 4 : 10), r });
   }
-  // Base shading: cooler underside.
+  const base = h - 16;
+  const shape = () => {
+    ctx.beginPath();
+    for (const q of puffs) {
+      ctx.moveTo(q.x + q.r, q.y);
+      ctx.arc(q.x, q.y, q.r, 0, Math.PI * 2);
+    }
+    ctx.rect(puffs[0]!.x, base - 14, puffs[n - 1]!.x - puffs[0]!.x, 14);
+  };
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, w, base);
+  ctx.clip();
+  // Body with a cool underside
+  shape();
+  ctx.fillStyle = linearV(ctx, 10, base, [[0, 0xffffff], [0.6, 0xf3f1ee], [1, 0xc9ccd8]]);
+  ctx.fill();
+  // Sunlit tops: a lighter copy of each puff nudged up-left
   ctx.globalCompositeOperation = 'source-atop';
-  ctx.fillStyle = linearV(ctx, 20, h, [
-    [0, 0xffffff, 0],
-    [0.65, 0xb9bccb, 0.15],
-    [1, 0x8d93a8, 0.45],
-  ]);
-  ctx.fillRect(0, 0, w, h);
-  ctx.globalCompositeOperation = 'source-over';
+  for (const q of puffs) {
+    ctx.fillStyle = css(0xffffff, 0.55);
+    ctx.beginPath();
+    ctx.arc(q.x - q.r * 0.18, q.y - q.r * 0.22, q.r * 0.78, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // A soft feathered base so it sits in the sky
+  const g = ctx.createLinearGradient(0, base - 6, 0, base);
+  g.addColorStop(0, 'rgba(201,204,216,0)');
+  g.addColorStop(1, 'rgba(201,204,216,0.5)');
+  ctx.fillStyle = g;
+  ctx.fillRect(puffs[0]!.x, base - 6, puffs[n - 1]!.x - puffs[0]!.x, 6);
   return t.canvas;
 }
 
