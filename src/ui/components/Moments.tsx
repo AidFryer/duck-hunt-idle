@@ -7,13 +7,14 @@ import { useStore } from '../store';
 import { Patch } from './Patch';
 import { FEATURES } from '../../data/features';
 import { KEEPER_NAME } from '../../data/goals';
+import { formatNumber } from '../../util/format';
 
 /** Shows queued "new Field Guide entry" / "patch earned" cards one at a time. */
 export function Moments({ onOpen }: { onOpen: (feature: string) => void }) {
   const queue = useStore(moments);
   const m = queue[0];
   useEffect(() => {
-    if (!m || m.kind === 'feature') return;
+    if (!m || m.kind === 'feature' || m.kind === 'daily') return;
     const t = setTimeout(popMoment, 4200);
     return () => clearTimeout(t);
   }, [m]);
@@ -35,6 +36,28 @@ export function Moments({ onOpen }: { onOpen: (feature: string) => void }) {
           <div class="btn-row">
             <button class="btn btn--primary" onClick={() => { popMoment(); onOpen(m.id); }}>Open {f.name}</button>
             <button class="btn" onClick={popMoment}>Later</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (m.kind === 'daily') {
+    return (
+      <div class="away-backdrop">
+        <div class="away-card stage-card" role="dialog" aria-label="First Light gift" key="daily">
+          <span class="moment__tag">First Light</span>
+          <h3>A new day on the marsh</h3>
+          <p class="away-card__gus">
+            "Mornin'! Coffee's on, and the guests left a little something for you."
+            <span>— {KEEPER_NAME}</span>
+          </p>
+          <ul class="stage-card__points">
+            <li>+{formatNumber(m.coins)} coins</li>
+            <li>+{m.feathers} feathers</li>
+            <li>Come back tomorrow for another.</li>
+          </ul>
+          <div class="btn-row">
+            <button class="btn btn--primary" onClick={popMoment}>Thanks, Gus</button>
           </div>
         </div>
       </div>

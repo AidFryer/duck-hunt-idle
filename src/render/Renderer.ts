@@ -5,7 +5,7 @@ import type { BotId } from '../data/economy';
 import type { SimEvent } from '../sim/events';
 import type { SimRunner } from '../sim/runner';
 import type { Point } from './types';
-import { MarshScene } from './MarshScene';
+import { MarshScene, type TapTarget } from './MarshScene';
 import { computeSkyState, createSkyState } from './skyState';
 
 export interface RendererOptions {
@@ -30,6 +30,11 @@ export class Renderer {
   onEvent: ((e: SimEvent, at: Point | null) => void) | null = null;
   /** Called when the player taps a stuck bot's "!" bubble. */
   onFix: ((bot: BotId) => void) | null = null;
+  /** Called when the player taps the marsh itself. */
+  onTap: ((t: TapTarget) => void) | null = null;
+  /** DOM label that follows the hint ring. */
+  private hintEl: HTMLDivElement | null = null;
+  private hintText = '';
 
   /** True while frames are being drawn (tab visible, initialised). */
   get active(): boolean {
@@ -91,6 +96,21 @@ export class Renderer {
         this.app.ticker.start();
       }
     });
+
+    // Tap the marsh: flocks, floating birds and the water are all buttons.
+    const stage = this.app.stage;
+    stage.eventMode = 'static';
+    stage.hitArea = this.app.screen;
+    // Act on touch-down: it feels immediate, like pulling a trigger.
+    stage.on('pointerdown', (e) => {
+      if (e.button > 0) return;
+      const p = e.global;
+      this.onTap?.(this.scene.pick(p.x, p.y));
+    });
+    this.hintEl = document.createElement('div');
+    this.hintEl.className = 'scene-hint';
+    this.hintEl.setAttribute('aria-hidden', 'true');
+    this.host.appendChild(this.hintEl);
 
     this.app.ticker.add((ticker) => this.frame(Math.min(ticker.deltaMS / 1000, 0.1)));
     this.ready = true;
@@ -172,5 +192,28 @@ export class Renderer {
       activity: duckActivityAt(hour),
       motion: this.options.motion,
     });
+    this.placeHint();
+  }
+
+  private placeHint(): void {
+    const el = this.hintEl;
+    if (!el) return;
+    const at = this.scene.hint.labelAt;
+    const text = at ? this.scene.hint.target?.label ?? '' : '';
+    if (text !== this.hintText) {
+      this.hintText = text;
+      el.textContent = text;
+      el.classList.toggle('is-on', text !== '');
+    }
+    if (at && text) {
+      const w = this.app.screen.width;
+      const half = el.offsetWidth / 2 + 8;
+      const x = Math.max(half, Math.min(w - half, at.x));
+      // Too close to the top bar: put the label under the ring instead.
+      const below = this.scene.hint.labelBelow;
+      const flip = at.y - el.offsetHeight < 56 && below;
+      const y = flip ? below.y : at.y;
+      el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, ${flip ? '0' : '-100%'})`;
+    }
   }
 }

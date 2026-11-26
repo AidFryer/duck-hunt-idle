@@ -4,6 +4,7 @@ import {
   BOT_ORDER, BOTS, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
+import { STREAK } from '../data/economy';
 import { currentGoal } from '../data/goals';
 import { FEATURE_ORDER, FEATURES, type FeatureId } from '../data/features';
 import { ACHIEVEMENTS } from '../data/achievements';
@@ -103,6 +104,9 @@ export interface HudSnapshot {
   committed: number;
   downed: number;
   ledger: number;
+  /** Hunter's Rhythm level and how much of its window is left (0–1). */
+  streak: number;
+  streakLeft: number;
   reputation: number;
   keeperRate: number;
   can: Record<HuntStage, boolean>;
@@ -290,6 +294,8 @@ export function snapshot(state: GameState): HudSnapshot {
     committed: state.hunt.committed.length,
     downed: state.hunt.downed.length,
     ledger: state.hunt.ledger.length,
+    streak: state.hunt.streak,
+    streakLeft: state.hunt.streak > 0 ? Math.max(0, 1 - (state.elapsed - state.hunt.lastManualAt) / STREAK.window) : 0,
     reputation: reputationMultiplier(state),
     keeperRate: LEDGER.keeperRate,
     can: {

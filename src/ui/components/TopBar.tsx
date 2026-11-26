@@ -1,4 +1,5 @@
 import { GAME_TITLE } from '../../config';
+import { STREAK } from '../../data/economy';
 import type { Notation } from '../../util/format';
 import type { HudSnapshot } from '../hudState';
 import { activityLabel, windLabel } from '../hudState';
@@ -9,8 +10,10 @@ import type { WeatherId } from '../../data/weather';
 
 const WEATHER_ICON: Record<WeatherId, IconName> = { clear: 'sun', fog: 'fog', drizzle: 'drop', coldFront: 'snow', wind: 'wind' };
 
+/** One slim row over the sky: purse, today's birds, clock + weather, buttons. */
 export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnapshot; notation: Notation; onSettings: () => void; onProblems: () => void }) {
   const night = hud.phaseId === 'night' || hud.phaseId === 'predawn';
+  const conditions = `${hud.weather.name}: ${hud.weather.blurb} Next: ${hud.weather.nextName} around ${hud.weather.changeAt}. Ducks: ${activityLabel(hud.activity)}. Wind: ${windLabel(hud.wind)}.`;
   return (
     <header class="topbar">
       <div class="title-sign" title={GAME_TITLE}>
@@ -19,27 +22,28 @@ export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnap
         <span class="title-sign__nail" />
       </div>
 
-      <div class="chips" aria-label="Resources">
-        <div class="chip chip--gold" title="Coins">
-          <Icon name="coin" size={18} />
-          <span class="chip__value"><Counter value={hud.coins} notation={notation} /></span>
-          <span class="chip__label">Coins</span>
-        </div>
-        <div class="chip chip--cream" title="Feathers">
-          <Icon name="feather" size={18} />
-          <span class="chip__value"><Counter value={hud.feathers} notation={notation} /></span>
-          <span class="chip__label">Feathers</span>
-        </div>
-        <div class="chip chip--sage" title={`Today's bag (best: ${hud.bestBag})`}>
-          <Icon name="duck" size={18} />
-          <span class="chip__value"><Counter value={hud.bag} notation={notation} /></span>
-          <span class="chip__label">Bag</span>
-        </div>
+      <div class="purse" aria-label="Resources">
+        <span class="purse__item" title="Coins">
+          <Icon name="coin" size={17} class="purse__coin" />
+          <Counter value={hud.coins} notation={notation} />
+          <span class="sr-only"> coins</span>
+        </span>
+        <span class="purse__item" title="Feathers">
+          <Icon name="feather" size={17} class="purse__feather" />
+          <Counter value={hud.feathers} notation={notation} />
+          <span class="sr-only"> feathers</span>
+        </span>
+      </div>
+
+      <div class="chip chip--birds" title={`Today's birds (best day: ${hud.bestBag})`}>
+        <Icon name="duck" size={17} />
+        <span class="chip__value"><Counter value={hud.bag} notation={notation} /></span>
+        <span class="chip__label">today</span>
       </div>
 
       <div class="topbar__right">
-        <div class="clock" aria-label={`Day ${hud.day}, ${hud.clock}, ${hud.phaseLabel}`}>
-          <Icon name={night ? 'moon' : 'sun'} size={20} class={night ? 'clock__moon' : 'clock__sun'} />
+        <div class="clock" title={conditions} aria-label={`Day ${hud.day}, ${hud.clock}, ${hud.phaseLabel}. ${conditions}`}>
+          <Icon name={night ? 'moon' : 'sun'} size={18} class={night ? 'clock__moon' : 'clock__sun'} />
           <div class="clock__text">
             <strong>{hud.clock}</strong>
             <span>
@@ -47,6 +51,12 @@ export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnap
               <span class="clock__day"> · Day {hud.day}</span>
             </span>
           </div>
+          {hud.weather.id !== 'clear' && (
+            <span class={`clock__weather clock__weather--${hud.weather.id}`}>
+              <Icon name={WEATHER_ICON[hud.weather.id]} size={16} />
+              <span class="clock__weather-name">{hud.weather.name}</span>
+            </span>
+          )}
         </div>
         {hud.problemStats.total > 0 && (
           <button
@@ -60,22 +70,22 @@ export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnap
           </button>
         )}
         <button class="icon-btn" onClick={onSettings} aria-label="Settings" title="Settings">
-          <Icon name="gear" size={22} />
+          <Icon name="gear" size={20} />
         </button>
       </div>
-
-      <div class="conditions">
-        <span class={`weather-pill weather-pill--${hud.weather.id}`} title={`${hud.weather.blurb} Next: ${hud.weather.nextName} around ${hud.weather.changeAt}.`}>
-          <Icon name={WEATHER_ICON[hud.weather.id]} size={16} /> {hud.weather.name}
-          <span class="weather-pill__next">→ {hud.weather.nextName} {hud.weather.changeAt}</span>
-        </span>
-        <span>
-          <Icon name="duck" size={16} /> {activityLabel(hud.activity)}
-        </span>
-        <span class="conditions__wind">
-          <Icon name="wind" size={16} /> {windLabel(hud.wind)}
-        </span>
-      </div>
     </header>
+  );
+}
+
+/** Hunter's Rhythm: a little meter over the marsh while you're on a roll. */
+export function RhythmMeter({ hud }: { hud: HudSnapshot }) {
+  if (hud.streak < 2) return null;
+  const pct = Math.round(hud.streak * STREAK.bonusPerLevel * 100);
+  return (
+    <div class={`rhythm ${hud.streak >= 10 ? 'is-max' : ''}`} aria-live="off" title="Tap quickly in a row to build your rhythm. Birds you fetch by hand pay extra.">
+      <span class="rhythm__label">Rhythm ×{hud.streak}</span>
+      <span class="rhythm__bonus">+{pct}% on birds you fetch</span>
+      <span class="rhythm__bar"><span style={{ width: `${Math.round(hud.streakLeft * 100)}%` }} /></span>
+    </div>
   );
 }

@@ -111,7 +111,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
                 <li>Coins & feathers</li>
                 <li>Bots & their levels</li>
                 <li>Marsh upgrades & acres</li>
-                <li>Today's bag and problems</li>
+                <li>Today's birds and problems</li>
               </ul>
             </div>
             <div>

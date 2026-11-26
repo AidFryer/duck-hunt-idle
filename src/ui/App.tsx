@@ -14,7 +14,7 @@ import { JobBoard } from './components/JobBoard';
 import { MarshTab } from './components/MarshTab';
 import { ProblemLog } from './components/ProblemLog';
 import { Settings } from './components/Settings';
-import { TopBar } from './components/TopBar';
+import { RhythmMeter, TopBar } from './components/TopBar';
 import { UpgradesTab } from './components/UpgradesTab';
 import { FieldGuide } from './components/FieldGuide';
 import { Moments } from './components/Moments';
@@ -64,20 +64,14 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const n = prefs.notation;
 
   return (
-    <div class={`layout ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
+    <div class={`layout ${tab === 'marsh' ? 'layout--marsh' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
       <section class="scene" aria-label="The marsh">
         <div class="scene-host" ref={sceneRef} />
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
         <Moments onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
-        {tutorialOn && tab === 'marsh' && (
-          <Tutorial
-            step={tStep}
-            onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
-            onSkip={finishTutorial}
-          />
-        )}
+        <RhythmMeter hud={hud} />
       </section>
 
       <aside class="panel">
@@ -104,7 +98,20 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="panel__content" role="tabpanel" key={tab}>
           {!activeOpen && activeFeature && <LockedTab tab={active} feature={activeFeature} hud={hud} />}
           {activeOpen && activeFeature && <TabHelp feature={activeFeature} />}
-          {tab === 'marsh' && <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} tutorial={tutorialOn && welcomed ? tStep : null} />}
+          {tab === 'marsh' && (
+            <MarshTab
+              hud={hud}
+              controls={controls}
+              devTools={prefs.devTools}
+              tutorial={tutorialOn ? (
+                <Tutorial
+                  step={tStep}
+                  onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
+                  onSkip={finishTutorial}
+                />
+              ) : null}
+            />
+          )}
           {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}

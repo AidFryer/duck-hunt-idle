@@ -1,4 +1,4 @@
-import { ACRES, BOTS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, TINKER, BOT_ORDER, type HuntStage, type JobId } from '../data/economy';
+import { ACRES, BOTS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type HuntStage, type JobId } from '../data/economy';
 import { SPECIES } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -38,9 +38,16 @@ export function canDo(state: GameState, job: ActionJob): boolean {
   }
 }
 
-export function doAction(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink): boolean {
+/**
+ * Do one hunt action. `targetId` picks a specific flock for call/shoot
+ * (the one the player tapped); otherwise the one that's waited longest.
+ */
+export function doAction(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink, targetId?: number): boolean {
   if (!canDo(state, job)) return false;
-  if (source === 'manual') state.stats.manualActions += 1;
+  if (source === 'manual') {
+    state.stats.manualActions += 1;
+    bumpStreak(state, events);
+  }
   const h = state.hunt;
   const src = source === 'keeper' ? 'manual' : source;
   switch (job) {
@@ -55,7 +62,8 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       break;
     }
     case 'call': {
-      const flock = h.incoming.shift()!;
+      const idx = targetId !== undefined ? Math.max(0, h.incoming.findIndex((f) => f.id === targetId)) : 0;
+      const flock = h.incoming.splice(idx, 1)[0]!;
       flock.age = 0;
       h.committed.push(flock);
       state.stats.flocksCalled += 1;
@@ -63,7 +71,8 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       break;
     }
     case 'shoot': {
-      const flock = h.committed.shift()!;
+      const idx = targetId !== undefined ? Math.max(0, h.committed.findIndex((f) => f.id === targetId)) : 0;
+      const flock = h.committed.splice(idx, 1)[0]!;
       const room = HUNT.maxDowned - h.downed.length;
       const downed = Math.max(0, Math.min(room, Math.max(1, Math.ceil(flock.size * shotFraction(state)))));
       for (let i = 0; i < downed; i++) h.downed.push(flock.species);
@@ -72,12 +81,38 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       break;
     }
     case 'retrieve':
-    case 'log':
+    case 'log': {
+      const species = job === 'retrieve' ? h.downed[0] : undefined;
       doMany(state, job, 1, source, events);
+      // Hunter's Rhythm pays a bonus on birds you fetch by hand.
+      if (source === 'manual' && species && h.streak > 1) {
+        const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * h.streak * 100) / 100;
+        state.currencies.coins = state.currencies.coins.add(bonus);
+        state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(bonus);
+        state.season.coins = state.season.coins.add(bonus);
+        events.push({ type: 'streak', level: h.streak, bonus });
+      }
       return true;
+    }
   }
   recordJob(state, job, true);
   return true;
+}
+
+/** Manual actions in quick succession build the streak; a pause resets it. */
+function bumpStreak(state: GameState, events: EventSink): void {
+  const h = state.hunt;
+  const quick = state.elapsed - h.lastManualAt <= STREAK.window;
+  const before = h.streak;
+  h.streak = quick ? Math.min(STREAK.max, h.streak + 1) : 1;
+  h.lastManualAt = state.elapsed;
+  if (h.streak > before && h.streak > 1) events.push({ type: 'streak', level: h.streak, bonus: 0 });
+}
+
+/** Let the streak fade once the player stops tapping. */
+export function decayStreak(state: GameState): void {
+  const h = state.hunt;
+  if (h.streak > 0 && state.elapsed - h.lastManualAt > STREAK.window) h.streak = 0;
 }
 
 /** Most per-action events emitted for one batch; the rest are summed into one. */
@@ -153,6 +188,7 @@ function recordJobMany(state: GameState, job: JobId, n: number): void {
 export function stepHunt(state: GameState, dt: number, activity: number, events: EventSink): void {
   const h = state.hunt;
   advanceMetrics(state);
+  decayStreak(state);
 
   // Decoys slowly drift loose, faster in wind.
   if (h.decoys > 0) {

@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { DayPhaseId } from '../../data/dayCycle';
-import type { HuntStage } from '../../data/economy';
+import type { ComponentChildren } from 'preact';
 import { KEEPER_NAME } from '../../data/goals';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
@@ -16,20 +16,14 @@ const JUMPS: { id: DayPhaseId; label: string }[] = [
 
 const SPEEDS = [1, 10, 60];
 
-const GOAL_HINT: Record<string, HuntStage> = {
-  decoys: 'decoys',
-  call: 'call',
-  shoot: 'shoot',
-  retrieve: 'retrieve',
-};
-
-export function MarshTab({ hud, controls, devTools, tutorial }: { hud: HudSnapshot; controls: GameControls; devTools: boolean; tutorial: string | null }) {
+export function MarshTab({ hud, controls, devTools, tutorial }: { hud: HudSnapshot; controls: GameControls; devTools: boolean; tutorial: ComponentChildren }) {
   const [speed, setSpeed] = useState(controls.getTimeScale());
   return (
     <div class="tab-body">
-      <HuntPanel hud={hud} controls={controls} highlight={GOAL_HINT[tutorial ?? hud.goalId] ?? null} />
+      {tutorial}
+      <HuntPanel hud={hud} controls={controls} />
 
-      <div class="keeper">
+      {!tutorial && <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">
           <span class="keeper__hat" />
           <span class="keeper__face" />
@@ -39,15 +33,15 @@ export function MarshTab({ hud, controls, devTools, tutorial }: { hud: HudSnapsh
           <p class="speech__name">{KEEPER_NAME}, old lodge keeper</p>
           <p>{hud.goalGus}</p>
         </div>
-      </div>
+      </div>}
 
-      <div class="goal" key={`g-${hud.goalId}`}>
+      {!tutorial && <div class="goal" key={`g-${hud.goalId}`}>
         <span class="goal__tag">Next goal</span>
         <p>{hud.goalTitle}</p>
         <p class="goal__hint">
-          Today's bag: {hud.bag} · Best day: {hud.bestBag} · Lifetime: {hud.lifetimeBirds}
+          Today's birds: {hud.bag} · Best day: {hud.bestBag} · Lifetime: {hud.lifetimeBirds}
         </p>
-      </div>
+      </div>}
 
       {devTools && (
         <section class="card">

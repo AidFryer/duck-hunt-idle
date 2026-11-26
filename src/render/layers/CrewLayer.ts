@@ -471,7 +471,12 @@ export class CrewLayer implements Layer {
       s.eventMode = 'static';
       s.cursor = 'pointer';
       s.hitArea = new Circle(11, 12, 22);
-      s.on('pointertap', () => this.onFix?.(bot));
+      // Keep the marsh's own tap handler from also firing.
+      s.on('pointerdown', (e) => e.stopPropagation());
+      s.on('pointertap', (e) => {
+        e.stopPropagation();
+        this.onFix?.(bot);
+      });
       this.bubbleLayer.addChild(s);
       this.bubbles.push({ s, bot, phase: this.rnd() * 6 });
     };

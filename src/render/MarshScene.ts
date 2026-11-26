@@ -4,6 +4,11 @@ import { BlindLayer } from './layers/BlindLayer';
 import { CloudLayer } from './layers/CloudLayer';
 import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
+import { HintLayer, type HintTarget } from './layers/HintLayer';
+import type { Floater } from './layers/DuckLayer';
+import { HUNT, type HuntStage } from '../data/economy';
+import { incomingPatience, spreadSize } from '../sim/economy';
+import { LAB_NAME } from '../data/goals';
 import { EffectsLayer } from './layers/EffectsLayer';
 import { FogLayer } from './layers/FogLayer';
 import { LandLayer } from './layers/LandLayer';
@@ -21,6 +26,14 @@ import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from './types';
 
+/** What a tap on the marsh means. */
+export interface TapTarget {
+  job: Exclude<HuntStage, 'log'> | null;
+  flockId?: number;
+  floater?: Floater;
+  at: Point;
+}
+
 /**
  * Composes every layer of the marsh in back-to-front order and owns the
  * shared layout. Reads nothing from the DOM; the Renderer feeds it frames.
@@ -35,6 +48,9 @@ export class MarshScene {
   readonly blind: BlindLayer;
   readonly crew: CrewLayer;
   readonly weather: WeatherLayer;
+  readonly hint: HintLayer;
+  /** Show words next to the hint ring (new players). */
+  hintLabels = true;
   private readonly clouds: CloudLayer;
   private readonly fogs: FogLayer[];
   private readonly plots: PlotsLayer;
@@ -82,16 +98,46 @@ export class MarshScene {
     this.water.surface.addChild(this.fx.rippleView);
 
     // Back-to-front draw order.
+    this.hint = new HintLayer(this.ducks);
     this.layers = [
       this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, midReeds, blind,
-      this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, overlay,
+      this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
       this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, midReeds,
-      this.ducks, nearFog, this.fx, fgReeds, this.weather, overlay,
+      this.ducks, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
+  }
+
+  /** Turn a tap at screen (x, y) into a hunt action. */
+  pick(x: number, y: number): TapTarget {
+    const p = this.ducks.pick(x, y);
+    if (p?.kind === 'flock') return { job: p.called ? 'shoot' : 'call', flockId: p.id, at: p.at };
+    if (p?.kind === 'floater') return { job: 'retrieve', floater: p.floater, at: p.at };
+    if (y < this.layout.horizon) {
+      const n = this.ducks.nearestFlock(x, y, 70 * this.layout.scale);
+      if (n?.kind === 'flock') return { job: n.called ? 'shoot' : 'call', flockId: n.id, at: n.at };
+      return { job: null, at: { x, y } };
+    }
+    return { job: 'decoys', at: { x, y } };
+  }
+
+  /** Pick what the hint ring should point at next. */
+  private chooseHint(state: GameState): HintTarget | null {
+    const h = state.hunt;
+    const words = this.hintLabels;
+    if (h.committed.length > 0) return { kind: 'flock', id: h.committed[0]!.id, label: words ? 'Tap to shoot!' : '' };
+    const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < HUNT.maxCommitted;
+    const callFlock = { kind: 'flock', id: h.incoming[0]?.id ?? -1, label: words ? 'Tap the flock to call it in' : '' } as const;
+    // A flock about to give up beats a bird that can wait on the water.
+    if (canCall && h.incoming[0]!.age > incomingPatience(state) * 0.5) return callFlock;
+    if (h.downed.length > 0 && this.ducks.firstFreeFloater()) return { kind: 'floater', label: words ? `Tap the bird for ${LAB_NAME}` : '' };
+    if (canCall) return callFlock;
+    if (h.decoys < Math.min(3, spreadSize(state))) return { kind: 'water', label: words ? 'Tap the water to set decoys' : '' };
+    if (h.decoys < spreadSize(state) && words) return { kind: 'water', label: 'Tap the water for more decoys' };
+    return null;
   }
 
   resize(w: number, h: number): void {
@@ -173,6 +219,8 @@ export class MarshScene {
       case 'featureUnlocked':
       case 'perkBought':
       case 'flockReturned':
+      case 'streak':
+      case 'dailyBonus':
         return null;
       case 'seasonClosed':
         this.fx.confetti(this.layout.w / 2, this.layout.h * 0.4, this.layout.scale * 1.3, 60);
@@ -199,6 +247,7 @@ export class MarshScene {
       this.resize(this.layout.w, this.layout.h);
     }
     this.crew.sync(state);
+    this.hint.target = this.chooseHint(state);
     const w = state.environment.weather;
     this.weather.weather = w;
     for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;

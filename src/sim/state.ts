@@ -3,7 +3,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -116,6 +116,10 @@ export interface GameState {
     ledger: SpeciesId[];
     /** Gus's own logging progress (0–1). */
     keeperProgress: number;
+    /** Hunter's Rhythm streak level (0 = none). */
+    streak: number;
+    /** Sim time of the last manual action. */
+    lastManualAt: number;
   };
   bots: Record<BotId, BotState>;
   /** How many of each bot type work each job (or rest on the bench). */
@@ -201,6 +205,8 @@ export interface GameState {
     /** Wall-clock ms when this save was created / last written. */
     createdAt: number;
     lastSaved: number;
+    /** Local date (YYYY-MM-DD) the First Light gift was last given. */
+    lastDailyBonus: string;
   };
 }
 
@@ -252,6 +258,8 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       bag: 0,
       ledger: [],
       keeperProgress: 0,
+      streak: 0,
+      lastManualAt: -999,
     },
     bots: createBotStates(),
     assign: createAssignments(),
@@ -287,7 +295,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       longestAway: 0,
       seasonsClosed: 0,
     },
-    meta: { createdAt: now, lastSaved: now },
+    meta: { createdAt: now, lastSaved: now, lastDailyBonus: '' },
   };
 }
 

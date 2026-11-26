@@ -13,7 +13,7 @@ computers, installs to your home screen, and plays offline.
 
 ## Features
 
-- **The hunt:** Set Decoys → Call → Shoot → Retrieve → Log, by hand at first.
+- **The hunt:** tap the marsh itself: the water to set decoys, a circling flock to call it, ducks over the decoys to shoot, a floating bird to send the dog (keys D / C / S / R on a keyboard). Gus logs every bird at the lodge. Quick taps build a Hunter's Rhythm bonus, and a First Light gift waits each new day.
 - **Eight decoy-bots** (Scout, Decoy Setter, Caller, Blind, Robo-Retriever,
   Ledger, Foreman, Tinker), each with its own post and animations.
 - **Job Board:** move bots between jobs, watch throughput, queues and a 60s

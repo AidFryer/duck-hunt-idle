@@ -1,4 +1,6 @@
-import { Container, Sprite } from 'pixi.js';
+import { Container, Graphics, Sprite } from 'pixi.js';
+import { HUNT } from '../../data/economy';
+import { incomingPatience } from '../../sim/economy';
 import { SPECIES, type SpeciesId } from '../../data/species';
 import type { GameState } from '../../sim/state';
 import { lerpColor, shadeColor } from '../../util/color';
@@ -73,6 +75,11 @@ export interface Floater {
   fade: number;
 }
 
+/** What a tap on the scene landed on. */
+export type DuckPick =
+  | { kind: 'flock'; id: number; called: boolean; at: Point }
+  | { kind: 'floater'; floater: Floater; at: Point };
+
 const MAX_DUCKS = 48;
 const MAX_VISIBLE_PER_FLOCK = 6;
 const MAX_FLOATERS = 12;
@@ -94,6 +101,12 @@ export class DuckLayer implements Layer {
   private readonly ducks: Duck[] = [];
   private readonly flocks: Flock[] = [];
   private readonly floaters: Floater[] = [];
+  /** Countdown rings around hunt flocks. */
+  private readonly rings = new Graphics();
+  /** Patience left (0–1) per sim flock id, refreshed from the sim each frame. */
+  private readonly patience = new Map<number, number>();
+  /** Next floater a retriever should take (the one the player tapped). */
+  private preferred: Floater | null = null;
   private l!: SceneLayout;
   private time = 0;
   private flyoverTimer = 3;
@@ -101,7 +114,7 @@ export class DuckLayer implements Layer {
   ambient = true;
 
   constructor(private readonly tex: TextureLibrary, private readonly fx: EffectsLayer) {
-    this.view.addChild(this.waterView, this.skyView);
+    this.view.addChild(this.waterView, this.skyView, this.rings);
     for (let i = 0; i < MAX_DUCKS; i++) {
       const drake = i % 5 < 3;
       const kind = drake ? 'drake' : 'hen';
@@ -233,6 +246,10 @@ export class DuckLayer implements Layer {
    */
   reconcile(state: GameState): void {
     const h = state.hunt;
+    this.patience.clear();
+    const wait = incomingPatience(state);
+    for (const fl of h.incoming) this.patience.set(fl.id, clamp(1 - fl.age / wait, 0, 1));
+    for (const fl of h.committed) this.patience.set(fl.id, clamp(1 - fl.age / HUNT.committedPatience, 0, 1));
     const live = new Set<number>();
     for (const fl of h.incoming) {
       live.add(fl.id);
@@ -284,8 +301,19 @@ export class DuckLayer implements Layer {
 
   // ------------------------------------------------------------------ floaters
 
+  /** Send the next retriever for this particular bird. */
+  prefer(f: Floater): void {
+    this.preferred = f;
+  }
+
   /** Oldest unclaimed floating bird, now reserved for a retriever. */
   claimFloater(): Floater | null {
+    const p = this.preferred;
+    this.preferred = null;
+    if (p && !p.reserved && p.fade === 0 && this.floaters.includes(p)) {
+      p.reserved = true;
+      return p;
+    }
     for (const f of this.floaters) {
       if (!f.reserved && f.fade === 0) {
         f.reserved = true;
@@ -306,6 +334,113 @@ export class DuckLayer implements Layer {
 
   get floaterCount(): number {
     return this.floaters.length;
+  }
+
+  /** The oldest bird still waiting on the water (for hints). */
+  firstFreeFloater(): Floater | null {
+    return this.floaters.find((f) => !f.reserved && f.fade === 0) ?? null;
+  }
+
+  /** Centre and rough radius of a visible hunt flock. */
+  flockBounds(id: number): { x: number; y: number; r: number } | null {
+    const f = this.findHunt(id);
+    return f ? this.bounds(f) : null;
+  }
+
+  private bounds(f: Flock): { x: number; y: number; r: number } | null {
+    let n = 0;
+    let x = 0;
+    let y = 0;
+    for (const d of f.ducks) {
+      if (d.flock !== f || d.mode !== 'fly') continue;
+      x += d.x;
+      y += d.y;
+      n++;
+    }
+    if (n === 0) return null;
+    x /= n;
+    y /= n;
+    let r = 0;
+    for (const d of f.ducks) if (d.flock === f && d.mode === 'fly') r = Math.max(r, Math.hypot(d.x - x, d.y - y));
+    const s = this.l.scale;
+    return { x, y, r: clamp(r + 16 * s, 26 * s, 84 * s) };
+  }
+
+  /**
+   * What's under a tap: a hunt flock (generous radius, called flocks first)
+   * or a floating bird. Null when the tap hit open sky or water.
+   */
+  pick(x: number, y: number): DuckPick | null {
+    const s = this.l.scale;
+    const slop = Math.max(14, 14 * s);
+    let best: DuckPick | null = null;
+    let bestScore = Infinity;
+    for (const f of this.flocks) {
+      if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
+      const b = this.bounds(f);
+      if (!b) continue;
+      const d = Math.hypot(x - b.x, y - b.y);
+      const reach = Math.max(b.r, 30) + slop;
+      if (d > reach) continue;
+      const score = d / reach - (f.called ? 0.3 : 0);
+      if (score < bestScore) {
+        bestScore = score;
+        best = { kind: 'flock', id: f.id, called: f.called, at: { x: b.x, y: b.y } };
+      }
+    }
+    if (best) return best;
+    const reach = Math.max(28, 30 * s);
+    let fbest: Floater | null = null;
+    let fd = reach;
+    for (const f of this.floaters) {
+      if (f.reserved || f.fade > 0) continue;
+      const d = Math.hypot(x - f.x, y - f.y);
+      if (d < fd) {
+        fd = d;
+        fbest = f;
+      }
+    }
+    return fbest ? { kind: 'floater', floater: fbest, at: { x: fbest.x, y: fbest.y } } : null;
+  }
+
+  /** Nearest hunt flock within `reach` (for sky taps that just miss). */
+  nearestFlock(x: number, y: number, reach: number): DuckPick | null {
+    let best: DuckPick | null = null;
+    let bd = reach;
+    for (const f of this.flocks) {
+      if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
+      const b = this.bounds(f);
+      if (!b) continue;
+      const d = Math.hypot(x - b.x, y - b.y) - b.r;
+      if (d < bd) {
+        bd = d;
+        best = { kind: 'flock', id: f.id, called: f.called, at: { x: b.x, y: b.y } };
+      }
+    }
+    return best;
+  }
+
+  private drawRings(): void {
+    const g = this.rings;
+    g.clear();
+    const s = this.l.scale;
+    const w = Math.max(2.5, 3 * s);
+    for (const f of this.flocks) {
+      if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
+      const frac = this.patience.get(f.id);
+      if (frac === undefined) continue;
+      const b = this.bounds(f);
+      if (!b) continue;
+      const r = b.r;
+      g.circle(b.x, b.y, r).stroke({ width: w, color: 0x2d2520, alpha: 0.28 });
+      if (frac > 0.005) {
+        const a0 = -Math.PI / 2;
+        const a1 = a0 + Math.PI * 2 * frac;
+        g.moveTo(b.x + Math.cos(a0) * r, b.y + Math.sin(a0) * r)
+          .arc(b.x, b.y, r, a0, a1)
+          .stroke({ width: w, color: frac < 0.3 ? 0xd2693a : f.called ? 0xf6c56e : 0xf4e9d4, alpha: 0.9, cap: 'round' });
+      }
+    }
   }
 
   private addFloater(p: Point, splash: boolean, species: SpeciesId = 'mallard', drake = this.rnd() < 0.6): void {
@@ -500,6 +635,7 @@ export class DuckLayer implements Layer {
       fl.s.tint = shadeColor(f.sky.light, 0.78);
       fl.s.alpha = fl.fade > 0 ? fl.fade : 1;
     }
+    this.drawRings();
     const ch = this.waterView.children;
     if (ch.length > 1) ch.sort((a, b) => a.y - b.y);
   }

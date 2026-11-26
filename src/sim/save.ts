@@ -42,6 +42,12 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v5 → v6 adds feature stages. Players from before get what they've earned, quietly.
   5: (s) => ({ ...s, silentUnlocks: true, version: 6 }),
+  // v6 → v7 adds tap streaks and the daily First Light gift. Existing players
+  // get a gift on their next visit (fresh games skip the very first day).
+  6: (s) => {
+    const meta = (s.meta ?? {}) as Json;
+    return { ...s, meta: { ...meta, lastDailyBonus: 'before-v7' }, version: 7 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

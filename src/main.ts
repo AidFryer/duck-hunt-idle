@@ -18,7 +18,10 @@ import { buyAcre, buyBot, levelUpBot } from './sim/economy';
 import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
-import { doAction } from './sim/hunt';
+import { canDo, doAction } from './sim/hunt';
+import { claimDailyBonus, localDayKey } from './sim/daily';
+import type { TapTarget } from './render/MarshScene';
+import type { HuntStage } from './data/economy';
 import { SimRunner } from './sim/runner';
 import { exportSave, importSave } from './sim/save';
 import { runOffline } from './sim/offline';
@@ -109,7 +112,11 @@ async function catchUp(away: number): Promise<void> {
   for (const id of r.value.newSpecies) pushMoment({ kind: 'species', id });
   save();
 }
-setInterval(() => hud.set(snapshot(state)), 200);
+setInterval(() => {
+  hud.set(snapshot(state));
+  // Words next to the hint ring until the player has the hang of it.
+  if (renderer?.scene) renderer.scene.hintLabels = state.stats.manualActions < 60;
+}, 200);
 
 // --- Autosave ---------------------------------------------------------------
 const save = () => saveGame(state);
@@ -233,10 +240,19 @@ function onEvent(e: SimEvent, at: Point | null): void {
       feedback.toast(`Acre ${e.acres} restored. More ducks will find the marsh.`, 'good');
       break;
     case 'dayEnded':
-      if (e.bag > 0) feedback.toast(e.best ? `Day ${e.day} is done: ${e.bag} birds, your best day yet!` : `Day ${e.day} is done: ${e.bag} birds in the bag.`, e.best ? 'celebrate' : 'info', 4200);
+      if (e.bag > 0) feedback.toast(e.best ? `Day ${e.day} is done: ${e.bag} birds, your best day yet!` : `Day ${e.day} is done: ${e.bag} birds brought in.`, e.best ? 'celebrate' : 'info', 4200);
       break;
     case 'flockFlared':
       if (at) feedback.float('Flared off', at.x, at.y, 'info');
+      break;
+    case 'streak':
+      if (lastTapAt) {
+        if (e.bonus > 0) feedback.float(`+${formatNumber(e.bonus, n)} rhythm`, lastTapAt.x, lastTapAt.y - 34, 'coins', 0.15);
+        else if (e.level === 5 || e.level === 10) feedback.float(`Rhythm ×${e.level}!`, lastTapAt.x, lastTapAt.y - 34, 'info');
+      }
+      break;
+    case 'dailyBonus':
+      pushMoment({ kind: 'daily', coins: e.coins, feathers: e.feathers });
       break;
     default:
       break;
@@ -254,6 +270,51 @@ function replaceState(next: GameState): void {
 }
 
 let lastNudge = 0;
+let lastTapAt: Point | null = null;
+let lastTapNote = 0;
+
+/** A short note at the tap point, at most once every couple of seconds. */
+function tapNote(text: string, at: Point): void {
+  if (performance.now() - lastTapNote < 1800) return;
+  lastTapNote = performance.now();
+  feedback.float(text, at.x, at.y - 10, 'info');
+}
+
+/** The player tapped the marsh: work out what they meant and do it. */
+function onSceneTap(t: TapTarget): void {
+  lastTapAt = t.at;
+  let job = t.job;
+  if (!job) return;
+  // A tap on the water when the spread is full fetches a bird instead.
+  if (job === 'decoys' && !canDo(state, 'decoys')) {
+    if (canDo(state, 'retrieve')) job = 'retrieve';
+    else return tapNote('Spread is full', t.at);
+  }
+  if (job === 'call' && !canDo(state, 'call')) return tapNote('Shoot the low flock first', t.at);
+  if (job === 'retrieve' && t.floater) renderer?.scene.ducks.prefer(t.floater);
+  if (job === 'decoys') renderer?.scene.fx.ripple(t.at.x, t.at.y, 0.7, 1.4);
+  doAction(state, job, 'manual', runner.sink, t.flockId);
+  hud.set(snapshot(state));
+}
+
+/** Keyboard: D decoys, C call, S shoot, R retrieve. */
+const KEYS: Record<string, Exclude<HuntStage, 'log'>> = { d: 'decoys', c: 'call', s: 'shoot', r: 'retrieve' };
+window.addEventListener('keydown', (e) => {
+  if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+  const el = e.target as HTMLElement | null;
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+  const job = KEYS[e.key.toLowerCase()];
+  if (!job) return;
+  lastTapAt = null;
+  controls.act(job);
+});
+
+/** First Light: a small gift on the first visit of each calendar day. */
+function checkDailyBonus(): void {
+  if (catchingUp) return;
+  claimDailyBonus(state, localDayKey(), runner.sink);
+}
+setInterval(checkDailyBonus, 60_000);
 const UPGRADE_NAMES = Object.fromEntries(Object.entries(UPGRADES).map(([k, v]) => [k, v.name])) as Record<keyof typeof UPGRADES, string>;
 void SPECIES;
 void FLYWAYS;
@@ -411,6 +472,7 @@ async function startScene(host: HTMLElement): Promise<void> {
   renderer.options.motion = prefs.get().reducedMotion ? 0.35 : 1;
   renderer.onEvent = onEvent;
   renderer.onFix = (bot) => controls.fixBot(bot);
+  renderer.onTap = onSceneTap;
   await renderer.init();
   document.body.classList.add('is-ready');
   if (loaded.kind === 'loaded') {
@@ -418,6 +480,8 @@ async function startScene(host: HTMLElement): Promise<void> {
     if (state.meta.lastSaved > 0 && away > OFFLINE.minSummarySeconds) void catchUp(away);
     else feedback.toast(`Welcome back to the marsh. Day ${state.clock.day}.`);
   }
+  // After any offline catch-up has started, so the gift lands on top.
+  setTimeout(checkDailyBonus, 1500);
   if (loaded.kind === 'error') feedback.toast("Your old save couldn't be read, so a fresh marsh was started. A backup was kept.", 'info', 6000);
 }
 

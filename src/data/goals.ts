@@ -25,31 +25,31 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'decoys',
     title: 'Set out 3 decoys',
-    gus: 'First things first. Toss a few decoys out so passing ducks figure this is a safe spot to land.',
+    gus: 'First things first. Tap the water to toss a few decoys out, so passing ducks figure this is a safe spot to land.',
     done: (s) => s.hunt.decoys >= 3 || s.stats.flocksCalled > 0,
   },
   {
     id: 'call',
     title: 'Call in a circling flock',
-    gus: "Hear that? There's a flock circling up high. Give 'em a call and bring 'em down to the spread.",
+    gus: "Hear that? There's a flock circling up high. Tap it to give 'em a call and bring 'em down to the spread.",
     done: (s) => s.stats.flocksCalled > 0,
   },
   {
     id: 'shoot',
     title: 'Take the shot',
-    gus: "They're working the decoys now, wings cupped. Take your shot. Easy does it.",
+    gus: "They're working the decoys now, wings cupped. Tap 'em to take your shot. Easy does it.",
     done: (s) => s.stats.shots > 0,
   },
   {
     id: 'retrieve',
     title: `Send ${LAB_NAME} to retrieve`,
-    gus: `Birds on the water. Send ${LAB_NAME} out. That dog lives for this.`,
+    gus: `Birds on the water. Tap one to send ${LAB_NAME} out. That dog lives for this.`,
     done: (s) => s.stats.lifetimeBirds > 0,
   },
   {
     id: 'coins',
     title: 'Earn 25 coins',
-    gus: 'Every bird you bring in draws guests to the lodge, and guests pay. Keep the hunt going.',
+    gus: 'Every bird you bring in draws guests to the lodge, and guests pay. Tap quick, one after another, and you\'ll find your rhythm.',
     done: (s) => s.stats.lifetimeCoins.gte(25),
   },
   {
@@ -114,7 +114,7 @@ export const GOALS: readonly GoalDef[] = [
   },
   {
     id: 'bag25',
-    title: 'Bag 25 birds in one day',
+    title: 'Bring in 25 birds in one day',
     gus: 'Keep the decoys set and the crew balanced. A full day of hunting can fill the lodge.',
     done: (s) => s.stats.bestBag >= 25 || s.hunt.bag >= 25,
   },

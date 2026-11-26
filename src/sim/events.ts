@@ -38,6 +38,8 @@ export type SimEvent =
   | { type: 'achievement'; id: string }
   | { type: 'workflowChanged' }
   | { type: 'featureUnlocked'; feature: FeatureId }
+  | { type: 'streak'; level: number; bonus: number }
+  | { type: 'dailyBonus'; coins: number; feathers: number }
   | { type: 'perkBought'; perk: PerkId }
   | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }
   | { type: 'flockReturned'; flockId: number }

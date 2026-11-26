@@ -9,7 +9,7 @@ export const HUNT = {
   /** Decoys in a full spread at the start (more come from upgrades later). */
   baseSpreadSize: 6,
   /** Real seconds before one decoy drifts loose (wind makes it faster). */
-  decoyDriftSeconds: 75,
+  decoyDriftSeconds: 150,
   /** Wind multiplier on decoy drift: rate × (1 + wind × this). */
   decoyDriftWind: 0.8,
 
@@ -194,6 +194,23 @@ export const LEDGER = {
   keeperRate: 0.5,
   /** Coin bonus from reputation: 1 + k × sqrt(birds logged). */
   reputationK: 0.012,
+} as const;
+
+/** Hunter's Rhythm: quick manual taps in a row build a streak that pays a bonus. */
+export const STREAK = {
+  /** Seconds between manual actions before the streak fades. */
+  window: 10,
+  max: 10,
+  /** Bonus coins per streak level on each bird you retrieve by hand (× its value). */
+  bonusPerLevel: 0.06,
+} as const;
+
+/** First Light: a once-a-day welcome gift. */
+export const DAILY = {
+  /** Minimum coins, and how many seconds of current income the gift is worth. */
+  minCoins: 100,
+  incomeSeconds: 300,
+  feathers: 20,
 } as const;
 
 export const SCOUT = {

@@ -1,61 +1,46 @@
 import type { HuntStage } from '../../data/economy';
-import { LAB_NAME } from '../../data/goals';
+import { KEEPER_NAME, LAB_NAME } from '../../data/goals';
 import { formatRate } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 
-interface StageView {
-  stage: HuntStage;
-  verb: string;
-  status: (h: HudSnapshot) => string;
-  idle: string;
+interface StepView {
+  stage: Exclude<HuntStage, 'log'>;
+  label: string;
+  value: (h: HudSnapshot) => string;
   bot: string;
 }
 
-const STAGES: (StageView & { stage: Exclude<HuntStage, 'log'> })[] = [
-  {
-    stage: 'decoys',
-    verb: 'Set Decoys',
-    status: (h) => `${h.decoys}/${h.spread} out`,
-    idle: 'Spread is full',
-    bot: 'Decoy Setters',
-  },
-  {
-    stage: 'call',
-    verb: 'Call',
-    status: (h) => (h.incoming ? `${h.incoming} circling` : 'No flocks circling'),
-    idle: 'Wait for a flock',
-    bot: 'Caller Bots',
-  },
-  {
-    stage: 'shoot',
-    verb: 'Shoot',
-    status: (h) => (h.committed ? `${h.committed} in range` : 'Nothing in range'),
-    idle: 'Call a flock in first',
-    bot: 'Blind Bots',
-  },
-  {
-    stage: 'retrieve',
-    verb: 'Retrieve',
-    status: (h) => (h.downed ? `${h.downed} on the water` : 'Nothing to fetch'),
-    idle: `${LAB_NAME} is waiting`,
-    bot: 'Robo-Retrievers',
-  },
+const STEPS: StepView[] = [
+  { stage: 'decoys', label: 'Decoys out', value: (h) => `${h.decoys}/${h.spread}`, bot: 'Setters' },
+  { stage: 'call', label: 'Circling', value: (h) => `${h.incoming}`, bot: 'Callers' },
+  { stage: 'shoot', label: 'Over decoys', value: (h) => `${h.committed}`, bot: 'Blind Bots' },
+  { stage: 'retrieve', label: 'On the water', value: (h) => `${h.downed}`, bot: 'Retrievers' },
 ];
 
-/** The four manual hunt actions, laid out as a pipeline. */
-export function HuntPanel({ hud, controls, highlight }: { hud: HudSnapshot; controls: GameControls; highlight: HuntStage | null }) {
+/**
+ * The hunt happens on the marsh itself (tap the water, a flock, a bird).
+ * This slim card just shows where things stand; each cell also works as a
+ * button for anyone who'd rather tap here.
+ */
+export function HuntPanel({ hud, controls }: { hud: HudSnapshot; controls: GameControls }) {
   return (
-    <section class="hunt" aria-label="The hunt">
-      <ol class="hunt__row">
-        {STAGES.map((s, i) => {
+    <section class="hunt-status" aria-label="The hunt">
+      {hud.lifetimeBirds < 40 && (
+        <p class="hunt-status__how">
+          <strong>Tap the marsh to hunt.</strong> Water sets decoys, a circling flock gets called in, ducks over the decoys get shot, and a floating bird sends {LAB_NAME}.
+        </p>
+      )}
+      <ol class="hunt-steps">
+        {STEPS.map((s) => {
           const can = hud.can[s.stage];
           const auto = hud.auto[s.stage];
           return (
-            <li class="hunt__cell">
+            <li>
               <button
-                class={`hunt-btn hunt-btn--${s.stage} ${can ? 'is-ready' : ''} ${highlight === s.stage ? 'is-hint' : ''}`}
+                class={`hunt-step ${can ? 'is-ready' : ''}`}
                 aria-disabled={!can}
+                aria-label={`${s.label}: ${s.value(hud)}`}
                 onClick={(e) => {
                   const ok = controls.act(s.stage);
                   const el = e.currentTarget as HTMLElement;
@@ -64,37 +49,18 @@ export function HuntPanel({ hud, controls, highlight }: { hud: HudSnapshot; cont
                   el.classList.add(ok ? 'is-pressed' : 'is-nope');
                 }}
               >
-                <span class="hunt-btn__step">{i + 1}</span>
-                <span class="hunt-btn__verb">{s.verb}</span>
-                <span class="hunt-btn__status">{can || s.stage !== 'decoys' ? s.status(hud) : s.idle}</span>
-                {auto > 0 && <span class="hunt-btn__auto">{s.bot}: {formatRate(auto)}</span>}
+                <strong>{s.value(hud)}</strong>
+                <span>{s.label}</span>
+                {auto > 0 && <em>{s.bot} {formatRate(auto)}</em>}
               </button>
             </li>
           );
         })}
       </ol>
-      <div class={`ledger-bar ${hud.ledger >= 10 ? 'is-hot' : ''}`}>
-        <div class="ledger-bar__text">
-          <strong>Lodge ledger</strong>
-          <span>
-            {hud.ledger} bird{hud.ledger === 1 ? '' : 's'} to log · Gus {formatRate(hud.keeperRate)}
-            {hud.auto.log > 0 ? ` · Ledger Bots ${formatRate(hud.auto.log)}` : ''} · guests pay ×{hud.reputation.toFixed(2)}
-          </span>
-        </div>
-        <button
-          class={`btn btn--small ${hud.can.log ? '' : ''}`}
-          aria-disabled={!hud.can.log}
-          onClick={(e) => {
-            const ok = controls.act('log');
-            const el = e.currentTarget as HTMLElement;
-            el.classList.remove('is-pressed', 'is-nope');
-            void el.offsetWidth;
-            el.classList.add(ok ? 'is-pressed' : 'is-nope');
-          }}
-        >
-          Log a bird
-        </button>
-      </div>
+      <p class="hunt-status__lodge">
+        {KEEPER_NAME.split(' ')[0]} logs birds at the lodge: {hud.ledger} waiting
+        {hud.auto.log > 0 ? ` · Ledger Bots ${formatRate(hud.auto.log)}` : ''} · guests pay ×{hud.reputation.toFixed(2)}
+      </p>
     </section>
   );
 }
