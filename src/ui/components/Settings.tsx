@@ -1,7 +1,8 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import type { Prefs } from '../../app/prefs';
 import type { GameControls } from '../controls';
-import { installState, promptInstall } from '../../app/pwa';
+import { BUILD_STAMP, installState, promptInstall } from '../../app/pwa';
+import { LODGE_LEVELS } from '../../data/progression';
 import { useStore } from '../store';
 import { AVATARS, NAME_MAX } from '../../data/avatars';
 import { avatarPortrait } from '../portraits';
@@ -14,6 +15,8 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
   profile: { name: string; avatar: string };
 }) {
   const [name, setName] = useState(profile.name);
+  // A restore or import brings its own name along.
+  useEffect(() => setName(profile.name), [profile.name]);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ text: string; tone: 'good' | 'bad' } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -28,6 +31,24 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
     } catch {
       setMsg({ text: 'Save code is in the box below. Select it all and copy it.', tone: 'good' });
     }
+  };
+
+  const doShare = async () => {
+    const c = controls.exportSave();
+    setCode(c);
+    try {
+      await navigator.share({ title: 'Duck Hunt Idle save', text: c });
+      setMsg({ text: 'Save code sent. Paste it into Import save to load it.', tone: 'good' });
+    } catch {
+      /* cancelled */
+    }
+  };
+  const canShare = typeof navigator.share === 'function';
+  const [backups, setBackups] = useState(() => controls.listBackups());
+  const restore = (at: number) => {
+    const r = controls.restoreBackup(at);
+    setBackups(controls.listBackups());
+    setMsg(r.ok ? { text: 'Backup restored. Welcome back!', tone: 'good' } : { text: r.error, tone: 'bad' });
   };
 
   const doImport = () => {
@@ -164,9 +185,18 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
 
         <section class="drawer__section">
           <h4>Your save</h4>
-          <p class="card__hint">The game saves itself every 15 seconds on this device. Export a code to back it up or move it to another device.</p>
+          <p class="card__hint">
+            The game saves itself every 15 seconds and updates itself when a new version is out, so there's no need to
+            remove it from your home screen. Removing the home-screen app erases the save inside it.
+          </p>
+          {install.ios && (
+            <p class="card__hint">
+              On iPhone, Safari and the home-screen app keep separate saves. Use a save code to move one to the other.
+            </p>
+          )}
           <div class="btn-row">
-            <button class="btn" onClick={doExport}>Export save</button>
+            <button class="btn" onClick={doExport}>Copy save code</button>
+            {canShare && <button class="btn" onClick={() => void doShare()}>Send save code</button>}
             <button class="btn" onClick={doImport} aria-disabled={!code.trim()}>Import save</button>
           </div>
           <textarea
@@ -178,6 +208,24 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
             rows={4}
           />
           {msg && <p class={`msg msg--${msg.tone}`}>{msg.text}</p>}
+          {backups.length > 0 && (
+            <>
+              <h4 class="backups__head">Backups on this device</h4>
+              <p class="card__hint">Copies kept every 10 minutes, and right before a reset, import or restore.</p>
+              <ul class="backups">
+                {backups.map((b) => (
+                  <li class="backup">
+                    <div class="backup__text">
+                      <strong>{b.name || 'Hunter'} · {LODGE_LEVELS[b.lodge - 1]?.name ?? 'Lodge'}</strong>
+                      <span>{b.birds.toLocaleString()} birds · {whenText(b.at)}{b.why === 'reset' ? ' · before reset' : b.why === 'import' ? ' · before import' : b.why === 'restore' ? ' · before restore' : ''}</span>
+                    </div>
+                    <button class="btn btn--small" onClick={() => restore(b.at)}>Restore</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          <p class="card__hint build-stamp">Version {BUILD_STAMP}</p>
         </section>
 
         <section class="drawer__section">
@@ -186,7 +234,7 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
             <button class="btn btn--danger" onClick={() => setConfirmReset(true)}>Reset save…</button>
           ) : (
             <div class="confirm">
-              <p>This erases your marsh, bots and coins on this device. Export a save first if you might want it back.</p>
+              <p>This starts a new marsh. A backup of your current save is kept above, so you can restore it later.</p>
               <div class="btn-row">
                 <button class="btn btn--danger" onClick={() => { controls.resetSave(); setConfirmReset(false); onClose(); }}>Yes, erase everything</button>
                 <button class="btn" onClick={() => setConfirmReset(false)}>Keep my save</button>
@@ -197,6 +245,15 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
       </div>
     </div>
   );
+}
+
+function whenText(at: number): string {
+  const mins = Math.round((Date.now() - at) / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  return new Date(at).toLocaleDateString();
 }
 
 function Slider({ id, label, value, onChange }: { id: string; label: string; value: number; onChange: (v: number) => void }) {

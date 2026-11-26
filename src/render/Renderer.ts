@@ -72,9 +72,9 @@ export class Renderer {
       this.scene.crew.onFix = (b) => this.onFix?.(b);
       this.app.stage.addChild(this.scene.root);
       this.lastW = this.lastH = 0;
-      this.setGround('marsh');
+      // Lay the new scene out before anything draws into it.
       this.handleResize();
-      this.scene.sync(runner.state);
+      this.setGround('marsh');
     }
   }
 

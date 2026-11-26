@@ -36,6 +36,9 @@ export interface GameControls {
   exportSave(): string;
   importSave(code: string): { ok: true } | { ok: false; error: string };
   resetSave(): void;
+  /** Older copies of the save kept on this device, newest first. */
+  listBackups(): { at: number; why: string; name: string; lodge: number; birds: number }[];
+  restoreBackup(at: number): { ok: true } | { ok: false; error: string };
   setNotation(n: Notation): void;
   setReducedMotion(on: boolean): void;
   // Preview helpers

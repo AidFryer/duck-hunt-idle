@@ -4034,3 +4034,11 @@ select {
 .guide-drawer .guide-card {
   margin-bottom: 10px;
 }
+
+/* Save backups in Settings */
+.backups__head { margin-top: 14px; }
+.backups { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.backup { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(255, 244, 220, 0.06); }
+.backup__text { flex: 1; display: grid; gap: 2px; font-size: 13px; }
+.backup__text span { opacity: 0.75; font-size: 12px; }
+.build-stamp { margin-top: 12px; opacity: 0.6; font-size: 11px; }

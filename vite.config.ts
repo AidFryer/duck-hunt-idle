@@ -16,6 +16,10 @@ function gameTitle(): Plugin {
 // GitHub Pages (served from /duck-hunt-idle/), locally, and inside Capacitor.
 export default defineConfig({
   base: './',
+  define: {
+    // Build time (UTC), shown in Settings so it's easy to tell which version is running.
+    __BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')),
+  },
   plugins: [
     preact(),
     gameTitle(),
@@ -44,6 +48,11 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         cleanupOutdatedCaches: true,
+        // Take over as soon as a new version is downloaded. Without this it
+        // waits until every copy of the game is closed, which on a phone's
+        // home screen almost never happens, so updates seemed stuck.
+        skipWaiting: true,
+        clientsClaim: true,
         navigateFallback: 'index.html',
       },
     }),

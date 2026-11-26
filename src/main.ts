@@ -5,7 +5,7 @@ import '@fontsource/nunito/latin-800.css';
 import './styles/main.css';
 
 import { h, render } from 'preact';
-import { backupBrokenSave, AUTOSAVE_MS, clearSave, loadGame, saveGame } from './app/persistence';
+import { askToKeepStorage, backupBrokenSave, backupNow, AUTOSAVE_MS, listBackups, loadGame, saveGame } from './app/persistence';
 import { loadPrefs, savePrefs, type Prefs } from './app/prefs';
 import { GAME_TITLE } from './config';
 import { BOTS, JOBS, PROBLEMS } from './data/economy';
@@ -29,7 +29,7 @@ import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
 import { SimRunner } from './sim/runner';
-import { exportSave, importSave } from './sim/save';
+import { deserialize, exportSave, importSave } from './sim/save';
 import { runOffline } from './sim/offline';
 import { buyUpgrade } from './sim/upgrades';
 import { addNode, connect, cut, removeNode } from './sim/workflow';
@@ -47,7 +47,7 @@ import type { GameControls } from './ui/controls';
 import { feedback } from './ui/feedback';
 import { snapshot } from './ui/hudState';
 import { Store } from './ui/store';
-import { setupPwa } from './app/pwa';
+import { justUpdated, setupPwa } from './app/pwa';
 import { setupViewport } from './app/viewport';
 import { audio, type Sfx } from './audio/AudioEngine';
 import { clockAt, duckActivityAt } from './sim/clock';
@@ -74,6 +74,7 @@ function freshState(): GameState {
 const loaded = loadGame();
 let state: GameState = loaded.kind === 'loaded' ? loaded.state : freshState();
 if (loaded.kind === 'error') backupBrokenSave(loaded.raw);
+askToKeepStorage();
 
 // --- Simulation (pure TS, fixed 10 Hz) --------------------------------------
 let runner = new SimRunner(state, () => performance.now());
@@ -515,16 +516,34 @@ const controls: GameControls = {
   exportSave: () => exportSave(state),
   importSave(code) {
     try {
-      replaceState(importSave(code));
+      const next = importSave(code);
+      backupNow(state, 'import');
+      replaceState(next);
+      save();
       return { ok: true };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
     }
   },
   resetSave() {
-    clearSave();
+    backupNow(state, 'reset');
     replaceState(freshState());
+    save();
     feedback.toast('A fresh start. The marsh is waiting.');
+  },
+  listBackups: () => listBackups().map(({ at, why, name, lodge, birds }) => ({ at, why, name, lodge, birds })),
+  restoreBackup(at) {
+    const b = listBackups().find((x) => x.at === at);
+    if (!b) return { ok: false, error: 'That backup is gone.' };
+    try {
+      const next = deserialize(b.raw);
+      backupNow(state, 'restore');
+      replaceState(next);
+      save();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
   },
   setNotation: () => hud.set(snapshot(state)),
   setReducedMotion(on) {
@@ -593,6 +612,7 @@ async function startScene(host: HTMLElement): Promise<void> {
   // After any offline catch-up has started, so the gift lands on top.
   setTimeout(checkDailyBonus, 1500);
   if (loaded.kind === 'error') feedback.toast("Your old save couldn't be read, so a fresh marsh was started. A backup was kept.", 'info', 6000);
+  else if (justUpdated()) setTimeout(() => feedback.toast('The game updated. Your save came along.', 'good', 3500), 2500);
 }
 
 const root = document.getElementById('app')!;
