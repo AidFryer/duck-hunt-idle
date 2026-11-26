@@ -25,6 +25,14 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     for (const b of Object.values(bots)) delete b.progress;
     return { ...s, version: 3 };
   },
+  // v3 (Phase 3) → v4 adds species, weather spells, upgrades and achievements.
+  // Birds already harvested were all mallards, so seed the Field Guide.
+  3: (s) => {
+    const stats = (s.stats ?? {}) as Json;
+    const birds = typeof stats.lifetimeBirds === 'number' ? stats.lifetimeBirds : 0;
+    const guide = birds > 0 ? { mallard: { count: birds, firstAt: 0 } } : {};
+    return { ...s, guide, version: 4 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

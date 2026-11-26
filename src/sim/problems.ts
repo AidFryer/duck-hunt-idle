@@ -77,9 +77,8 @@ export function retryDelay(state: GameState, attempt: number): number {
 }
 
 /** How many problems the foremen can work on at once. */
-export function foremanCapacity(state: GameState): number {
-  const r = jobRate(state, 'foreman');
-  return r <= 0 ? 0 : Math.max(1, Math.floor(r));
+export function foremanCapacity(state: GameState, rate = jobRate(state, 'foreman')): number {
+  return rate <= 0 ? 0 : Math.max(1, Math.floor(rate));
 }
 
 export function setForemanSettings(state: GameState, retries: number, backoff: number): void {
@@ -88,8 +87,9 @@ export function setForemanSettings(state: GameState, retries: number, backoff: n
 }
 
 /** Foremen pick up open problems and retry them with exponential backoff. */
-export function stepForemen(state: GameState, events: EventSink): void {
-  const cap = foremanCapacity(state);
+export function stepForemen(state: GameState, events: EventSink, rate?: number): void {
+  if (state.problems.open.length === 0) return;
+  const cap = foremanCapacity(state, rate);
   const now = state.elapsed;
   let busy = state.problems.open.filter((p) => p.status === 'retrying').length;
   if (cap === 0) {

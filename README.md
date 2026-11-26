@@ -60,7 +60,7 @@ Rules the code follows:
 - [x] Phase 1: scaffold, palette, animated marsh (day cycle, water, reeds, fog, flocks), responsive layout
 - [x] Phase 2: core loop (manual hunt, currencies, saves, first bots)
 - [x] Phase 3: automation (job board, flock queue, exceptions, foremen)
-- [ ] Phase 4: species, weather, upgrades, achievements, offline progress
+- [x] Phase 4: species, weather, upgrades, achievements, offline progress
 - [ ] Phase 5: workflows and prestige
 - [ ] Phase 6: polish, audio, tutorial, balancing
 - [ ] Phase 7: PWA, GitHub Pages deploy, Capacitor

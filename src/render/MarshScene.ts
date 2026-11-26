@@ -12,6 +12,9 @@ import { ReedLayer, type ReedClump } from './layers/ReedLayer';
 import { ShoreLayer } from './layers/ShoreLayer';
 import { SkyLayer } from './layers/SkyLayer';
 import { WaterLayer } from './layers/WaterLayer';
+import { WeatherLayer } from './layers/WeatherLayer';
+import { PlotsLayer, TimberLayer } from './layers/MarshUpgradeLayer';
+import { WEATHER } from '../data/weather';
 import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from './types';
@@ -29,6 +32,11 @@ export class MarshScene {
   readonly fx: EffectsLayer;
   readonly blind: BlindLayer;
   readonly crew: CrewLayer;
+  readonly weather: WeatherLayer;
+  private readonly clouds: CloudLayer;
+  private readonly fogs: FogLayer[];
+  private readonly plots: PlotsLayer;
+  private readonly timber: TimberLayer;
   private readonly layers: Layer[];
   private readonly layoutOrder: Layer[];
   layout: SceneLayout = {
@@ -43,7 +51,7 @@ export class MarshScene {
   constructor() {
     const tex = this.tex;
     this.sky = new SkyLayer(tex);
-    const clouds = new CloudLayer(tex);
+    const clouds = (this.clouds = new CloudLayer(tex));
     const farFog = new FogLayer(tex, [{ at: -0.02, speed: 6, alpha: 0.85, height: 0.6 }]);
     const land = new LandLayer();
     this.water = new WaterLayer(tex);
@@ -58,22 +66,26 @@ export class MarshScene {
       { at: 0.55, speed: 16, alpha: 0.32, height: 0.7 },
     ]);
     const fgReeds = new ReedLayer(tex, 77, foregroundClumps, 0.62);
+    this.weather = new WeatherLayer(tex, this.fx);
+    this.plots = new PlotsLayer();
+    this.timber = new TimberLayer();
+    this.fogs = [farFog, nearFog];
     const overlay = new OverlayLayer(tex);
 
     // Reflections live inside the water, under shimmer and ripples.
-    this.water.reflections.addChild(land.reflection, shore.reflection, blind.reflection, this.crew.reflection);
+    this.water.reflections.addChild(land.reflection, this.timber.reflection, shore.reflection, blind.reflection, this.crew.reflection);
     this.water.surface.addChild(this.fx.rippleView);
 
     // Back-to-front draw order.
     this.layers = [
-      this.sky, clouds, farFog, land, this.water, shore, midReeds, blind,
-      this.ducks, this.crew, nearFog, this.fx, fgReeds, overlay,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, midReeds, blind,
+      this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, shore, blind, this.crew, midReeds,
-      this.ducks, nearFog, this.fx, fgReeds, overlay,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, midReeds,
+      this.ducks, nearFog, this.fx, fgReeds, this.weather, overlay,
     ];
   }
 
@@ -99,7 +111,7 @@ export class MarshScene {
         this.blind.driftDecoy();
         return null;
       case 'flockArrived':
-        this.ducks.arrive(e.flockId, e.size);
+        this.ducks.arrive(e.flockId, e.size, e.species);
         return null;
       case 'flockPassed':
         this.ducks.spawnFlyover(Math.min(e.size, 6), 0.35, true);
@@ -147,7 +159,20 @@ export class MarshScene {
         this.fx.confetti(this.layout.anchors.decoyCenter.x, this.layout.anchors.decoyCenter.y, this.layout.scale);
         return this.layout.anchors.decoyCenter;
       case 'dayEnded':
+      case 'weatherChanged':
+      case 'newSpecies':
+      case 'achievement':
         return null;
+      case 'upgradeBought': {
+        const a = this.layout.anchors;
+        const at = e.upgrade === 'timber' ? { x: a.lodge.x + 80 * this.layout.scale, y: a.decoyCenter.y - 40 * this.layout.scale }
+          : e.upgrade === 'rice' || e.upgrade === 'millet' ? { x: this.layout.w * (e.upgrade === 'rice' ? 0.75 : 0.35), y: this.layout.horizon }
+          : e.upgrade === 'lodgeRooms' || e.upgrade === 'cot' ? a.lodge
+          : e.upgrade === 'coffee' || e.upgrade === 'blinds' ? a.blind
+          : a.decoyCenter;
+        this.fx.confetti(at.x, at.y, this.layout.scale);
+        return at;
+      }
     }
   }
 
@@ -156,6 +181,12 @@ export class MarshScene {
     this.blind.reconcile(state.hunt.decoys);
     this.ducks.reconcile(state);
     this.crew.sync(state);
+    const w = state.environment.weather;
+    this.weather.weather = w;
+    for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;
+    this.plots.setLevels(state.upgrades.rice ?? 0, state.upgrades.millet ?? 0);
+    this.timber.setLevel(state.upgrades.timber ?? 0);
+    this.fx.steamBoost = 1 + (state.upgrades.coffee ?? 0) * 0.35;
   }
 
   update(f: Omit<FrameContext, 'layout'>): void {
@@ -164,6 +195,7 @@ export class MarshScene {
     // Sun/moon x feed the water's light path.
     this.water.sunX = this.sky.celestialPos(f.sky.sunProgress, 0).x;
     this.water.moonX = this.sky.celestialPos(f.sky.moonProgress, 0).x;
+    this.clouds.overcast = this.weather.overcast;
     for (const layer of this.layers) layer.update(frame);
   }
 }

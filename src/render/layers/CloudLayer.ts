@@ -17,6 +17,8 @@ export class CloudLayer implements Layer {
   readonly view = new Container();
   private readonly clouds: Cloud[] = [];
   private l!: SceneLayout;
+  /** 0–1: rainy/cold weather darkens and thickens the clouds. */
+  overcast = 0;
 
   constructor(tex: TextureLibrary) {
     const rnd = seededRandom(88);
@@ -47,8 +49,8 @@ export class CloudLayer implements Layer {
       if (c.nx > 1) c.nx -= 1;
       c.s.x = c.nx * span - 170 * l.scale;
       // Far clouds take on more horizon haze.
-      c.s.tint = lerpColor(f.sky.cloud, f.sky.skyMid, (1 - c.depth) * 0.35);
-      c.s.alpha = 0.55 + c.depth * 0.35;
+      c.s.tint = lerpColor(lerpColor(f.sky.cloud, f.sky.skyMid, (1 - c.depth) * 0.35), 0x7a808a, this.overcast * 0.45);
+      c.s.alpha = Math.min(1, 0.55 + c.depth * 0.35 + this.overcast * 0.3);
     }
   }
 }

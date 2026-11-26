@@ -7,6 +7,7 @@
  * directly.
  */
 import { palette, plumage } from '../../data/palette';
+import { SPECIES, type DuckLook } from '../../data/species';
 import { seededRandom } from '../../util/math';
 import { createPaintTarget, css, ellipse, linearV, softBlob } from './canvas';
 
@@ -299,73 +300,71 @@ export function paintLeaf(variant: number): Canvas {
 
 // ---------------------------------------------------------------- ducks
 
-interface DuckColors {
-  drake: boolean;
+/** Default looks (mallard) for callers that just want "a duck". */
+const MALLARD = SPECIES.mallard;
+function lookFor(arg: { drake: boolean } | DuckLook): DuckLook {
+  if ('drake' in arg) return arg.drake ? MALLARD.drake : MALLARD.hen;
+  return arg;
 }
 
 /** Flying body, facing right. Design 64×26. Shoulder at (30, 10). */
-export function paintDuckFlyBody({ drake }: DuckColors): Canvas {
+export function paintDuckFlyBody(arg: { drake: boolean } | DuckLook): Canvas {
+  const L = lookFor(arg);
   const t = createPaintTarget(64, 26);
   const { ctx } = t;
   // Tail
-  ctx.fillStyle = css(drake ? plumage.drakeTail : plumage.henDark);
+  ctx.fillStyle = css(L.tail);
   ctx.beginPath();
-  ctx.moveTo(9, 12);
-  ctx.lineTo(0.5, 10);
-  ctx.lineTo(2, 14);
-  ctx.lineTo(0.5, 17.5);
-  ctx.lineTo(9, 16);
-  ctx.fill();
-  if (drake) {
-    ctx.fillStyle = css(palette.cream, 0.9);
-    ctx.fillRect(1.5, 12.8, 3, 2.2);
+  if (L.longTail) {
+    ctx.moveTo(9, 12.5);
+    ctx.lineTo(-0.5, 12.5);
+    ctx.lineTo(9, 15.5);
+  } else {
+    ctx.moveTo(9, 12);
+    ctx.lineTo(0.5, 10);
+    ctx.lineTo(2, 14);
+    ctx.lineTo(0.5, 17.5);
+    ctx.lineTo(9, 16);
   }
-  // Body
-  ctx.fillStyle = linearV(ctx, 7, 21, drake
-    ? [[0, plumage.drakeBack], [0.45, plumage.drakeFlank], [1, 0xe4ddcf]]
-    : [[0, plumage.henDark], [0.5, plumage.henBody], [1, plumage.henLight]]);
+  ctx.fill();
+  // Body: back on top, flank below
+  ctx.fillStyle = linearV(ctx, 7, 21, [[0, L.back], [0.45, L.flank], [1, shadeHex(L.flank, 1.12)]]);
   ellipse(ctx, 26, 14, 19, 6.8);
   ctx.fill();
-  if (!drake) streaks(ctx, 12, 9, 28, 10, 22);
-  // Breast
-  if (drake) {
-    ctx.fillStyle = css(plumage.drakeBreast);
-    ellipse(ctx, 40, 15, 7.5, 5.6, -0.2);
+  if (L.sidePatch) {
+    ctx.fillStyle = css(L.sidePatch);
+    ellipse(ctx, 22, 16.5, 7, 2.6);
     ctx.fill();
   }
+  if (L.streaky) streaksIn(ctx, 12, 9, 28, 10, 22, L.back);
+  // Breast
+  ctx.fillStyle = css(L.breast);
+  ellipse(ctx, 40, 15, 7.5, 5.6, -0.2);
+  ctx.fill();
   // Neck + head
-  ctx.fillStyle = css(drake ? plumage.drakeHead : plumage.henBody);
+  ctx.fillStyle = css(L.head);
   ellipse(ctx, 47, 11.5, 6.5, 3.4, -0.25);
   ctx.fill();
   ellipse(ctx, 54, 9, 5.2, 4.2);
   ctx.fill();
-  if (drake) {
-    ctx.fillStyle = css(plumage.drakeHeadSheen, 0.7);
-    ellipse(ctx, 53.5, 7.6, 3, 1.6, -0.2);
-    ctx.fill();
+  paintHeadDetails(ctx, L, 54, 9, 1);
+  if (L.neckMark === 'ring') {
     ctx.strokeStyle = css(palette.white, 0.95);
     ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.moveTo(44.2, 9.6);
     ctx.lineTo(43.6, 14.2);
     ctx.stroke();
-  } else {
-    ctx.strokeStyle = css(plumage.henDark, 0.8);
-    ctx.lineWidth = 0.8;
+  } else if (L.neckMark === 'stripe') {
+    ctx.strokeStyle = css(palette.white, 0.95);
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(50.5, 8.4);
-    ctx.lineTo(57.5, 8.2);
+    ctx.moveTo(43, 14);
+    ctx.quadraticCurveTo(47, 11, 51, 8.5);
     ctx.stroke();
   }
-  // Bill
-  ctx.fillStyle = css(drake ? plumage.bill : plumage.henBill);
-  ctx.beginPath();
-  ctx.moveTo(58, 7.6);
-  ctx.quadraticCurveTo(64, 8.6, 64, 10.2);
-  ctx.quadraticCurveTo(61, 11.2, 58, 11);
-  ctx.fill();
-  // Eye
-  ctx.fillStyle = css(palette.ink);
+  paintBill(ctx, L, 58, 7.6, 1);
+  ctx.fillStyle = css(L.bill === 0xd8483a ? 0xd8483a : palette.ink);
   ctx.beginPath();
   ctx.arc(55.2, 7.9, 0.9, 0, Math.PI * 2);
   ctx.fill();
@@ -373,32 +372,27 @@ export function paintDuckFlyBody({ drake }: DuckColors): Canvas {
 }
 
 /** Wing, drawn pointing up from the shoulder. Design 30×28, shoulder at (12, 28). */
-export function paintDuckWing({ drake }: DuckColors): Canvas {
+export function paintDuckWing(arg: { drake: boolean } | DuckLook): Canvas {
+  const L = lookFor(arg);
   const t = createPaintTarget(30, 28);
   const { ctx } = t;
-  const base = drake ? plumage.wingGray : plumage.henBody;
-  const dark = drake ? plumage.wingDark : plumage.henDark;
-  ctx.fillStyle = linearV(ctx, 28, 0, [
-    [0, base],
-    [0.6, base],
-    [1, dark],
-  ]);
+  const base = shadeHex(L.back, 1.15);
+  const dark = shadeHex(L.back, 0.75);
+  ctx.fillStyle = linearV(ctx, 28, 0, [[0, base], [0.6, base], [1, dark]]);
   ctx.beginPath();
   ctx.moveTo(5, 28);
   ctx.quadraticCurveTo(1, 14, 3, 0.5);
   ctx.quadraticCurveTo(14, 10, 21, 28);
   ctx.closePath();
   ctx.fill();
-  // Speculum band with white borders along the trailing edge
   ctx.save();
   ctx.clip();
   ctx.fillStyle = css(palette.white, 0.9);
   ctx.fillRect(0, 17.5, 30, 1.2);
-  ctx.fillStyle = css(plumage.speculum);
+  ctx.fillStyle = css(L.speculum);
   ctx.fillRect(0, 18.7, 30, 3.6);
   ctx.fillStyle = css(palette.white, 0.9);
   ctx.fillRect(0, 22.3, 30, 1.1);
-  // Feather tips
   ctx.strokeStyle = css(dark, 0.6);
   ctx.lineWidth = 0.6;
   for (let i = 0; i < 5; i++) {
@@ -412,7 +406,8 @@ export function paintDuckWing({ drake }: DuckColors): Canvas {
 }
 
 /** Swimming duck (or wooden decoy), facing right. Design 60×34, waterline y=30. */
-export function paintDuckSwim({ drake }: DuckColors, decoy = false): Canvas {
+export function paintDuckSwim(arg: { drake: boolean } | DuckLook, decoy = false): Canvas {
+  const L = lookFor(arg);
   const t = createPaintTarget(60, 34);
   const { ctx } = t;
   ctx.save();
@@ -420,83 +415,72 @@ export function paintDuckSwim({ drake }: DuckColors, decoy = false): Canvas {
   ctx.rect(0, 0, 60, 30);
   ctx.clip();
   // Tail
-  ctx.fillStyle = css(drake ? plumage.drakeTail : plumage.henDark);
+  ctx.fillStyle = css(L.tail);
   ctx.beginPath();
-  ctx.moveTo(10, 24);
-  ctx.lineTo(1, 17);
-  ctx.lineTo(12, 19);
-  ctx.fill();
-  if (drake) {
-    ctx.fillStyle = css(palette.cream);
-    ctx.beginPath();
-    ctx.moveTo(4, 19);
+  if (L.longTail) {
+    ctx.moveTo(10, 23);
+    ctx.lineTo(-1, 13);
+    ctx.lineTo(12, 20);
+  } else {
+    ctx.moveTo(10, 24);
     ctx.lineTo(1, 17);
-    ctx.lineTo(6, 18);
-    ctx.fill();
+    ctx.lineTo(12, 19);
   }
+  ctx.fill();
   // Body
-  ctx.fillStyle = linearV(ctx, 16, 32, drake
-    ? [[0, plumage.drakeBack], [0.35, plumage.drakeFlank], [1, 0xded6c6]]
-    : [[0, plumage.henDark], [0.45, plumage.henBody], [1, plumage.henLight]]);
+  ctx.fillStyle = linearV(ctx, 16, 32, [[0, L.back], [0.35, L.flank], [1, shadeHex(L.flank, 1.1)]]);
   ellipse(ctx, 26, 25, 19.5, 8.8);
   ctx.fill();
-  if (!drake && !decoy) streaks(ctx, 10, 18, 32, 10, 26);
-  // Folded wing with speculum flash
-  ctx.fillStyle = css(drake ? plumage.wingDark : plumage.henDark, 0.75);
-  ellipse(ctx, 22, 21, 12, 3.6, 0.08);
-  ctx.fill();
-  ctx.fillStyle = css(plumage.speculum, 0.9);
-  ctx.fillRect(13, 21.6, 6, 1.6);
-  // Breast
-  if (drake) {
-    ctx.fillStyle = css(plumage.drakeBreast);
-    ellipse(ctx, 40.5, 24.5, 7, 7.2);
+  if (L.sidePatch) {
+    ctx.fillStyle = css(L.sidePatch);
+    ellipse(ctx, 24, 26.5, 8, 3);
     ctx.fill();
   }
+  if (L.streaky && !decoy) streaksIn(ctx, 10, 18, 32, 10, 26, L.back);
+  // Folded wing with speculum flash
+  ctx.fillStyle = css(shadeHex(L.back, 0.8), 0.75);
+  ellipse(ctx, 22, 21, 12, 3.6, 0.08);
+  ctx.fill();
+  ctx.fillStyle = css(L.speculum, 0.9);
+  ctx.fillRect(13, 21.6, 6, 1.6);
+  // Breast
+  ctx.fillStyle = css(L.breast);
+  ellipse(ctx, 40.5, 24.5, 7, 7.2);
+  ctx.fill();
   ctx.restore();
   // Neck
-  ctx.strokeStyle = css(drake ? plumage.drakeHead : plumage.henBody);
+  ctx.strokeStyle = css(L.head);
   ctx.lineWidth = decoy ? 7 : 6;
   ctx.beginPath();
   ctx.moveTo(41.5, 21);
   ctx.quadraticCurveTo(44, 15, 46, 11);
   ctx.stroke();
   // Head
-  ctx.fillStyle = css(drake ? plumage.drakeHead : plumage.henBody);
+  ctx.fillStyle = css(L.head);
   ellipse(ctx, 47.5, 9, decoy ? 6.6 : 6, decoy ? 5.4 : 5);
   ctx.fill();
-  if (drake) {
-    ctx.fillStyle = css(plumage.drakeHeadSheen, decoy ? 0.45 : 0.7);
-    ellipse(ctx, 47, 7.2, 3.4, 1.7, -0.2);
-    ctx.fill();
+  paintHeadDetails(ctx, L, 47.5, 9, decoy ? 1.1 : 1.05);
+  if (L.neckMark === 'ring') {
     ctx.strokeStyle = css(palette.white);
     ctx.lineWidth = 1.3;
     ctx.beginPath();
     ctx.moveTo(41.2, 16.2);
     ctx.lineTo(45.2, 17);
     ctx.stroke();
-  } else {
-    ctx.strokeStyle = css(plumage.henDark, 0.8);
-    ctx.lineWidth = 0.8;
+  } else if (L.neckMark === 'stripe') {
+    ctx.strokeStyle = css(palette.white);
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(44, 8);
-    ctx.lineTo(52, 8.4);
+    ctx.moveTo(42, 20);
+    ctx.quadraticCurveTo(44.5, 14, 45.6, 9);
     ctx.stroke();
   }
-  // Bill
-  ctx.fillStyle = css(drake ? plumage.bill : plumage.henBill);
-  ctx.beginPath();
-  ctx.moveTo(52.5, 7.8);
-  ctx.quadraticCurveTo(59.5, 9.4, 59.5, 11);
-  ctx.quadraticCurveTo(56, 12, 52.5, 11.6);
-  ctx.fill();
-  // Eye
-  ctx.fillStyle = css(palette.ink);
+  paintBill(ctx, L, 52.5, 7.8, 1);
+  ctx.fillStyle = css(L.bill === 0xd8483a ? 0xd8483a : palette.ink);
   ctx.beginPath();
   ctx.arc(49.3, 7.6, decoy ? 1.2 : 1, 0, Math.PI * 2);
   ctx.fill();
   if (decoy) {
-    // Painted-wood sheen and a carved line where head meets body.
     ctx.strokeStyle = css(palette.cream, 0.35);
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -513,9 +497,68 @@ export function paintDuckSwim({ drake }: DuckColors, decoy = false): Canvas {
   return t.canvas;
 }
 
-function streaks(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number): void {
+/** Crest, sheen, eye patch, crown stripe and face lines on a head at (hx, hy). */
+function paintHeadDetails(ctx: CanvasRenderingContext2D, L: DuckLook, hx: number, hy: number, k: number): void {
+  if (L.crest) {
+    ctx.fillStyle = css(L.head);
+    ctx.beginPath();
+    ctx.moveTo(hx + 1 * k, hy - 4 * k);
+    ctx.quadraticCurveTo(hx - 6 * k, hy - 4.5 * k, hx - 9 * k, hy + 1 * k);
+    ctx.quadraticCurveTo(hx - 5 * k, hy - 0.5 * k, hx - 1 * k, hy - 1 * k);
+    ctx.fill();
+  }
+  if (L.headSheen) {
+    ctx.fillStyle = css(L.headSheen, 0.7);
+    ellipse(ctx, hx - 0.5 * k, hy - 1.6 * k, 3 * k, 1.6 * k, -0.2);
+    ctx.fill();
+  }
+  if (L.eyePatch) {
+    ctx.fillStyle = css(L.eyePatch, 0.95);
+    ctx.beginPath();
+    ctx.moveTo(hx + 2.5 * k, hy - 1.5 * k);
+    ctx.quadraticCurveTo(hx - 2 * k, hy - 2.5 * k, hx - 5 * k, hy + 1 * k);
+    ctx.quadraticCurveTo(hx - 1 * k, hy + 0.5 * k, hx + 2.5 * k, hy + 0.2 * k);
+    ctx.fill();
+  }
+  if (L.crown) {
+    ctx.strokeStyle = css(L.crown);
+    ctx.lineWidth = 1.4 * k;
+    ctx.beginPath();
+    ctx.moveTo(hx - 3 * k, hy - 3.4 * k);
+    ctx.quadraticCurveTo(hx + 1 * k, hy - 4.6 * k, hx + 4 * k, hy - 2.6 * k);
+    ctx.stroke();
+  }
+  if (L.faceLines) {
+    ctx.strokeStyle = css(palette.white, 0.95);
+    ctx.lineWidth = 0.7 * k;
+    ctx.beginPath();
+    ctx.moveTo(hx + 4 * k, hy - 2.6 * k);
+    ctx.quadraticCurveTo(hx - 2 * k, hy - 3.6 * k, hx - 8 * k, hy + 0.5 * k);
+    ctx.moveTo(hx + 1 * k, hy + 1.5 * k);
+    ctx.quadraticCurveTo(hx - 2 * k, hy + 0.6 * k, hx - 6 * k, hy + 1.2 * k);
+    ctx.moveTo(hx + 1 * k, hy + 3 * k);
+    ctx.lineTo(hx - 1 * k, hy + 6 * k);
+    ctx.stroke();
+  }
+}
+
+function paintBill(ctx: CanvasRenderingContext2D, L: DuckLook, x: number, y: number, k: number): void {
+  if (L.billShield) {
+    ctx.fillStyle = css(L.bill);
+    ellipse(ctx, x - 0.5 * k, y + 0.4 * k, 2.4 * k, 2.2 * k);
+    ctx.fill();
+  }
+  ctx.fillStyle = css(L.bill);
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.quadraticCurveTo(x + 6 * k, y + 1 * k, x + 6 * k, y + 2.6 * k);
+  ctx.quadraticCurveTo(x + 3 * k, y + 3.6 * k, x, y + 3.4 * k);
+  ctx.fill();
+}
+
+function streaksIn(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, seed: number, color: number): void {
   const rnd = seededRandom(seed);
-  ctx.strokeStyle = css(plumage.henDark, 0.55);
+  ctx.strokeStyle = css(shadeHex(color, 0.75), 0.55);
   ctx.lineWidth = 0.7;
   for (let i = 0; i < 26; i++) {
     const sx = x + rnd() * w;
@@ -525,6 +568,23 @@ function streaks(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
     ctx.lineTo(sx + 2 + rnd() * 1.5, sy + 0.6);
     ctx.stroke();
   }
+}
+
+function shadeHex(c: number, f: number): number {
+  const ch = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)));
+  return (ch((c >> 16) & 0xff) << 16) | (ch((c >> 8) & 0xff) << 8) | ch(c & 0xff);
+}
+
+/** Field Guide portrait: the swimming drake on a little water ring. Design 64×40. */
+export function paintSpeciesPortrait(L: DuckLook): Canvas {
+  const t = createPaintTarget(64, 40);
+  const { ctx } = t;
+  ctx.strokeStyle = css(0x4e6e7e, 0.35);
+  ctx.lineWidth = 1.2;
+  ellipse(ctx, 30, 33.5, 26, 3.6);
+  ctx.stroke();
+  ctx.drawImage(paintDuckSwim(L), 2, 2, 60, 34);
+  return t.canvas;
 }
 
 // ---------------------------------------------------------------- buildings
@@ -1287,5 +1347,16 @@ export function paintDeck(): Canvas {
     ctx.lineTo(x, 7.6);
     ctx.stroke();
   }
+  return t.canvas;
+}
+
+/** A thin rain streak. Design 2×26. */
+export function paintRainStreak(): Canvas {
+  const t = createPaintTarget(2, 26, 2);
+  const g = t.ctx.createLinearGradient(0, 0, 0, 26);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(1, 'rgba(255,255,255,0.9)');
+  t.ctx.fillStyle = g;
+  t.ctx.fillRect(0.4, 0, 1.2, 26);
   return t.canvas;
 }

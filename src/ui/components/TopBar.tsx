@@ -4,6 +4,10 @@ import type { HudSnapshot } from '../hudState';
 import { activityLabel, windLabel } from '../hudState';
 import { Counter } from './Counter';
 import { Icon } from './Icon';
+import type { IconName } from '../tabs';
+import type { WeatherId } from '../../data/weather';
+
+const WEATHER_ICON: Record<WeatherId, IconName> = { clear: 'sun', fog: 'fog', drizzle: 'drop', coldFront: 'snow', wind: 'wind' };
 
 export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnapshot; notation: Notation; onSettings: () => void; onProblems: () => void }) {
   const night = hud.phaseId === 'night' || hud.phaseId === 'predawn';
@@ -61,10 +65,14 @@ export function TopBar({ hud, notation, onSettings, onProblems }: { hud: HudSnap
       </div>
 
       <div class="conditions">
+        <span class={`weather-pill weather-pill--${hud.weather.id}`} title={`${hud.weather.blurb} Next: ${hud.weather.nextName} around ${hud.weather.changeAt}.`}>
+          <Icon name={WEATHER_ICON[hud.weather.id]} size={16} /> {hud.weather.name}
+          <span class="weather-pill__next">→ {hud.weather.nextName} {hud.weather.changeAt}</span>
+        </span>
         <span>
           <Icon name="duck" size={16} /> {activityLabel(hud.activity)}
         </span>
-        <span>
+        <span class="conditions__wind">
           <Icon name="wind" size={16} /> {windLabel(hud.wind)}
         </span>
       </div>

@@ -5,13 +5,18 @@ import {
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
 import { currentGoal } from '../data/goals';
+import { ACHIEVEMENTS } from '../data/achievements';
+import { SPECIES, SPECIES_ORDER, type SpeciesId } from '../data/species';
+import { UPGRADE_ORDER, UPGRADES, type UpgradeId } from '../data/upgrades';
+import { WEATHER, type WeatherId } from '../data/weather';
+import { offlineCapSeconds, upgradePrice } from '../sim/upgrades';
 import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
   milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, type Price,
 } from '../sim/economy';
 import { canDo } from '../sim/hunt';
-import { assigned, efficiency, jobRate, stuck } from '../sim/jobs';
+import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
 import { successRate, throughput } from '../sim/metrics';
 import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
 import type { GameState, Problem } from '../sim/state';
@@ -104,6 +109,13 @@ export interface HudSnapshot {
   needsYou: number;
   problemStats: { total: number; byYou: number; byForeman: number; escalated: number };
   foreman: { retries: number; backoff: number; chance: number; delays: number[]; capacity: number; hired: boolean };
+  weather: { id: WeatherId; name: string; blurb: string; next: WeatherId; nextName: string; changeAt: string };
+  guide: { id: SpeciesId; count: number; found: boolean }[];
+  speciesFound: number;
+  achievements: { id: string; unlocked: boolean }[];
+  patches: number;
+  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean }[];
+  offlineHours: number;
   acres: number;
   acrePrice: Price;
   acreAffordable: boolean;
@@ -165,10 +177,7 @@ export function snapshot(state: GameState): HudSnapshot {
     let rate = 0;
     let st = 0;
     for (const j of JOB_ORDER) st += stuck(state, id, j);
-    for (const j of JOB_ORDER) {
-      const n = assigned(state, id, j) - stuck(state, id, j);
-      if (n > 0) rate += n * botUnitSpeed(id, b.level) * milestoneMultiplier(b.owned) * efficiency(id, j);
-    }
+    for (const j of JOB_ORDER) rate += contribution(state, id, j);
     bots[id] = {
       id,
       owned: b.owned,
@@ -224,6 +233,8 @@ export function snapshot(state: GameState): HudSnapshot {
 
   const ap = acrePrice(state.acres);
   const goal = currentGoal(state);
+  const env = state.environment;
+  const changeClock = clockAt(state.clock.dayTime + Math.max(0, env.weatherUntil - state.elapsed));
   return {
     day: state.clock.day,
     clock: formatClock(c.hour),
@@ -279,6 +290,29 @@ export function snapshot(state: GameState): HudSnapshot {
       capacity: foremanCapacity(state),
       hired: state.bots.foreman.owned > 0,
     },
+    weather: {
+      id: env.weather,
+      name: WEATHER[env.weather].name,
+      blurb: WEATHER[env.weather].blurb,
+      next: env.nextWeather,
+      nextName: WEATHER[env.nextWeather].name,
+      changeAt: formatClock(changeClock.hour),
+    },
+    guide: SPECIES_ORDER.map((id) => ({ id, count: state.guide[id]?.count ?? 0, found: (state.guide[id]?.count ?? 0) > 0 })),
+    speciesFound: SPECIES_ORDER.filter((id) => (state.guide[id]?.count ?? 0) > 0).length,
+    achievements: ACHIEVEMENTS.map((a) => ({ id: a.id, unlocked: state.achievements[a.id] !== undefined })),
+    patches: Object.keys(state.achievements).length,
+    upgrades: UPGRADE_ORDER.map((id) => {
+      const level = state.upgrades[id] ?? 0;
+      const price = upgradePrice(id, level);
+      const max = UPGRADES[id].maxLevel;
+      return {
+        id, level, max, price,
+        affordable: level < max && canAfford(state, price),
+        revealed: level > 0 || state.stats.lifetimeCoins.gte(UPGRADES[id].revealAtCoins),
+      };
+    }),
+    offlineHours: offlineCapSeconds(state) / 3600,
     acres: state.acres,
     acrePrice: ap,
     acreAffordable: canAfford(state, ap),
@@ -303,6 +337,7 @@ function row(state: GameState, p: Problem): ProblemRow {
 }
 
 export const MAX_COMMITTED = HUNT.maxCommitted;
+export const SPECIES_DEFS = SPECIES;
 export const FOREMAN_LIMITS = FOREMAN;
 
 export function activityLabel(a: number): string {

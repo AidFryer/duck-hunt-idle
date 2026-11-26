@@ -41,21 +41,8 @@ export const HUNT = {
 
 // ---------------------------------------------------------------- species
 
-export interface SpeciesDef {
-  id: SpeciesId;
-  name: string;
-  /** Coins paid by the lodge per bird. */
-  coins: number;
-  /** Feathers per bird. */
-  feathers: number;
-}
-
-export type SpeciesId = 'mallard';
-
-/** Phase 2 has only mallards; the full field guide arrives in Phase 4. */
-export const SPECIES: Record<SpeciesId, SpeciesDef> = {
-  mallard: { id: 'mallard', name: 'Mallard', coins: 5, feathers: 1 },
-};
+// Species live in species.ts; re-exported here for convenience.
+export { SPECIES, type SpeciesId } from './species';
 
 // ---------------------------------------------------------------- jobs
 

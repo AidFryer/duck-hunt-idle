@@ -29,7 +29,9 @@ export function Counter({ value, notation }: { value: Decimal | number; notation
     const tick = (now: number) => {
       const k = Math.min(1, (now - t0) / dur);
       const e = 1 - Math.pow(1 - k, 3);
-      const v = new Decimal(a + (b - a) * e);
+      const whole = Number.isInteger(a) && Number.isInteger(b);
+      const raw = a + (b - a) * e;
+      const v = new Decimal(whole ? Math.round(raw) : raw);
       shownRef.current = k >= 1 ? target : v;
       setShown(shownRef.current);
       if (k < 1) raf.current = requestAnimationFrame(tick);

@@ -10,7 +10,7 @@ import { assigned, canWork, jobRate, moveBots, working } from '../src/sim/jobs';
 import { throughput } from '../src/sim/metrics';
 import { fixBot, foremanCapacity, raiseProblem, retryChance, retryDelay, setForemanSettings } from '../src/sim/problems';
 import { fromPlain } from '../src/sim/save';
-import { createInitialState, type GameState } from '../src/sim/state';
+import { createInitialState, SAVE_VERSION, type GameState } from '../src/sim/state';
 import { advance } from '../src/sim/tick';
 
 function rich(seed = 3): GameState {
@@ -178,7 +178,7 @@ describe('v2 → v3 migration', () => {
       meta: { createdAt: 0, lastSaved: 0 },
     };
     const s = fromPlain(v2);
-    expect(s.version).toBe(3);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(assigned(s, 'caller', 'call')).toBe(3);
     expect(assigned(s, 'blind', 'shoot')).toBe(1);
     expect(s.bots.scout.owned).toBe(0);

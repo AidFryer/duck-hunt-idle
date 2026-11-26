@@ -2,6 +2,7 @@ import { BOT_ORDER, BOTS, CROSS_JOB_EFFICIENCY, type BotId, type JobId, type Slo
 import { botUnitSpeed, milestoneMultiplier } from './economy';
 import type { EventSink } from './events';
 import type { GameState } from './state';
+import { botSpeedMultiplier } from './upgrades';
 
 /** Bots of a type currently placed in a slot (job or bench). */
 export function assigned(state: GameState, bot: BotId, slot: Slot): number {
@@ -36,7 +37,7 @@ export function contribution(state: GameState, bot: BotId, job: JobId): number {
   const w = working(state, bot, job);
   if (w === 0) return 0;
   const b = state.bots[bot];
-  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job);
+  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job) * botSpeedMultiplier(state);
 }
 
 /** Total actions per second for a job across every bot assigned to it. */
@@ -105,4 +106,47 @@ export function normalizeAssignments(state: GameState): void {
       }
     }
   }
+}
+
+/** Per-step snapshot of who contributes what to each job (avoids recomputing per action). */
+export interface RateTable {
+  total: Record<JobId, number>;
+  parts: Record<JobId, [BotId, number][]>;
+}
+
+export function rateTable(state: GameState): RateTable {
+  const total = {} as Record<JobId, number>;
+  const parts = {} as Record<JobId, [BotId, number][]>;
+  // Count stuck bots once instead of per (bot, job) lookup.
+  const stuckBy = new Map<string, number>();
+  for (const p of state.problems.open) stuckBy.set(`${p.bot}|${p.job}`, (stuckBy.get(`${p.bot}|${p.job}`) ?? 0) + 1);
+  const speed = botSpeedMultiplier(state);
+  for (const bot of BOT_ORDER) {
+    const b = state.bots[bot];
+    if (b.owned === 0) continue;
+    const unit = botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * speed;
+    for (const [slot, n] of Object.entries(state.assign[bot])) {
+      if (slot === 'bench' || !n) continue;
+      const job = slot as JobId;
+      const w = n - (stuckBy.get(`${bot}|${job}`) ?? 0);
+      if (w <= 0) continue;
+      const c = w * unit * efficiency(bot, job);
+      if (c <= 0) continue;
+      (parts[job] ??= []).push([bot, c]);
+      total[job] = (total[job] ?? 0) + c;
+    }
+  }
+  return { total, parts };
+}
+
+export function pickFrom(t: RateTable, job: JobId, roll: number): BotId | null {
+  const list = t.parts[job];
+  const total = t.total[job] ?? 0;
+  if (!list || total <= 0) return null;
+  let x = roll * total;
+  for (const [bot, c] of list) {
+    if (x < c) return bot;
+    x -= c;
+  }
+  return list[list.length - 1]![0];
 }

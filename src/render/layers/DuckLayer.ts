@@ -1,4 +1,5 @@
 import { Container, Sprite } from 'pixi.js';
+import { SPECIES, type SpeciesId } from '../../data/species';
 import type { GameState } from '../../sim/state';
 import { lerpColor, shadeColor } from '../../util/color';
 import { clamp, lerp, seededRandom } from '../../util/math';
@@ -15,6 +16,9 @@ interface Duck {
   wingNear: Sprite;
   wingFar: Sprite;
   drake: boolean;
+  species: SpeciesId;
+  /** Body size multiplier from the species. */
+  size: number;
   mode: DuckMode;
   x: number;
   y: number;
@@ -48,6 +52,7 @@ interface Flock {
   /** Has the sim called this flock in? */
   called: boolean;
   age: number;
+  species: SpeciesId;
   // flyover
   lx: number; ly: number; speed: number; depth: number; spacing: number;
   // hunt circling
@@ -114,7 +119,7 @@ export class DuckLayer implements Layer {
       root.visible = false;
       this.skyView.addChild(root);
       this.ducks.push({
-        root, body, wingNear, wingFar, drake, mode: 'off',
+        root, body, wingNear, wingFar, drake, species: 'mallard', size: 1, mode: 'off',
         x: 0, y: 0, vx: 0, vy: 0, depth: 1, facing: 1, targetFacing: 1, flap: 0, flapRate: 9,
         spin: 0, landY: 0, seed: this.rnd(), flock: null, index: 0,
       });
@@ -128,8 +133,18 @@ export class DuckLayer implements Layer {
 
   // ------------------------------------------------------------------ sim hooks
 
+  /** Paint a pooled duck as a given species. */
+  private setLook(d: Duck, species: SpeciesId): void {
+    if (d.species === species && d.body.texture === this.tex.get(`duck.fly.${species}.${d.drake ? 'drake' : 'hen'}`)) return;
+    d.species = species;
+    d.size = SPECIES[species].size;
+    const sex = d.drake ? 'drake' : 'hen';
+    d.body.texture = this.tex.get(`duck.fly.${species}.${sex}`);
+    d.wingNear.texture = d.wingFar.texture = this.tex.get(`duck.wing.${species}.${sex}`);
+  }
+
   /** A sim flock arrived: fly in and circle high, waiting for a call. */
-  arrive(id: number, size: number): void {
+  arrive(id: number, size: number, species: SpeciesId = 'mallard'): void {
     if (this.findHunt(id)) return;
     const ducks = this.take(Math.min(size, MAX_VISIBLE_PER_FLOCK));
     if (ducks.length === 0) return;
@@ -139,7 +154,8 @@ export class DuckLayer implements Layer {
     f.state = 'approach';
     f.lx = f.dir > 0 ? -60 * l.scale : l.w + 60 * l.scale;
     f.ly = l.horizon * (0.2 + this.rnd() * 0.25);
-    f.speed = 120 * l.scale;
+    f.speed = 120 * l.scale * (species === 'teal' ? 1.25 : 1);
+    f.species = species;
     this.setTargets(f);
     f.cx = f.tcx;
     f.cy = f.tcy;
@@ -168,6 +184,7 @@ export class DuckLayer implements Layer {
       for (let i = 0; i < Math.min(downed, 3); i++) this.addFloater(this.randomWaterPoint(), true);
       return;
     }
+    const species = f.species;
     const live = f.ducks.filter((d) => d.flock === f && d.mode === 'fly');
     let toDrop = Math.min(downed, live.length);
     const extra = downed - toDrop;
@@ -186,7 +203,7 @@ export class DuckLayer implements Layer {
         this.exit(d, true);
       }
     }
-    for (let i = 0; i < Math.min(extra, 3); i++) this.addFloater(this.randomWaterPoint(), true);
+    for (let i = 0; i < Math.min(extra, 3); i++) this.addFloater(this.randomWaterPoint(), true, species);
     f.ducks.length = 0;
   }
 
@@ -219,13 +236,13 @@ export class DuckLayer implements Layer {
     const live = new Set<number>();
     for (const fl of h.incoming) {
       live.add(fl.id);
-      if (!this.findHunt(fl.id)) this.arrive(fl.id, fl.size);
+      if (!this.findHunt(fl.id)) this.arrive(fl.id, fl.size, fl.species);
     }
     for (const fl of h.committed) {
       live.add(fl.id);
       const f = this.findHunt(fl.id);
       if (!f) {
-        this.arrive(fl.id, fl.size);
+        this.arrive(fl.id, fl.size, fl.species);
         this.call(fl.id);
       } else if (f.state === 'circle') this.call(fl.id);
     }
@@ -235,7 +252,7 @@ export class DuckLayer implements Layer {
     const tumbling = this.ducks.some((d) => d.mode === 'tumble');
     const want = Math.min(h.downed.length, MAX_FLOATERS);
     const have = this.floaters.filter((f) => f.fade === 0).length;
-    if (!tumbling && have < want) for (let i = have; i < want; i++) this.addFloater(this.randomWaterPoint(), false);
+    if (!tumbling && have < want) for (let i = have; i < want; i++) this.addFloater(this.randomWaterPoint(), false, h.downed[i]);
     if (have > h.downed.length) {
       let extra = have - h.downed.length;
       for (const f of this.floaters) {
@@ -248,11 +265,13 @@ export class DuckLayer implements Layer {
     }
   }
 
-  spawnFlyover(count = 3 + Math.floor(this.rnd() * 6), depth = 0.3 + this.rnd() * 0.6, high = false): boolean {
+  spawnFlyover(count = 3 + Math.floor(this.rnd() * 6), depth = 0.3 + this.rnd() * 0.6, high = false, species?: SpeciesId): boolean {
     const ducks = this.take(count);
     if (ducks.length < 2) return false;
     const l = this.l;
     const f = this.newFlock('flyover', ducks, this.rnd() > 0.5 ? 1 : -1);
+    const common: SpeciesId[] = ['mallard', 'mallard', 'teal', 'pintail', 'gadwall'];
+    f.species = species ?? common[Math.floor(this.rnd() * common.length)]!;
     f.depth = depth;
     f.spacing = 24 * l.scale * depth;
     f.speed = (55 + this.rnd() * 30) * l.scale * (0.5 + depth * 0.6);
@@ -289,14 +308,13 @@ export class DuckLayer implements Layer {
     return this.floaters.length;
   }
 
-  private addFloater(p: Point, splash: boolean): void {
+  private addFloater(p: Point, splash: boolean, species: SpeciesId = 'mallard', drake = this.rnd() < 0.6): void {
     if (this.floaters.length >= MAX_FLOATERS) return;
-    const drake = this.rnd() < 0.6;
-    const s = new Sprite(this.tex.get(drake ? 'duck.swim.drake' : 'duck.swim.hen'));
+    const s = new Sprite(this.tex.get(`duck.swim.${species}.${drake ? 'drake' : 'hen'}`));
     s.anchor.set(0.45, 30 / 34);
     this.waterView.addChild(s);
     const f: Floater = { s, x: p.x, y: p.y, phase: this.rnd() * 10, reserved: false, fade: 0 };
-    const k = waterDepthScale(this.l, p.y) * 0.5;
+    const k = waterDepthScale(this.l, p.y) * 0.5 * SPECIES[species].size;
     s.scale.set(k * (this.rnd() > 0.5 ? 1 : -1), k * 0.8);
     this.floaters.push(f);
     if (splash) this.fx.splash(p.x, p.y, 0.8);
@@ -329,7 +347,7 @@ export class DuckLayer implements Layer {
 
   private newFlock(kind: Flock['kind'], ducks: Duck[], dir: number): Flock {
     return {
-      kind, id: -1, ducks, dir, state: 'approach', called: false, age: 0,
+      kind, id: -1, ducks, dir, state: 'approach', called: false, age: 0, species: 'mallard',
       lx: 0, ly: 0, speed: 0, depth: 1, spacing: 0,
       theta: 0, cx: 0, cy: 0, radius: 0, squash: 0.25, baseDepth: 0.7,
       tcx: 0, tcy: 0, tradius: 0, tsquash: 0.25, tdepth: 0.7, history: [],
@@ -356,6 +374,7 @@ export class DuckLayer implements Layer {
   }
 
   private launch(d: Duck, f: Flock, i: number): void {
+    this.setLook(d, f.species);
     d.mode = 'fly';
     d.flock = f;
     d.index = i;
@@ -416,7 +435,7 @@ export class DuckLayer implements Layer {
         d.y += d.vy * dt;
         d.root.rotation += d.spin * dt;
         if (d.y >= d.landY) {
-          this.addFloater({ x: d.x, y: d.landY }, true);
+          this.addFloater({ x: d.x, y: d.landY }, true, d.species, d.drake);
           this.retire(d);
         }
       } else if (d.mode === 'exit') {
@@ -435,7 +454,7 @@ export class DuckLayer implements Layer {
     for (const d of this.ducks) {
       if (d.mode === 'off') continue;
       d.facing += (d.targetFacing - d.facing) * Math.min(1, dt * 5);
-      const k = l.scale * d.depth * 0.6;
+      const k = l.scale * d.depth * 0.6 * d.size;
       d.root.scale.set(k * d.facing, k);
       const working = d.mode === 'fly' && d.flock?.state === 'work';
       if (d.mode === 'tumble') {

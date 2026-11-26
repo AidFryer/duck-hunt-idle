@@ -96,6 +96,12 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => s.stats.botMoves > 0,
   },
   {
+    id: 'upgrade',
+    title: 'Build a marsh upgrade',
+    gus: 'The Upgrades tab has plans for the marsh: flooded timber, food plots, a better coffee pot. Each one draws more ducks or makes the crew better.',
+    done: (s) => Object.values(s.upgrades).some((v) => v > 0),
+  },
+  {
     id: 'foreman',
     title: 'Hire a Foreman Bot',
     gus: "Fixing every stuck bot yourself gets old. A Foreman will retry them for you. Set how hard it tries in the Problem Log.",
@@ -120,6 +126,12 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => s.bots.caller.owned >= 10,
   },
   {
+    id: 'species5',
+    title: 'Find 5 species for the Field Guide',
+    gus: 'Not every duck is a mallard. Weather and time of day bring in different birds. Fog at dawn is my favorite.',
+    done: (s) => Object.values(s.guide).filter((g) => (g?.count ?? 0) > 0).length >= 5,
+  },
+  {
     id: 'tinker',
     title: 'Hire a Tinker Bot',
     gus: 'A Tinker keeps the whole crew in good repair and tunes them up while you sleep.',
@@ -128,7 +140,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'more',
     title: 'More coming soon',
-    gus: "That's a fine operation. Next we'll learn the birds by name, and keep an eye on the weather.",
+    gus: "That's a fine operation. Before long we'll talk about closing out the season and seeing what the other flyways have to offer.",
     done: () => false,
   },
 ];

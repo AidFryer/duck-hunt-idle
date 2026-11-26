@@ -27,6 +27,8 @@ export class EffectsLayer implements Layer {
   private readonly sparkles: ParticlePool;
   private readonly confettiTex: Texture[];
   private l!: SceneLayout;
+  /** Coffee pot upgrades make the mug steam more. */
+  steamBoost = 1;
   private smokeTimer = 0;
   private steamTimer = 0;
   private leafTimer = 2;
@@ -237,14 +239,14 @@ export class EffectsLayer implements Layer {
     // Coffee steam from the mug in the blind
     this.steamTimer -= dt;
     if (this.steamTimer <= 0) {
-      this.steamTimer = 0.5 + this.rnd() * 0.4;
+      this.steamTimer = (0.5 + this.rnd() * 0.4) / this.steamBoost;
       const p = this.steam.spawn();
       p.x = a.mug.x;
       p.y = a.mug.y;
       p.vy = -7 * l.scale;
       p.life = 2.2;
       p.scale0 = 0.06 * l.scale;
-      p.scale1 = 0.22 * l.scale;
+      p.scale1 = 0.22 * l.scale * Math.sqrt(this.steamBoost);
       p.alpha0 = 0.45;
     }
     for (const p of this.steam.items) {

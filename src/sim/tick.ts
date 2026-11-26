@@ -1,7 +1,7 @@
 import { DAY_LENGTH_SECONDS } from '../config';
 import type { GameState } from './state';
 import { clockAt, duckActivityAt } from './clock';
-import { windAt } from './environment';
+import { stepWeather } from './weather';
 import type { EventSink } from './events';
 import { stepHunt } from './hunt';
 
@@ -27,7 +27,7 @@ export function step(state: GameState, dt: number, events: EventSink = []): void
     state.stats.lostToday = 0;
   }
 
-  state.environment.wind = windAt(state.elapsed, state.environment.seed);
+  stepWeather(state, events);
   stepHunt(state, dt, duckActivityAt(clockAt(clock.dayTime).hour), events);
 }
 

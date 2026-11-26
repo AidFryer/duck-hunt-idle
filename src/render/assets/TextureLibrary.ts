@@ -1,6 +1,7 @@
 import { Texture } from 'pixi.js';
 import { PAINT_SCALE } from './canvas';
 import * as P from './painters';
+import { SPECIES, type SpeciesId } from '../../data/species';
 
 /**
  * The single entry point for all scene art.
@@ -56,6 +57,7 @@ const recipes: Record<string, Recipe> = {
   'bot.foreman': { paint: () => P.paintDecoyBot('foreman'), resolution: PAINT_SCALE },
   'bot.tinker': { paint: () => P.paintDecoyBot('tinker'), resolution: PAINT_SCALE },
   alert: { paint: P.paintAlertBubble, resolution: PAINT_SCALE },
+  rain: { paint: P.paintRainStreak, resolution: 2 },
 };
 for (const k of ['lab', 'robo'] as const) {
   recipes[`dog.${k}.body`] = { paint: () => P.paintDogBody(k), resolution: PAINT_SCALE };
@@ -67,13 +69,27 @@ for (let i = 0; i < 4; i++) recipes[`cloud${i}`] = { paint: () => P.paintCloud(i
 for (let i = 0; i < 3; i++) recipes[`reed${i}`] = { paint: () => P.paintReedBlade(i), resolution: PAINT_SCALE };
 for (let i = 0; i < 3; i++) recipes[`leaf${i}`] = { paint: () => P.paintLeaf(i), resolution: PAINT_SCALE };
 
+/**
+ * Species textures are made on demand from keys like
+ * "duck.fly.woodDuck.drake", "duck.wing.teal.hen", "duck.swim.pintail.drake".
+ */
+function speciesRecipe(key: string): Recipe | undefined {
+  const m = /^duck\.(fly|wing|swim)\.(\w+)\.(drake|hen)$/.exec(key);
+  if (!m) return undefined;
+  const def = SPECIES[m[2] as SpeciesId];
+  if (!def) return undefined;
+  const look = m[3] === 'drake' ? def.drake : def.hen;
+  const paint = m[1] === 'fly' ? P.paintDuckFlyBody : m[1] === 'wing' ? P.paintDuckWing : P.paintDuckSwim;
+  return { paint: () => paint(look), resolution: PAINT_SCALE };
+}
+
 export class TextureLibrary {
   private readonly cache = new Map<string, Texture>();
 
   get(key: string): Texture {
     let tex = this.cache.get(key);
     if (!tex) {
-      const recipe = recipes[key];
+      const recipe = recipes[key] ?? speciesRecipe(key);
       if (!recipe) throw new Error(`TextureLibrary: unknown texture "${key}"`);
       tex = Texture.from({ resource: recipe.paint(), resolution: recipe.resolution });
       this.cache.set(key, tex);

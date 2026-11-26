@@ -1,6 +1,7 @@
 import type { DayPhaseId } from '../data/dayCycle';
 import type { BotId, HuntStage, Slot } from '../data/economy';
 import type { Notation } from '../util/format';
+import type { UpgradeId } from '../data/upgrades';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
@@ -8,6 +9,7 @@ export interface GameControls {
   buyBot(id: BotId, count: number): number;
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;
+  buyUpgrade(id: UpgradeId): boolean;
   moveBot(bot: BotId, from: Slot, to: Slot): boolean;
   fixProblem(id: number): boolean;
   fixBot(bot: BotId): boolean;

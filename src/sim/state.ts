@@ -3,9 +3,11 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
-export type WeatherId = 'clear' | 'fog' | 'drizzle' | 'coldFront' | 'wind';
+export type { WeatherId } from '../data/weather';
+import type { WeatherId } from '../data/weather';
+import { UPGRADE_ORDER, type UpgradeId } from '../data/upgrades';
 
 /** A flock of ducks moving through the hunt pipeline. */
 export interface FlockState {
@@ -67,6 +69,10 @@ export interface GameState {
   };
   environment: {
     weather: WeatherId;
+    /** Sim time (elapsed) when the current weather changes. */
+    weatherUntil: number;
+    /** What's coming next (shown in the forecast). */
+    nextWeather: WeatherId;
     /** Wind strength 0–1. */
     wind: number;
     /** Seed for deterministic environmental noise. */
@@ -127,6 +133,12 @@ export interface GameState {
   };
   /** Restored wetland acres (Wetland Acres currency). */
   acres: number;
+  /** Marsh & lodge upgrade levels. */
+  upgrades: Record<UpgradeId, number>;
+  /** Field Guide: birds brought in per species. */
+  guide: Partial<Record<SpeciesId, { count: number; firstAt: number }>>;
+  /** Unlocked achievement ids → sim time unlocked. */
+  achievements: Record<string, number>;
   stats: {
     lifetimeCoins: Decimal;
     lifetimeFeathers: Decimal;
@@ -141,6 +153,10 @@ export interface GameState {
     manualActions: number;
     /** Times the player moved a bot on the Job Board. */
     botMoves: number;
+    birdsByWeather: Partial<Record<WeatherId, number>>;
+    nightBirds: number;
+    /** Longest offline gap (seconds) the player came back from. */
+    longestAway: number;
   };
   meta: {
     /** Wall-clock ms when this save was created / last written. */
@@ -184,7 +200,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     tick: 0,
     rng: (seed ^ 0x5bd1e995) >>> 0,
     clock: { dayTime: NEW_GAME_DAY_TIME, day: 1 },
-    environment: { weather: 'clear', wind: 0.35, seed },
+    environment: { weather: 'clear', weatherUntil: 200, nextWeather: 'fog', wind: 0.35, seed },
     currencies: { coins: new Decimal(START.coins), feathers: new Decimal(START.feathers) },
     hunt: {
       decoys: START.decoys,
@@ -206,6 +222,9 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     tinkerWork: 0,
     metrics: { sec: 0, jobs: createJobMetrics() },
     acres: ACRES.start,
+    upgrades: Object.fromEntries(UPGRADE_ORDER.map((u) => [u, 0])) as Record<UpgradeId, number>,
+    guide: {},
+    achievements: {},
     stats: {
       lifetimeCoins: new Decimal(0),
       lifetimeFeathers: new Decimal(0),
@@ -218,6 +237,9 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       shots: 0,
       manualActions: 0,
       botMoves: 0,
+      birdsByWeather: {},
+      nightBirds: 0,
+      longestAway: 0,
     },
     meta: { createdAt: now, lastSaved: now },
   };

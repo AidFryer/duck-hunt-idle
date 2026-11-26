@@ -15,6 +15,9 @@ import { ProblemLog } from './components/ProblemLog';
 import { Settings } from './components/Settings';
 import { TopBar } from './components/TopBar';
 import { UpgradesTab } from './components/UpgradesTab';
+import { FieldGuide } from './components/FieldGuide';
+import { Moments } from './components/Moments';
+import { OfflineCard } from './components/OfflineCard';
 
 interface AppProps {
   hud: Store<HudSnapshot>;
@@ -24,7 +27,7 @@ interface AppProps {
   onSceneHost: (el: HTMLElement) => void;
 }
 
-const BUILT_THROUGH_PHASE = 3;
+const BUILT_THROUGH_PHASE = 4;
 
 export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSceneHost }: AppProps) {
   const hud = useStore(hudStore);
@@ -43,7 +46,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
 
   const active = TABS.find((t) => t.id === tab)!;
   const botsAlert = BOT_ORDER.some((id) => hud.bots[id].revealed && hud.bots[id].affordable);
-  const upgradesAlert = hud.acreAffordable;
+  const upgradesAlert = hud.acreAffordable || hud.upgrades.some((u) => u.revealed && u.affordable);
   const n = prefs.notation;
 
   return (
@@ -53,6 +56,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
+        <Moments />
       </section>
 
       <aside class="panel">
@@ -79,10 +83,12 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           {tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
           {tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
+          {tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
           {active.phase > BUILT_THROUGH_PHASE && <ComingSoon tab={active} />}
         </div>
       </aside>
 
+      <OfflineCard notation={n} />
       {problems && <ProblemLog hud={hud} controls={controls} onClose={() => setProblems(false)} />}
       {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} />}
     </div>

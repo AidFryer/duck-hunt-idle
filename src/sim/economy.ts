@@ -5,6 +5,8 @@ import {
 } from '../data/economy';
 import type { EventSink } from './events';
 import type { GameState } from './state';
+import { UPGRADE_EFFECTS } from '../data/upgrades';
+import { WEATHER } from '../data/weather';
 
 export interface Price {
   coins: Decimal;
@@ -130,8 +132,23 @@ export function buyAcre(state: GameState, events?: EventSink): boolean {
 
 // ---------------------------------------------------------------- marsh
 
-export function spreadSize(_state: GameState): number {
-  return HUNT.baseSpreadSize;
+export function spreadSize(state: GameState): number {
+  return HUNT.baseSpreadSize + UPGRADE_EFFECTS.decoyQualitySpread * (state.upgrades.decoyQuality ?? 0);
+}
+
+/** Seconds a circling flock waits for a call. */
+export function incomingPatience(state: GameState): number {
+  return HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0);
+}
+
+/** Fraction of a flock taken by one shot. */
+export function shotFraction(state: GameState): number {
+  return HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0);
+}
+
+/** Extra birds per flock from food plots and weather. */
+export function extraFlockSize(state: GameState): number {
+  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize;
 }
 
 /** Flocks per second right now, before the activity curve. */
@@ -139,7 +156,10 @@ export function flockDraw(state: GameState): number {
   const fill = state.hunt.decoys / spreadSize(state);
   const spread = HUNT.emptySpreadFloor + (1 - HUNT.emptySpreadFloor) * Math.pow(fill, HUNT.spreadExponent);
   const acreBonus = 1 + ACRES.flockRatePerAcre * (state.acres - ACRES.start);
-  return HUNT.baseFlockRate * spread * acreBonus;
+  const marsh =
+    (1 + UPGRADE_EFFECTS.timberFlockRate * (state.upgrades.timber ?? 0)) *
+    (1 + UPGRADE_EFFECTS.milletFlockRate * (state.upgrades.millet ?? 0));
+  return HUNT.baseFlockRate * spread * acreBonus * marsh * WEATHER[state.environment.weather].flockRate;
 }
 
 /** Lodge reputation: more birds logged, better-paying guests. */
@@ -150,5 +170,6 @@ export function reputationMultiplier(state: GameState): number {
 /** Coins (when logged) and feathers (when retrieved) for one bird. */
 export function birdValue(state: GameState, species: SpeciesId): { coins: number; feathers: number } {
   const s = SPECIES[species];
-  return { coins: Math.round(s.coins * reputationMultiplier(state) * 100) / 100, feathers: s.feathers };
+  const rooms = 1 + UPGRADE_EFFECTS.lodgeRoomsCoins * (state.upgrades.lodgeRooms ?? 0);
+  return { coins: Math.round(s.coins * reputationMultiplier(state) * rooms * 100) / 100, feathers: s.feathers };
 }

@@ -108,7 +108,8 @@ export class Renderer {
 
   private frame(dt: number): void {
     // Keep the sim moving from the render loop too (cheap; it only runs due ticks).
-    this.runner.update();
+    // Long gaps are left for the offline catch-up path in main.ts.
+    if (this.runner.pendingMs() < 60_000) this.runner.update();
     this.time += dt;
     const state = this.runner.state;
     for (const e of this.runner.drain()) {

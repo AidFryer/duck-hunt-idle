@@ -30,9 +30,21 @@ export class SimRunner {
     this.last = now();
   }
 
+  /** While paused (e.g. offline catch-up running), real time is ignored. */
+  paused = false;
+
+  /** Milliseconds of real time not yet handed to the sim. */
+  pendingMs(): number {
+    return Math.max(0, this.now() - this.last);
+  }
+
   /** Run any due ticks. Returns how many ticks ran. */
   update(): number {
     const t = this.now();
+    if (this.paused) {
+      this.last = t;
+      return 0;
+    }
     const realMs = Math.max(0, t - this.last);
     this.last = t;
     this.acc += realMs * this.timeScale;

@@ -1,4 +1,6 @@
 import type { BotId, JobId, ProblemKind, Slot, SpeciesId } from '../data/economy';
+import type { UpgradeId } from '../data/upgrades';
+import type { WeatherId } from '../data/weather';
 
 export type ActionSource = 'manual' | BotId;
 
@@ -15,8 +17,8 @@ export type SimEvent =
   | { type: 'flockCalled'; flockId: number; source: ActionSource }
   | { type: 'flockFlared'; flockId: number }
   | { type: 'shot'; flockId: number; downed: number; source: ActionSource }
-  | { type: 'retrieved'; species: SpeciesId; feathers: number; source: ActionSource }
-  | { type: 'logged'; species: SpeciesId; coins: number; source: ActionSource | 'keeper' }
+  | { type: 'retrieved'; species: SpeciesId; feathers: number; count: number; source: ActionSource }
+  | { type: 'logged'; coins: number; count: number; source: ActionSource | 'keeper' }
   | { type: 'scouted'; source: ActionSource }
   | { type: 'problem'; problemId: number; bot: BotId; job: JobId; kind: ProblemKind }
   | { type: 'problemRetry'; problemId: number; bot: BotId; attempt: number; ok: boolean }
@@ -27,6 +29,10 @@ export type SimEvent =
   | { type: 'botMilestone'; bot: BotId; owned: number; multiplier: number }
   | { type: 'botLevel'; bot: BotId; level: number; by: 'you' | 'tinker' }
   | { type: 'acreRestored'; acres: number }
+  | { type: 'upgradeBought'; upgrade: UpgradeId; level: number }
+  | { type: 'weatherChanged'; from: WeatherId; to: WeatherId }
+  | { type: 'newSpecies'; species: SpeciesId }
+  | { type: 'achievement'; id: string }
   | { type: 'dayEnded'; day: number; bag: number; best: boolean };
 
 export type EventSink = SimEvent[];
