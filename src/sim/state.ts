@@ -4,7 +4,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -21,6 +21,16 @@ export interface FlockState {
   size: number;
   /** Seconds spent in its current queue (for patience timeouts). */
   age: number;
+}
+
+/** One hunting ground's flocks and spread (the marsh and the goose field). */
+export interface GroundState {
+  decoys: number;
+  decoyDrift: number;
+  flockCountdown: number;
+  incoming: FlockState[];
+  committed: FlockState[];
+  downed: SpeciesId[];
 }
 
 export interface BotState {
@@ -122,6 +132,8 @@ export interface GameState {
     /** Sim time of the last manual action. */
     lastManualAt: number;
   };
+  /** The goose field (opens with the Sporting Club). Flock ids share hunt.nextFlockId. */
+  field: GroundState;
   bots: Record<BotId, BotState>;
   /** How many of each bot type work each job (or rest on the bench). */
   assign: Record<BotId, Partial<Record<Slot, number>>>;
@@ -200,6 +212,8 @@ export interface GameState {
     lostToday: number;
     shots: number;
     manualActions: number;
+    /** Geese and cranes brought in from the field. */
+    geese: number;
     /** Hand actions per hunt step (the on-marsh hints stop after a couple each). */
     manualByJob: Partial<Record<string, number>>;
     /** Times the player moved a bot on the Job Board. */
@@ -270,6 +284,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       streak: 0,
       lastManualAt: -999,
     },
+    field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
     bots: createBotStates(),
     assign: createAssignments(),
     jobs: createJobs(),
@@ -301,6 +316,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       lostToday: 0,
       shots: 0,
       manualActions: 0,
+      geese: 0,
       manualByJob: {},
       botMoves: 0,
       birdsByWeather: {},

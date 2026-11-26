@@ -334,6 +334,7 @@ function lookFor(arg: { drake: boolean } | DuckLook): DuckLook {
 /** Flying body, facing right. Design 64×26. Shoulder at (30, 10). */
 export function paintDuckFlyBody(arg: { drake: boolean } | DuckLook): Canvas {
   const L = lookFor(arg);
+  if (L.form) return paintGooseFly(L);
   const t = createPaintTarget(64, 26);
   const { ctx } = t;
   // Tail
@@ -398,6 +399,7 @@ export function paintDuckFlyBody(arg: { drake: boolean } | DuckLook): Canvas {
 /** Wing, drawn pointing up from the shoulder. Design 30×28, shoulder at (12, 28). */
 export function paintDuckWing(arg: { drake: boolean } | DuckLook): Canvas {
   const L = lookFor(arg);
+  if (L.form) return paintGooseWing(L);
   const t = createPaintTarget(30, 28);
   const { ctx } = t;
   const base = shadeHex(L.back, 1.15);
@@ -432,6 +434,7 @@ export function paintDuckWing(arg: { drake: boolean } | DuckLook): Canvas {
 /** Swimming duck (or wooden decoy), facing right. Design 60×34, waterline y=30. */
 export function paintDuckSwim(arg: { drake: boolean } | DuckLook, decoy = false): Canvas {
   const L = lookFor(arg);
+  if (L.form) return paintGooseSit(L, decoy);
   const t = createPaintTarget(60, 34);
   const { ctx } = t;
   ctx.save();
@@ -516,6 +519,195 @@ export function paintDuckSwim(arg: { drake: boolean } | DuckLook, decoy = false)
     ctx.beginPath();
     ctx.moveTo(39, 20.5);
     ctx.quadraticCurveTo(42, 22, 44.5, 20.5);
+    ctx.stroke();
+  }
+  return t.canvas;
+}
+
+// ---------------------------------------------------------------- geese & cranes
+
+/** A goose (or crane) in flight, facing right. Same 64×26 design box as a duck. */
+function paintGooseFly(L: DuckLook): Canvas {
+  const t = createPaintTarget(64, 26);
+  const { ctx } = t;
+  const crane = L.form === 'crane';
+  const neck = L.neck ?? L.head;
+  if (crane) {
+    // Long legs trailing behind
+    ctx.strokeStyle = css(0x3a3632);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(12, 15.5);
+    ctx.lineTo(0.5, 16.5);
+    ctx.moveTo(12, 16.5);
+    ctx.lineTo(1, 18);
+    ctx.stroke();
+  }
+  // Tail
+  ctx.fillStyle = css(L.tail);
+  ctx.beginPath();
+  ctx.moveTo(10, 12);
+  ctx.lineTo(3, 11);
+  ctx.lineTo(3, 16);
+  ctx.lineTo(10, 16);
+  ctx.fill();
+  // Body
+  ctx.fillStyle = linearV(ctx, 8, 21, [[0, L.back], [0.5, L.flank], [1, shadeHex(L.breast, 1.05)]]);
+  ellipse(ctx, 24, 14, crane ? 14 : 16, crane ? 5.2 : 6.4);
+  ctx.fill();
+  if (L.belly) {
+    ctx.fillStyle = css(L.belly, 0.85);
+    for (const x of [22, 26, 30]) {
+      ellipse(ctx, x, 18.6, 1.6, 0.9);
+      ctx.fill();
+    }
+  }
+  if (L.streaky) streaksIn(ctx, 12, 9, 24, 9, 31, shadeHex(L.back, 0.7));
+  // Long neck
+  ctx.strokeStyle = css(neck);
+  ctx.lineWidth = crane ? 2.4 : 3.6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(36, 13);
+  ctx.lineTo(crane ? 54 : 50, crane ? 11 : 10);
+  ctx.stroke();
+  // Head
+  const hx = crane ? 56 : 52.5;
+  const hy = crane ? 10.6 : 9.5;
+  ctx.fillStyle = css(L.head);
+  ellipse(ctx, hx, hy, crane ? 3 : 3.6, crane ? 2.4 : 3);
+  ctx.fill();
+  if (L.cheek) {
+    ctx.fillStyle = css(L.cheek);
+    ellipse(ctx, hx - 0.6, hy + 1, crane ? 1.8 : 2.2, 1.3);
+    ctx.fill();
+  }
+  if (L.crownRed) {
+    ctx.fillStyle = css(0xc8402a);
+    ellipse(ctx, hx + 0.4, hy - 1.4, 1.6, 0.9);
+    ctx.fill();
+  }
+  // Bill
+  ctx.fillStyle = css(L.bill);
+  ctx.beginPath();
+  ctx.moveTo(hx + 2.6, hy - 0.8);
+  ctx.lineTo(hx + (crane ? 8 : 6), hy + 0.2);
+  ctx.lineTo(hx + 2.6, hy + 1.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.arc(hx + 0.8, hy - 0.4, 0.7, 0, Math.PI * 2);
+  ctx.fill();
+  return t.canvas;
+}
+
+/** Broad goose wing: plain coverts and darker flight-feather tips. */
+function paintGooseWing(L: DuckLook): Canvas {
+  const t = createPaintTarget(30, 28);
+  const { ctx } = t;
+  const base = shadeHex(L.back, 1.1);
+  ctx.fillStyle = linearV(ctx, 28, 0, [[0, base], [0.7, shadeHex(L.back, 0.95)], [1, shadeHex(L.back, 0.8)]]);
+  ctx.beginPath();
+  ctx.moveTo(4, 28);
+  ctx.quadraticCurveTo(0, 13, 4, 0.5);
+  ctx.quadraticCurveTo(17, 9, 24, 28);
+  ctx.closePath();
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  // Primaries: black on snow geese, darker on everything else
+  ctx.fillStyle = css(L.speculum, 0.9);
+  ctx.fillRect(0, 0, 30, 8);
+  ctx.strokeStyle = css(shadeHex(L.back, 0.7), 0.5);
+  ctx.lineWidth = 0.6;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.moveTo(3 + i * 1.6, 8 + i * 3.4);
+    ctx.lineTo(9 + i * 2.6, 10 + i * 3.4);
+    ctx.stroke();
+  }
+  ctx.restore();
+  return t.canvas;
+}
+
+/** A goose or crane on the ground (or a full-body decoy). Same 60×34 box as a swimmer. */
+function paintGooseSit(L: DuckLook, decoy: boolean): Canvas {
+  const t = createPaintTarget(60, 34);
+  const { ctx } = t;
+  const crane = L.form === 'crane';
+  const neck = L.neck ?? L.head;
+  if (decoy) {
+    // Stake under a full-body decoy
+    ctx.fillStyle = css(palette.woodDark);
+    ctx.fillRect(25, 28, 2, 6);
+  }
+  // Tail
+  ctx.fillStyle = css(L.tail);
+  ctx.beginPath();
+  ctx.moveTo(10, 24);
+  ctx.lineTo(3, 20);
+  ctx.lineTo(10, 19);
+  ctx.fill();
+  // Body
+  ctx.fillStyle = linearV(ctx, 15, 31, [[0, L.back], [0.45, L.flank], [1, shadeHex(L.breast, 1.05)]]);
+  ellipse(ctx, 24, 24, crane ? 15 : 17, crane ? 7 : 8);
+  ctx.fill();
+  // Folded wing
+  ctx.fillStyle = css(shadeHex(L.back, 0.85), 0.8);
+  ellipse(ctx, 20, 21, 12, 4, 0.06);
+  ctx.fill();
+  ctx.fillStyle = css(L.speculum, 0.85);
+  ellipse(ctx, 10, 21, 4, 2.4, 0.1);
+  ctx.fill();
+  if (L.belly && !decoy) {
+    ctx.fillStyle = css(L.belly, 0.85);
+    for (const x of [26, 30, 34]) {
+      ellipse(ctx, x, 29, 1.6, 0.9);
+      ctx.fill();
+    }
+  }
+  if (L.streaky) streaksIn(ctx, 10, 17, 26, 10, 41, shadeHex(L.back, 0.7));
+  // Upright neck
+  ctx.strokeStyle = css(neck);
+  ctx.lineWidth = crane ? 2.6 : 4.2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(37, 21);
+  ctx.quadraticCurveTo(41, crane ? 10 : 13, crane ? 42 : 43, crane ? 3 : 6);
+  ctx.stroke();
+  const hx = crane ? 43.5 : 45;
+  const hy = crane ? 3 : 5.4;
+  ctx.fillStyle = css(L.head);
+  ellipse(ctx, hx, hy, crane ? 3 : 4, crane ? 2.4 : 3.2);
+  ctx.fill();
+  if (L.cheek) {
+    ctx.fillStyle = css(L.cheek);
+    ellipse(ctx, hx - 0.8, hy + 1.2, crane ? 1.8 : 2.4, 1.4);
+    ctx.fill();
+  }
+  if (L.crownRed) {
+    ctx.fillStyle = css(0xc8402a);
+    ellipse(ctx, hx + 0.4, hy - 1.5, 1.6, 0.9);
+    ctx.fill();
+  }
+  ctx.fillStyle = css(L.bill);
+  ctx.beginPath();
+  ctx.moveTo(hx + 3, hy - 0.8);
+  ctx.lineTo(hx + (crane ? 9 : 7), hy + 0.4);
+  ctx.lineTo(hx + 3, hy + 1.4);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.arc(hx + 1, hy - 0.4, decoy ? 0.9 : 0.75, 0, Math.PI * 2);
+  ctx.fill();
+  if (decoy) {
+    ctx.strokeStyle = css(palette.cream, 0.3);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(11, 18.5);
+    ctx.quadraticCurveTo(24, 15, 36, 18);
     ctx.stroke();
   }
   return t.canvas;
@@ -1097,7 +1289,7 @@ export function paintPegLeg(): Canvas {
   return t.canvas;
 }
 
-export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker';
+export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker' | 'staker' | 'flagger' | 'layout';
 
 /**
  * Decoy-bot: an upright carved decoy body on peg legs with a duck head,
@@ -1143,7 +1335,7 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fill();
   }
   // Neck + head
-  const henHead = kind === 'blind' || kind === 'setter' || kind === 'foreman';
+  const henHead = kind === 'blind' || kind === 'setter' || kind === 'foreman' || kind === 'layout';
   const headColor = henHead ? plumage.henBody : plumage.drakeHead;
   ctx.fillStyle = css(headColor);
   ctx.beginPath();
@@ -1189,7 +1381,37 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fillStyle = css(palette.brass);
     ctx.fillRect(24.6, 10.4, 1, 2.6);
   }
-  if (kind === 'blind') {
+  if (kind === 'flagger') {
+    // A black flag on a short pole, held up high
+    ctx.strokeStyle = css(palette.woodDark);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(22, 26);
+    ctx.lineTo(25, 2);
+    ctx.stroke();
+    ctx.fillStyle = css(0x1e1a18);
+    ctx.beginPath();
+    ctx.moveTo(25, 2);
+    ctx.quadraticCurveTo(30, 3, 28, 9);
+    ctx.lineTo(24.2, 9);
+    ctx.closePath();
+    ctx.fill();
+  }
+  if (kind === 'staker') {
+    // A little goose decoy tucked under the wing
+    ctx.fillStyle = css(0x6e5e4c);
+    ctx.beginPath();
+    ctx.ellipse(6, 27, 6, 3, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(0x1e1a18);
+    ctx.fillRect(10, 20, 1.6, 6);
+    ctx.beginPath();
+    ctx.ellipse(11, 19.5, 2, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(0xf4f2ec);
+    ctx.fillRect(10.2, 21, 1.4, 1.2);
+  }
+  if (kind === 'blind' || kind === 'layout') {
     // Grass hat for staying hidden
     const grass = [palette.reedDry, palette.reed, 0xd8be82, palette.sage];
     for (let i = 0; i < 18; i++) {

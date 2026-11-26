@@ -4,7 +4,7 @@
  */
 import type { GameState } from '../sim/state';
 
-export type FeatureId = 'bots' | 'upgrades' | 'jobs' | 'guide' | 'workflows' | 'legacy';
+export type FeatureId = 'bots' | 'upgrades' | 'jobs' | 'guide' | 'workflows' | 'legacy' | 'field';
 
 export interface FeatureDef {
   id: FeatureId;
@@ -82,6 +82,15 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
       ],
     },
   },
+  field: {
+    id: 'field', stage: 5, lodge: 4, name: 'The Goose Field',
+    requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
+    progress: (s) => [lodge(s), 4],
+    intro: {
+      gus: 'There\'s a picked cornfield over the rise. Geese pile into it every morning.',
+      points: [],
+    },
+  },
   workflows: {
     id: 'workflows', stage: 5, lodge: 4, name: 'Workflows',
     requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
@@ -112,7 +121,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
   },
 };
 
-export const FEATURE_ORDER: readonly FeatureId[] = ['guide', 'bots', 'upgrades', 'jobs', 'workflows', 'legacy'];
+export const FEATURE_ORDER: readonly FeatureId[] = ['guide', 'bots', 'upgrades', 'jobs', 'field', 'workflows', 'legacy'];
 
 export function featureReady(s: GameState, id: FeatureId): boolean {
   const [cur, goal] = FEATURES[id].progress(s);

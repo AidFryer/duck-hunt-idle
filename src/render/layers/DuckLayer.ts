@@ -1,7 +1,8 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
 import { committedPatience, incomingPatience } from '../../sim/economy';
 import { SPECIES, type SpeciesId } from '../../data/species';
-import type { GameState } from '../../sim/state';
+import type { GameState, GroundState } from '../../sim/state';
+import type { GroundId } from '../../data/economy';
 import { lerpColor, shadeColor } from '../../util/color';
 import { clamp, lerp, seededRandom } from '../../util/math';
 import type { TextureLibrary } from '../assets/TextureLibrary';
@@ -111,6 +112,10 @@ export class DuckLayer implements Layer {
   private flyoverTimer = 3;
   private readonly rnd = seededRandom(2718);
   ambient = true;
+  /** Birds come down on dry ground (the goose field): dust, not splashes; no drifting. */
+  onGround = false;
+  /** Species for ambient flyovers. */
+  flyoverSpecies: SpeciesId[] = ['mallard', 'mallard', 'teal', 'pintail', 'gadwall'];
 
   constructor(private readonly tex: TextureLibrary, private readonly fx: EffectsLayer) {
     this.view.addChild(this.waterView, this.skyView, this.rings);
@@ -244,11 +249,15 @@ export class DuckLayer implements Layer {
    * events were skipped while the tab was hidden).
    */
   reconcile(state: GameState): void {
-    const h = state.hunt;
+    this.reconcileGround(state.hunt, state);
+  }
+
+  /** Match flocks and floaters to one ground's sim state. */
+  reconcileGround(h: GroundState, state: GameState, g: GroundId = h === state.field ? 'field' : 'marsh'): void {
     this.patience.clear();
-    const wait = incomingPatience(state);
+    const wait = incomingPatience(state, g);
     for (const fl of h.incoming) this.patience.set(fl.id, clamp(1 - fl.age / wait, 0, 1));
-    const hold = committedPatience(state);
+    const hold = committedPatience(state, g);
     for (const fl of h.committed) this.patience.set(fl.id, clamp(1 - fl.age / hold, 0, 1));
     const live = new Set<number>();
     for (const fl of h.incoming) {
@@ -287,7 +296,7 @@ export class DuckLayer implements Layer {
     if (ducks.length < 2) return false;
     const l = this.l;
     const f = this.newFlock('flyover', ducks, this.rnd() > 0.5 ? 1 : -1);
-    const common: SpeciesId[] = ['mallard', 'mallard', 'teal', 'pintail', 'gadwall'];
+    const common = this.flyoverSpecies;
     f.species = species ?? common[Math.floor(this.rnd() * common.length)]!;
     f.depth = depth;
     f.spacing = 24 * l.scale * depth;
@@ -328,7 +337,7 @@ export class DuckLayer implements Layer {
     const i = this.floaters.indexOf(f);
     if (i < 0) return;
     this.floaters.splice(i, 1);
-    if (ripple) this.fx.ripple(f.x, f.y, 0.6, 1.6);
+    if (ripple && !this.onGround) this.fx.ripple(f.x, f.y, 0.6, 1.6);
     f.s.destroy();
   }
 
@@ -467,7 +476,10 @@ export class DuckLayer implements Layer {
     const k = waterDepthScale(this.l, p.y) * 0.5 * SPECIES[species].size;
     s.scale.set(k * (this.rnd() > 0.5 ? 1 : -1), k * 0.8);
     this.floaters.push(f);
-    if (splash) this.fx.splash(p.x, p.y, 0.8);
+    if (splash) {
+      if (this.onGround) this.fx.featherPuff(p.x, p.y, this.l.scale * 0.6, 4);
+      else this.fx.splash(p.x, p.y, 0.8);
+    }
   }
 
   private randomWaterPoint(): Point {
@@ -643,7 +655,7 @@ export class DuckLayer implements Layer {
           continue;
         }
       }
-      fl.x += f.wind * 1.5 * l.scale * dt;
+      if (!this.onGround) fl.x += f.wind * 1.5 * l.scale * dt;
       fl.s.position.set(fl.x, fl.y + Math.sin(this.time * 1.4 + fl.phase) * 0.8 * l.scale);
       // Harvested birds sit low and tilted, a little darker than live ducks.
       fl.s.rotation = 0.28 + Math.sin(this.time * 0.9 + fl.phase) * 0.06;

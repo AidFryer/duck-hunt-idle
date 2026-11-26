@@ -3,7 +3,8 @@ import type { SpeciesId } from './species';
 
 export type UpgradeId =
   | 'timber' | 'rice' | 'millet' | 'blinds' | 'decoyQuality' | 'lodgeRooms' | 'coffee' | 'cot'
-  | 'nestBoxes' | 'weathervane' | 'celeryBeds' | 'boatHouse' | 'lanterns' | 'deepPool' | 'guestDock' | 'smokehouse' | 'carvingShed';
+  | 'nestBoxes' | 'weathervane' | 'celeryBeds' | 'boatHouse' | 'lanterns' | 'deepPool' | 'guestDock' | 'smokehouse' | 'carvingShed'
+  | 'cornStubble' | 'winterWheat' | 'roostPond';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -19,6 +20,8 @@ export interface UpgradeDef {
   revealAtCoins: number;
   /** Lodge level that makes it available. */
   lodge: number;
+  /** Shown with the goose field's upgrades. */
+  field?: boolean;
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
@@ -107,13 +110,28 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     effect: 'Every bot 6% cheaper', maxLevel: 5,
     costCoins: 500_000, costFeathers: 20_000, costGrowth: 2.4, revealAtCoins: 0, lodge: 5,
   },
+  cornStubble: {
+    id: 'cornStubble', name: 'Corn Stubble', blurb: 'Leave a strip of picked corn standing. Geese can smell a free lunch.',
+    effect: '+10% goose flocks, brings cackling geese', maxLevel: 5, field: true,
+    costCoins: 30_000, costFeathers: 1_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
+  },
+  winterWheat: {
+    id: 'winterWheat', name: 'Winter Wheat', blurb: 'A green carpet of sprouting wheat. The white geese come down out of the sky for it.',
+    effect: '+1 goose per flock, brings snow geese', maxLevel: 5, field: true,
+    costCoins: 80_000, costFeathers: 4_000, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
+  },
+  roostPond: {
+    id: 'roostPond', name: 'Roost Pond', blurb: 'A shallow pond at the field edge for geese and cranes to loaf on at midday.',
+    effect: '+8% goose flocks, brings brant & cranes', maxLevel: 3, field: true,
+    costCoins: 400_000, costFeathers: 15_000, costGrowth: 2.4, revealAtCoins: 0, lodge: 5,
+  },
 };
 
 export const UPGRADE_ORDER: readonly UpgradeId[] = [
   'coffee', 'weathervane', 'decoyQuality', 'nestBoxes', 'millet',
   'rice', 'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
   'deepPool', 'guestDock', 'smokehouse', 'cot',
-  'carvingShed',
+  'carvingShed', 'cornStubble', 'winterWheat', 'roostPond',
 ];
 
 /** Per-level effect sizes (sim reads these). */
@@ -137,6 +155,9 @@ export const UPGRADE_EFFECTS = {
   guestDockReputation: 0.15,
   smokehouseFeathers: 0.15,
   carvingShedDiscount: 0.06,
+  cornStubbleFlockRate: 0.1,
+  winterWheatFlockSize: 1,
+  roostPondFlockRate: 0.08,
 } as const;
 
 /** Species weight multipliers per upgrade level: weight × (1 + k × level). */
@@ -147,6 +168,9 @@ export const UPGRADE_SPECIES: Partial<Record<UpgradeId, Partial<Record<SpeciesId
   nestBoxes: { woodDuck: 0.6 },
   celeryBeds: { wigeon: 0.5, ringNeck: 0.5, canvasback: 0.4 },
   deepPool: { redhead: 0.5, canvasback: 0.4, scaup: 0.4, bufflehead: 0.3 },
+  cornStubble: { canadaGoose: 0.2, cacklingGoose: 0.5 },
+  winterWheat: { snowGoose: 0.5, rossGoose: 0.4, whiteFront: 0.3 },
+  roostPond: { brant: 0.5, sandhillCrane: 0.4 },
 };
 
 export const OFFLINE = {

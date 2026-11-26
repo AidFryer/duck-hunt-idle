@@ -1,4 +1,5 @@
-import { SPECIES, SPECIES_ORDER, SPECIES_PREFERENCE, type SpeciesId } from '../data/species';
+import { SPECIES, SPECIES_ORDER, SPECIES_PREFERENCE, speciesAt, type SpeciesId } from '../data/species';
+import type { GroundId } from '../data/economy';
 import { UPGRADE_SPECIES } from '../data/upgrades';
 import { WEATHER } from '../data/weather';
 import type { UpgradeId } from '../data/upgrades';
@@ -12,15 +13,15 @@ function inHours(hour: number, windows: readonly [number, number][]): boolean {
 }
 
 /** Relative chance of each species right now (time, weather, upgrades). */
-export function speciesWeights(state: GameState, hour: number): Record<SpeciesId, number> {
+export function speciesWeights(state: GameState, hour: number, g: GroundId = 'marsh'): Record<SpeciesId, number> {
   const out = {} as Record<SpeciesId, number>;
   const w = state.environment.weather;
   const wf = workflowEval(state);
-  const fx = rungFx(state);
+  const fx = rungFx(state, g);
   for (const id of SPECIES_ORDER) {
     const d = SPECIES[id];
-    // Birds only visit once the marsh has what they need.
-    if (!speciesAvailable(state, id)) {
+    // Birds only visit their own ground, once it has what they need.
+    if (!speciesAt(g, id) || !speciesAvailable(state, id)) {
       out[id] = 0;
       continue;
     }
@@ -41,8 +42,8 @@ export function speciesWeights(state: GameState, hour: number): Record<SpeciesId
   return out;
 }
 
-export function pickSpecies(state: GameState, hour: number): SpeciesId {
-  const weights = speciesWeights(state, hour);
+export function pickSpecies(state: GameState, hour: number, g: GroundId = 'marsh'): SpeciesId {
+  const weights = speciesWeights(state, hour, g);
   let total = 0;
   for (const id of SPECIES_ORDER) total += weights[id];
   let t = rand(state) * total;
@@ -50,5 +51,5 @@ export function pickSpecies(state: GameState, hour: number): SpeciesId {
     t -= weights[id];
     if (t <= 0) return id;
   }
-  return 'mallard';
+  return g === 'field' ? 'canadaGoose' : 'mallard';
 }

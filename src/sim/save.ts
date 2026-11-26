@@ -66,6 +66,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     if (lodge >= 2) unlocks.upgrades ??= unlocks.bots;
     return { ...s, unlocks, lodge, plans, rungs: {}, version: 8 };
   },
+  // v8 → v9 adds the goose field; its state comes from the defaults.
+  8: (s) => ({ ...s, version: 9 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

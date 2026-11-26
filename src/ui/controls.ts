@@ -1,5 +1,5 @@
 import type { DayPhaseId } from '../data/dayCycle';
-import type { BotId, HuntStage, Slot } from '../data/economy';
+import type { BotId, GroundId, HuntStage, Slot } from '../data/economy';
 import type { Notation } from '../util/format';
 import type { UpgradeId } from '../data/upgrades';
 import type { NodeKind } from '../data/workflows';
@@ -9,7 +9,9 @@ import type { RungId } from '../data/progression';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
-  act(stage: HuntStage): boolean;
+  act(stage: HuntStage, ground?: GroundId): boolean;
+  /** Switch the view between the marsh and the goose field. */
+  setGround(g: GroundId): void;
   buyBot(id: BotId, count: number): number;
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;

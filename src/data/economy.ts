@@ -39,6 +39,35 @@ export const HUNT = {
   maxDowned: 40,
 } as const;
 
+/** The goose field: bigger, warier flocks that pay more and come less often. */
+export const FIELD = {
+  baseSpreadSize: 10,
+  /** Full-body decoys blow over far less often than marsh decoys drift. */
+  decoyDriftSeconds: 240,
+  decoyDriftWind: 1.2,
+  baseFlockRate: 1 / 10,
+  spreadExponent: 0.8,
+  emptySpreadFloor: 0.05,
+  flockSizeMin: 6,
+  flockSizeMax: 14,
+  maxIncoming: 3,
+  incomingPatience: 26,
+  maxCommitted: 2,
+  committedPatience: 14,
+  shotFraction: 0.2,
+  maxDowned: 40,
+} as const;
+
+/** Where you can hunt. */
+export type GroundId = 'marsh' | 'field';
+
+/** The four hunt steps, by ground: which job does each. */
+export type Step = 'decoys' | 'call' | 'shoot' | 'retrieve';
+export const GROUND_JOBS: Record<GroundId, Record<Step, HuntStage | FieldJob>> = {
+  marsh: { decoys: 'decoys', call: 'call', shoot: 'shoot', retrieve: 'retrieve' },
+  field: { decoys: 'fDecoys', call: 'flag', shoot: 'fShoot', retrieve: 'fRetrieve' },
+};
+
 // ---------------------------------------------------------------- species
 
 // Species live in species.ts; re-exported here for convenience.
@@ -47,7 +76,9 @@ export { SPECIES, type SpeciesId } from './species';
 // ---------------------------------------------------------------- jobs
 
 /** Every job on the Job Board, in pipeline order. */
-export type JobId = 'scout' | 'decoys' | 'call' | 'shoot' | 'retrieve' | 'log' | 'foreman' | 'tinker';
+export type JobId = 'scout' | 'decoys' | 'call' | 'shoot' | 'retrieve' | 'log' | 'fDecoys' | 'flag' | 'fShoot' | 'fRetrieve' | 'foreman' | 'tinker';
+/** Jobs in the goose field. */
+export type FieldJob = 'fDecoys' | 'flag' | 'fShoot' | 'fRetrieve';
 /** Jobs the player can also do by hand. */
 export type HuntStage = 'decoys' | 'call' | 'shoot' | 'retrieve' | 'log';
 /** Where unassigned bots rest. */
@@ -67,11 +98,17 @@ export const JOBS: Record<JobId, JobDef> = {
   shoot: { id: 'shoot', name: 'The Blind', blurb: 'Take the shot while a flock is in range.' },
   retrieve: { id: 'retrieve', name: 'Retrieving', blurb: 'Bring harvested birds back from the water.' },
   log: { id: 'log', name: 'The Ledger', blurb: 'Log the bag so the lodge gets paid.' },
+  fDecoys: { id: 'fDecoys', name: 'Field Spread', blurb: 'Stake out full-body goose decoys in the stubble.' },
+  flag: { id: 'flag', name: 'Flagging', blurb: 'Wave a flag and call to turn passing geese.' },
+  fShoot: { id: 'fShoot', name: 'Layout Blinds', blurb: 'Sit up from the layout blinds when geese commit.' },
+  fRetrieve: { id: 'fRetrieve', name: 'Field Pickup', blurb: 'Pick up geese from the stubble.' },
   foreman: { id: 'foreman', name: 'Foreman Desk', blurb: 'Retry stuck bots automatically.' },
   tinker: { id: 'tinker', name: 'Workshop', blurb: 'Tune bots up and make them more reliable.' },
 };
 
-export const JOB_ORDER: readonly JobId[] = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log', 'foreman', 'tinker'];
+export const JOB_ORDER: readonly JobId[] = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log', 'fDecoys', 'flag', 'fShoot', 'fRetrieve', 'foreman', 'tinker'];
+/** Jobs that move geese through the field hunt. */
+export const FIELD_JOBS: readonly FieldJob[] = ['fDecoys', 'flag', 'fShoot', 'fRetrieve'];
 /** Jobs that move birds along the hunt pipeline (shown as a flow on the board). */
 export const PIPELINE_JOBS: readonly JobId[] = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log'];
 
@@ -80,7 +117,7 @@ export const CROSS_JOB_EFFICIENCY = 0.5;
 
 // ---------------------------------------------------------------- bots
 
-export type BotId = 'scout' | 'setter' | 'caller' | 'blind' | 'retriever' | 'ledger' | 'foreman' | 'tinker';
+export type BotId = 'scout' | 'setter' | 'caller' | 'blind' | 'retriever' | 'ledger' | 'staker' | 'flagger' | 'layout' | 'fieldDog' | 'foreman' | 'tinker';
 
 export interface BotDef {
   id: BotId;
@@ -109,6 +146,8 @@ export interface BotDef {
 
 const HUNT_JOBS: readonly JobId[] = ['scout', 'decoys', 'call', 'shoot', 'log'];
 const others = (home: JobId) => HUNT_JOBS.filter((j) => j !== home);
+const FIELD_HELP: readonly JobId[] = ['fDecoys', 'flag', 'fShoot'];
+const fieldOthers = (home: JobId) => FIELD_HELP.filter((j) => j !== home);
 
 export const BOTS: Record<BotId, BotDef> = {
   setter: {
@@ -159,6 +198,38 @@ export const BOTS: Record<BotId, BotDef> = {
     levelCostCoins: 2400, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 150,
   },
+  staker: {
+    id: 'staker', name: 'Decoy Staker', job: 'fDecoys', crossJobs: fieldOthers('fDecoys'),
+    blurb: 'Carries a bundle of full-body goose decoys and stakes them out in tidy family groups.',
+    baseSpeed: 0.08, reliability: 0.95,
+    costCoins: 9_000, costFeathers: 600, costGrowth: 1.15,
+    levelCostCoins: 30_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  flagger: {
+    id: 'flagger', name: 'Flagger Bot', job: 'flag', crossJobs: fieldOthers('flag'),
+    blurb: 'Waves a black flag low over the stubble so passing geese think there\'s a family landing.',
+    baseSpeed: 0.15, reliability: 0.96,
+    costCoins: 8_000, costFeathers: 600, costGrowth: 1.15,
+    levelCostCoins: 36_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  layout: {
+    id: 'layout', name: 'Layout Bot', job: 'fShoot', crossJobs: fieldOthers('fShoot'),
+    blurb: 'Lies flat in a stubble-covered layout blind and sits up for the shot.',
+    baseSpeed: 0.15, reliability: 0.95,
+    costCoins: 12_000, costFeathers: 900, costGrowth: 1.15,
+    levelCostCoins: 48_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  fieldDog: {
+    id: 'fieldDog', name: 'Field Pup', job: 'fRetrieve', crossJobs: [],
+    blurb: 'A clockwork pup with big paws for stubble. Fetches geese nearly as big as itself.',
+    baseSpeed: 0.3, reliability: 0.95,
+    costCoins: 15_000, costFeathers: 1_000, costGrowth: 1.15,
+    levelCostCoins: 60_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
   foreman: {
     id: 'foreman', name: 'Foreman Bot', job: 'foreman', crossJobs: [],
     blurb: 'Hard hat and clipboard. Retries stuck bots so you don\'t have to.',
@@ -177,7 +248,9 @@ export const BOTS: Record<BotId, BotDef> = {
   },
 };
 
-export const BOT_ORDER: readonly BotId[] = ['setter', 'caller', 'blind', 'retriever', 'ledger', 'scout', 'foreman', 'tinker'];
+export const BOT_ORDER: readonly BotId[] = ['setter', 'caller', 'blind', 'retriever', 'ledger', 'scout', 'staker', 'flagger', 'layout', 'fieldDog', 'foreman', 'tinker'];
+/** Bots that work the goose field. */
+export const FIELD_BOTS: readonly BotId[] = ['staker', 'flagger', 'layout', 'fieldDog'];
 
 /** Owned counts that double a bot type's output. */
 export const BOT_MILESTONES: readonly number[] = [10, 25, 50, 100, 200];
@@ -220,7 +293,7 @@ export const SCOUT = {
 
 // ---------------------------------------------------------------- problems (exceptions)
 
-export type ProblemKind = 'mud' | 'lines' | 'reeds' | 'ice' | 'muskrat' | 'hat' | 'spyglass' | 'ink';
+export type ProblemKind = 'mud' | 'lines' | 'reeds' | 'ice' | 'muskrat' | 'hat' | 'spyglass' | 'ink' | 'frost' | 'flag' | 'burrs';
 
 export interface ProblemDef {
   kind: ProblemKind;
@@ -236,6 +309,9 @@ export const PROBLEMS: Record<ProblemKind, ProblemDef> = {
   hat: { kind: 'hat', title: 'Grass hat blew over its eyes' },
   spyglass: { kind: 'spyglass', title: 'Spyglass fogged up' },
   ink: { kind: 'ink', title: 'Ink blot in the ledger' },
+  frost: { kind: 'frost', title: 'Frozen to the stubble' },
+  flag: { kind: 'flag', title: 'Flag tangled on its pole' },
+  burrs: { kind: 'burrs', title: 'Paws full of burrs' },
 };
 
 /** Which problems can happen at each job. */
@@ -246,6 +322,10 @@ export const JOB_PROBLEMS: Record<JobId, readonly ProblemKind[]> = {
   shoot: ['hat', 'mud'],
   retrieve: ['reeds', 'muskrat'],
   log: ['ink'],
+  fDecoys: ['frost', 'mud'],
+  flag: ['flag', 'mud'],
+  fShoot: ['hat', 'frost'],
+  fRetrieve: ['burrs', 'mud'],
   foreman: [],
   tinker: [],
 };

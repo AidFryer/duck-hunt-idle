@@ -14,9 +14,11 @@ import { waterDepthScale } from '../types';
 /** How many of each bot type are drawn in the scene (the rest work off-screen). */
 const VISIBLE: Record<BotId, number> = {
   scout: 2, setter: 2, caller: 3, blind: 3, retriever: 2, ledger: 2, foreman: 1, tinker: 1,
+  // Field crew are drawn in the goose field, not on the marsh.
+  staker: 0, flagger: 0, layout: 0, fieldDog: 0,
 };
 
-type BotKind = Exclude<BotId, 'retriever'>;
+type BotKind = 'scout' | 'setter' | 'caller' | 'blind' | 'ledger' | 'foreman' | 'tinker';
 
 // ----------------------------------------------------------------- dogs
 
@@ -425,7 +427,7 @@ export class CrewLayer implements Layer {
   private readonly front = new Container();
   private readonly bubbles: Bubble[] = [];
   private readonly bubbleLayer = new Container();
-  private owned: Record<BotId, number> = { scout: 0, setter: 0, caller: 0, blind: 0, retriever: 0, ledger: 0, foreman: 0, tinker: 0 };
+  private owned: Record<BotId, number> = { scout: 0, setter: 0, caller: 0, blind: 0, retriever: 0, ledger: 0, foreman: 0, tinker: 0, staker: 0, flagger: 0, layout: 0, fieldDog: 0 };
   private stuckCount: Record<BotId, number> = { ...this.owned };
   private c!: CrewLayout;
   private l!: SceneLayout;
@@ -569,7 +571,7 @@ export class CrewLayer implements Layer {
       r.appear = 0;
       this.sparkleAt(this.c.roboHomes[idx]!);
     } else {
-      const b = this.bots[bot][idx]!;
+      const b = this.bots[bot as BotKind][idx]!;
       b.appear = 0;
       b.hop = 1;
       if (bot === 'blind') this.peek[idx] = 1.5;
@@ -579,7 +581,7 @@ export class CrewLayer implements Layer {
 
   private botPoint(bot: BotId, i: number): Point {
     if (bot === 'retriever') return this.robos[i]?.headPoint ?? this.c.roboHomes[0]!;
-    const spots = this.c.spots[bot];
+    const spots = this.c.spots[bot as BotKind];
     const p = spots[i % spots.length]!;
     if (bot === 'blind') return { x: p.x, y: this.c.slotCenter.y };
     return p;
@@ -588,7 +590,7 @@ export class CrewLayer implements Layer {
   /** Level-up (or milestone): everyone of that type does a happy hop. */
   celebrate(bot: BotId, confetti: boolean): void {
     if (bot === 'retriever') for (const r of this.robos) r.hop = 1;
-    else for (const b of this.bots[bot]) b.hop = 1;
+    else for (const b of this.bots[bot as BotKind]) b.hop = 1;
     if (bot === 'blind') this.peek = this.peek.map(() => 1.2);
     const p = this.botPoint(bot, 0);
     this.sparkleAt(p);
@@ -609,7 +611,7 @@ export class CrewLayer implements Layer {
       const r = this.robos[Math.max(0, i)];
       if (r) r.hop = 1;
     } else {
-      const b = this.bots[bot][Math.max(0, i)];
+      const b = this.bots[bot as BotKind][Math.max(0, i)];
       if (b) b.hop = 1;
     }
     return { x: p.x, y: p.y - 30 * this.c.a };

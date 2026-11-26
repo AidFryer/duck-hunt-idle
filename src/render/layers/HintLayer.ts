@@ -1,4 +1,9 @@
 import { Graphics } from 'pixi.js';
+import { GROUND_JOBS, type GroundId } from '../../data/economy';
+import { LAB_NAME } from '../../data/goals';
+import { incomingPatience, maxCommitted, spreadSize } from '../../sim/economy';
+import { ground } from '../../sim/hunt';
+import type { GameState } from '../../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from '../types';
 import type { DuckLayer } from './DuckLayer';
 
@@ -65,4 +70,39 @@ export class HintLayer implements Layer {
     this.labelAt = { x: at.x, y: at.y - rr * squash - 8 * s };
     this.labelBelow = { x: at.x, y: at.y + rr * squash + 8 * s };
   }
+}
+
+/** How many times each kind of tap is hinted before the hints stop. */
+const HINT_TAPS = 2;
+
+/** What the hint ring should point at next on a ground (null once the player knows the ropes). */
+export function chooseHint(state: GameState, g: GroundId, ducks: DuckLayer, words: boolean): HintTarget | null {
+  const jobs = GROUND_JOBS[g];
+  const done = state.stats.manualByJob;
+  const fresh = (j: string) => (done[j] ?? 0) < HINT_TAPS;
+  if (!fresh(jobs.decoys) && !fresh(jobs.call) && !fresh(jobs.shoot) && !fresh(jobs.retrieve)) return null;
+  const h = ground(state, g);
+  const field = g === 'field';
+  const label = (t: string) => (words ? t : '');
+  let pick: HintTarget | null = null;
+  let job = '';
+  const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < maxCommitted(state, g);
+  const callFlock = { kind: 'flock' as const, id: h.incoming[0]?.id ?? -1, label: label(field ? 'Tap the geese to flag them in' : 'Tap the flock to call it in') };
+  if (h.committed.length > 0) {
+    pick = { kind: 'flock', id: h.committed[0]!.id, label: label(field ? 'Sit up and shoot!' : 'Tap to shoot!') };
+    job = jobs.shoot;
+  } else if (canCall && h.incoming[0]!.age > incomingPatience(state, g) * 0.5) {
+    pick = callFlock;
+    job = jobs.call;
+  } else if (h.downed.length > 0 && ducks.firstFreeFloater()) {
+    pick = { kind: 'floater', label: label(field ? 'Tap the goose to pick it up' : `Tap the bird for ${LAB_NAME}`) };
+    job = jobs.retrieve;
+  } else if (canCall) {
+    pick = callFlock;
+    job = jobs.call;
+  } else if (h.decoys < Math.min(3, spreadSize(state, g))) {
+    pick = { kind: 'water', label: label(field ? 'Tap the field to stake decoys' : 'Tap the water to set decoys') };
+    job = jobs.decoys;
+  }
+  return pick && fresh(job) ? pick : null;
 }

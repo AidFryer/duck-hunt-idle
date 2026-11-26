@@ -40,13 +40,16 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
       )}
       {hud.upgrades.map((u) => {
         const d = UPGRADES[u.id];
+        const head = u.id === 'cornStubble' && d.lodge <= hud.lodge.level + 1 ? <h4 class="group-head">Goose field</h4> : null;
         if (!u.revealed) {
           // Only tease what the next lodge level brings, not the whole list.
           if (d.lodge > hud.lodge.level + 1) return null;
-          return <Locked name={d.name} text={`${d.effect}. Opens with the ${u.lodgeName}.`} />;
+          return <>{head}<Locked name={d.name} text={`${d.effect}. Opens with the ${u.lodgeName}.`} /></>;
         }
         const maxed = u.level >= u.max;
         return (
+          <>
+          {head}
           <div class="bot-card">
             <div class="bot-card__portrait" aria-hidden="true">
               <Icon name="hammer" size={26} />
@@ -71,6 +74,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
               </div>
             </div>
           </div>
+          </>
         );
       })}
     </div>

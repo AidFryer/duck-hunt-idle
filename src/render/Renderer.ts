@@ -6,6 +6,8 @@ import type { SimEvent } from '../sim/events';
 import type { SimRunner } from '../sim/runner';
 import type { Point } from './types';
 import { MarshScene, type TapTarget } from './MarshScene';
+import { FieldScene } from './FieldScene';
+import { FIELD_BOTS, type GroundId } from '../data/economy';
 import { computeSkyState, createSkyState } from './skyState';
 
 export interface RendererOptions {
@@ -21,6 +23,15 @@ export interface RendererOptions {
 export class Renderer {
   readonly app = new Application();
   scene!: MarshScene;
+  /** The goose field (built on first use; shares the marsh's textures). */
+  field: FieldScene | null = null;
+  /** Which ground is on screen. */
+  ground: GroundId = 'marsh';
+
+  /** The scene being drawn right now. */
+  get view(): MarshScene | FieldScene {
+    return this.ground === 'field' && this.field ? this.field : this.scene;
+  }
   private readonly sky = createSkyState();
   private time = 0;
   /** Optional override hour for previews/debugging (null = follow sim). */
@@ -49,6 +60,11 @@ export class Renderer {
     this.runner = runner;
     if (this.ready) {
       this.app.stage.removeChild(this.scene.root);
+      if (this.field) {
+        this.app.stage.removeChild(this.field.root);
+        this.field.root.destroy({ children: true });
+        this.field = null;
+      }
       const old = this.scene;
       old.root.destroy({ children: true });
       old.tex.destroy();
@@ -56,6 +72,7 @@ export class Renderer {
       this.scene.crew.onFix = (b) => this.onFix?.(b);
       this.app.stage.addChild(this.scene.root);
       this.lastW = this.lastH = 0;
+      this.setGround('marsh');
       this.handleResize();
       this.scene.sync(runner.state);
     }
@@ -92,7 +109,7 @@ export class Renderer {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.app.ticker.stop();
       else {
-        this.scene.sync(this.runner.state);
+        this.view.sync(this.runner.state);
         this.app.ticker.start();
       }
     });
@@ -105,7 +122,7 @@ export class Renderer {
     stage.on('pointerdown', (e) => {
       if (e.button > 0) return;
       const p = e.global;
-      this.onTap?.(this.scene.pick(p.x, p.y));
+      this.onTap?.(this.view.pick(p.x, p.y));
     });
     this.hintEl = document.createElement('div');
     this.hintEl.className = 'scene-hint';
@@ -158,6 +175,7 @@ export class Renderer {
     this.lastW = w;
     this.lastH = h;
     this.scene.resize(w, h);
+    this.field?.resize(w, h);
   }
 
   private frame(dt: number): void {
@@ -168,23 +186,26 @@ export class Renderer {
     this.watchPerformance(dt);
     if (this.shakeAmt > 0.01) {
       const k = this.shakeAmt * 7;
-      this.scene.root.position.set((Math.random() - 0.5) * k, (Math.random() - 0.5) * k);
+      this.view.root.position.set((Math.random() - 0.5) * k, (Math.random() - 0.5) * k);
       this.shakeAmt *= Math.pow(0.02, dt);
     } else if (this.shakeAmt > 0) {
       this.shakeAmt = 0;
-      this.scene.root.position.set(0, 0);
+      this.view.root.position.set(0, 0);
     }
     const state = this.runner.state;
     for (const e of this.runner.drain()) {
-      const at = this.scene.handle(e);
+      // Each event animates in its own ground's scene, if that's on screen.
+      const forField = ('ground' in e && e.ground === 'field') || ('bot' in e && FIELD_BOTS.includes(e.bot));
+      const sc = forField ? this.field : this.scene;
+      const at = sc && sc === this.view ? sc.handle(e) : null;
       this.onEvent?.(e, at);
     }
-    this.scene.sync(state);
+    this.view.sync(state);
     const dayTime = state.clock.dayTime + this.runner.alpha * TICK_SECONDS * this.runner.timeScale;
     const hour = this.hourOverride ?? clockAt(dayTime).hour;
     computeSkyState(hour, this.sky);
     // Reduced motion slows ambient animation; it never hides feedback.
-    this.scene.update({
+    this.view.update({
       time: this.time,
       dt,
       sky: this.sky,
@@ -195,11 +216,26 @@ export class Renderer {
     this.placeHint();
   }
 
+  /** Switch between the marsh and the goose field. */
+  setGround(g: GroundId): void {
+    if (g === 'field' && !this.field && this.ready) {
+      this.field = new FieldScene(this.scene.tex);
+      this.field.resize(this.app.screen.width, this.app.screen.height);
+      this.app.stage.addChildAt(this.field.root, 0);
+    }
+    this.ground = g === 'field' && this.field ? 'field' : 'marsh';
+    this.scene.root.visible = this.ground === 'marsh';
+    if (this.field) this.field.root.visible = this.ground === 'field';
+    this.scene.root.position.set(0, 0);
+    this.field?.root.position.set(0, 0);
+    this.view.sync(this.runner.state);
+  }
+
   private placeHint(): void {
     const el = this.hintEl;
     if (!el) return;
-    const at = this.scene.hint.labelAt;
-    const text = at ? this.scene.hint.target?.label ?? '' : '';
+    const at = this.view.hint.labelAt;
+    const text = at ? this.view.hint.target?.label ?? '' : '';
     if (text !== this.hintText) {
       this.hintText = text;
       el.textContent = text;
@@ -210,7 +246,7 @@ export class Renderer {
       const half = el.offsetWidth / 2 + 8;
       const x = Math.max(half, Math.min(w - half, at.x));
       // Too close to the top bar: put the label under the ring instead.
-      const below = this.scene.hint.labelBelow;
+      const below = this.view.hint.labelBelow;
       const flip = at.y - el.offsetHeight < 56 && below;
       const y = flip ? below.y : at.y;
       el.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) translate(-50%, ${flip ? '0' : '-100%'})`;

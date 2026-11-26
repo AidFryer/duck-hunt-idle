@@ -21,7 +21,16 @@ export type SpeciesId =
   | 'bufflehead'
   | 'hoodedMerganser'
   | 'cinnamonTeal'
-  | 'harlequin';
+  | 'harlequin'
+  | 'canadaGoose'
+  | 'cacklingGoose'
+  | 'snowGoose'
+  | 'rossGoose'
+  | 'blueGoose'
+  | 'whiteFront'
+  | 'brant'
+  | 'sandhillCrane'
+  | 'emperorGoose';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
@@ -51,6 +60,16 @@ export interface DuckLook {
   streaky?: boolean;
   /** Pale side panel (king eider). */
   sidePatch?: number;
+  /** Body plan: geese have long necks; cranes long necks and legs. */
+  form?: 'goose' | 'crane';
+  /** Goose neck color (defaults to head). */
+  neck?: number;
+  /** White chinstrap / cheek patch (Canada geese, brant necklace). */
+  cheek?: number;
+  /** Dark belly bars (white-fronted "specklebellies"). */
+  belly?: number;
+  /** Red crown (cranes). */
+  crownRed?: boolean;
 }
 
 export interface SpeciesDef {
@@ -69,6 +88,8 @@ export interface SpeciesDef {
   size: number;
   /** Flock size multiplier (pintail come in big groups, eiders alone-ish). */
   flockSize: number;
+  /** Where it's hunted: the marsh (default) or the goose field. */
+  ground?: 'field';
   guide: string;
   /** Hint shown on the undiscovered Field Guide page. */
   hint: string;
@@ -309,12 +330,162 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     },
     hen: { ...henBase(0x5a4a40, 0x6a5a4e, 0x4a4a4a, 0x5a4a40), eyePatch: 0xf0ece4 },
   },
+  canadaGoose: {
+    id: 'canadaGoose', name: 'Canada Goose', rarity: 'common', ground: 'field',
+    coins: 18, feathers: 3, weight: 100,
+    hours: [[7, 10], [15, 17.5]], weather: ['clear', 'wind'],
+    size: 1.6, flockSize: 1,
+    guide: 'The honker. Black neck and a white chinstrap, flying in long V\'s and talking the whole way down.',
+    hint: 'Comes to any decent field spread.',
+    drake: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0xd8ccb4, flank: 0x9a8a74,
+      back: 0x6e5e4c, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x6e5e4c,
+    },
+    hen: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0xd8ccb4, flank: 0x9a8a74,
+      back: 0x6e5e4c, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x6e5e4c,
+    },
+  },
+  cacklingGoose: {
+    id: 'cacklingGoose', name: 'Cackling Goose', rarity: 'common', ground: 'field',
+    coins: 15, feathers: 2, weight: 55,
+    hours: [[7, 11], [14, 17]], weather: ['wind', 'coldFront'],
+    size: 1.15, flockSize: 1.3,
+    guide: 'A pocket-sized Canada with a stubby bill and a high, squeaky cackle. Travels in tight, chattering bunches.',
+    hint: 'Loves picked corn stubble.',
+    drake: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0xa8947a, flank: 0x86745e,
+      back: 0x5e4e3e, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x5e4e3e,
+    },
+    hen: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0xa8947a, flank: 0x86745e,
+      back: 0x5e4e3e, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x5e4e3e,
+    },
+  },
+  snowGoose: {
+    id: 'snowGoose', name: 'Snow Goose', rarity: 'common', ground: 'field',
+    coins: 14, feathers: 3, weight: 70,
+    hours: [[7, 12]], weather: ['coldFront', 'wind'],
+    size: 1.35, flockSize: 2.2,
+    guide: 'White with black wingtips and a pink "grin" on the bill. Arrives in noisy tornadoes of hundreds.',
+    hint: 'Big white flocks follow the winter wheat.',
+    drake: {
+      form: 'goose', head: 0xf4f2ec, neck: 0xf0ece4, breast: 0xf4f2ec, flank: 0xeeeae2, back: 0xe6e2da,
+      tail: 0xe6e2da, bill: 0xe88a8a, speculum: 0x1e1a18,
+    },
+    hen: {
+      form: 'goose', head: 0xf4f2ec, neck: 0xf0ece4, breast: 0xf4f2ec, flank: 0xeeeae2, back: 0xe6e2da,
+      tail: 0xe6e2da, bill: 0xe88a8a, speculum: 0x1e1a18,
+    },
+  },
+  rossGoose: {
+    id: 'rossGoose', name: "Ross's Goose", rarity: 'uncommon', ground: 'field',
+    coins: 17, feathers: 3, weight: 30,
+    hours: [[7, 12]], weather: ['coldFront', 'clear'],
+    size: 1.1, flockSize: 1.6,
+    guide: 'A dainty little snow goose with a short, warty bill. Mixes in with the snows and fools everybody.',
+    hint: 'Hides among the snows. A silhouette spread helps.',
+    drake: {
+      form: 'goose', head: 0xf8f6f0, neck: 0xf4f2ec, breast: 0xf8f6f0, flank: 0xf2eee6, back: 0xeae6de,
+      tail: 0xeae6de, bill: 0xd87a6a, speculum: 0x1e1a18,
+    },
+    hen: {
+      form: 'goose', head: 0xf8f6f0, neck: 0xf4f2ec, breast: 0xf8f6f0, flank: 0xf2eee6, back: 0xeae6de,
+      tail: 0xeae6de, bill: 0xd87a6a, speculum: 0x1e1a18,
+    },
+  },
+  blueGoose: {
+    id: 'blueGoose', name: 'Blue Goose', rarity: 'uncommon', ground: 'field',
+    coins: 20, feathers: 4, weight: 22,
+    hours: [[7, 12]], weather: ['coldFront', 'wind'],
+    size: 1.35, flockSize: 1.2,
+    guide: 'The dark "blue phase" of the snow goose: slate body, white head. Old-timers swear they are smarter than the white ones.',
+    hint: 'Only a big full-body fleet fools the wise blues.',
+    drake: {
+      form: 'goose', head: 0xf4f2ec, neck: 0xe6e2da, breast: 0x5a6070, flank: 0x4a5060, back: 0x5a6070,
+      tail: 0x3a3e48, bill: 0xe88a8a, speculum: 0x1e1a18,
+    },
+    hen: {
+      form: 'goose', head: 0xf4f2ec, neck: 0xe6e2da, breast: 0x5a6070, flank: 0x4a5060, back: 0x5a6070,
+      tail: 0x3a3e48, bill: 0xe88a8a, speculum: 0x1e1a18,
+    },
+  },
+  whiteFront: {
+    id: 'whiteFront', name: 'White-fronted Goose', rarity: 'rare', ground: 'field',
+    coins: 26, feathers: 4, weight: 16,
+    hours: [[6.5, 9.5], [16, 18]], weather: ['clear', 'fog'],
+    size: 1.4, flockSize: 0.9,
+    guide: 'The "specklebelly": brown with a white face blaze, orange legs and black bars across the belly. Wary, and the finest on the table.',
+    hint: 'Specks need winter wheat and a flag that knows what it\'s doing.',
+    drake: {
+      form: 'goose', head: 0x6e5a46, neck: 0x6e5a46, cheek: 0xf4f2ec, breast: 0x9a8670, flank: 0x86725c,
+      back: 0x5e4c3a, tail: 0x3e3226, bill: 0xe8a07a, speculum: 0x5e4c3a, belly: 0x1e1a18,
+    },
+    hen: {
+      form: 'goose', head: 0x6e5a46, neck: 0x6e5a46, cheek: 0xf4f2ec, breast: 0x9a8670, flank: 0x86725c,
+      back: 0x5e4c3a, tail: 0x3e3226, bill: 0xe8a07a, speculum: 0x5e4c3a, belly: 0x1e1a18,
+    },
+  },
+  brant: {
+    id: 'brant', name: 'Brant', rarity: 'rare', ground: 'field',
+    coins: 28, feathers: 4, weight: 10,
+    hours: [[7, 11]], weather: ['wind', 'fog'],
+    size: 1.15, flockSize: 1.1,
+    guide: 'A small sea goose with a black neck and a delicate white necklace. Flies low and ragged, never in a tidy V.',
+    hint: 'Brant like water nearby. A roost pond might bring them.',
+    drake: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf0ece4, breast: 0x2a2622, flank: 0x5a5048,
+      back: 0x3e3630, tail: 0xf0ece4, bill: 0x1e1a18, speculum: 0x3e3630,
+    },
+    hen: {
+      form: 'goose', head: 0x1e1a18, neck: 0x1e1a18, cheek: 0xf0ece4, breast: 0x2a2622, flank: 0x5a5048,
+      back: 0x3e3630, tail: 0xf0ece4, bill: 0x1e1a18, speculum: 0x3e3630,
+    },
+  },
+  sandhillCrane: {
+    id: 'sandhillCrane', name: 'Sandhill Crane', rarity: 'rare', ground: 'field',
+    coins: 40, feathers: 6, weight: 8,
+    hours: [[8, 12], [15, 17]], weather: ['clear', 'wind'],
+    size: 1.7, flockSize: 0.6,
+    guide: 'Tall and grey with a red cap, bugling a rattling call you can hear for miles. Glides in on long, slow wings.',
+    hint: 'Cranes roost on shallow water and want blinds they can\'t spot.',
+    drake: {
+      form: 'crane', head: 0xc8c4bc, neck: 0xb8b4ac, cheek: 0xf0ece4, breast: 0xb0aca4, flank: 0xa8a49c,
+      back: 0x9a8a78, tail: 0x8a7a68, bill: 0x2a2622, speculum: 0x8a8a8a, crownRed: true,
+    },
+    hen: {
+      form: 'crane', head: 0xc8c4bc, neck: 0xb8b4ac, cheek: 0xf0ece4, breast: 0xb0aca4, flank: 0xa8a49c,
+      back: 0x9a8a78, tail: 0x8a7a68, bill: 0x2a2622, speculum: 0x8a8a8a, crownRed: true,
+    },
+  },
+  emperorGoose: {
+    id: 'emperorGoose', name: 'Emperor Goose', rarity: 'legendary', ground: 'field',
+    coins: 220, feathers: 40, weight: 0.5,
+    hours: [[7, 10]], weather: ['coldFront', 'fog'],
+    size: 1.4, flockSize: 0.4,
+    guide: 'A goose from the far Bering coast: silver-grey scales, a snow-white head and orange feet. Most hunters never see one.',
+    hint: 'A legend. Only the greatest honker chorus on the flyway could call one in.',
+    drake: {
+      form: 'goose', head: 0xf4f2ec, neck: 0x2a2632, breast: 0x8a90a0, flank: 0x9aa0b0, back: 0x7a8090,
+      tail: 0xf0ece4, bill: 0xe8a0b0, speculum: 0x5a6070, streaky: true,
+    },
+    hen: {
+      form: 'goose', head: 0xf4f2ec, neck: 0x2a2632, breast: 0x8a90a0, flank: 0x9aa0b0, back: 0x7a8090,
+      tail: 0xf0ece4, bill: 0xe8a0b0, speculum: 0x5a6070, streaky: true,
+    },
+  },
 };
 
 export const SPECIES_ORDER: readonly SpeciesId[] = [
   'mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck',
   'redhead', 'scaup', 'bufflehead', 'canvasback', 'hoodedMerganser', 'cinnamonTeal', 'harlequin', 'kingEider',
+  'canadaGoose', 'cacklingGoose', 'snowGoose', 'rossGoose', 'blueGoose', 'whiteFront', 'brant', 'sandhillCrane', 'emperorGoose',
 ];
+
+/** Species hunted at a ground. */
+export function speciesAt(ground: 'marsh' | 'field', id: SpeciesId): boolean {
+  return (SPECIES[id].ground ?? 'marsh') === ground;
+}
 
 export const RARITY_STARS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 };
 

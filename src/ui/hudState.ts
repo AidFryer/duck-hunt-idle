@@ -1,7 +1,7 @@
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
-  BOT_ORDER, BOTS, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER,
+  BOT_ORDER, BOTS, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
 import { STREAK } from '../data/economy';
@@ -20,9 +20,9 @@ import { ALL_CARDS, cardUnlocked, linkKey, workflowEval, workflowUnlocked } from
 import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
-  milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, botPriceMult, type Price,
+  milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, maxCommitted, botPriceMult, type Price,
 } from '../sim/economy';
-import { canDo } from '../sim/hunt';
+import { canDo, fieldOpen } from '../sim/hunt';
 import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
 import { successRate, throughput } from '../sim/metrics';
 import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
@@ -156,6 +156,17 @@ export interface HudSnapshot {
   can: Record<HuntStage, boolean>;
   /** Automation per stage (actions/sec), for the hunt buttons. */
   auto: Record<HuntStage, number>;
+  /** The goose field's numbers (same shape as the marsh's). */
+  field: {
+    open: boolean;
+    decoys: number;
+    spread: number;
+    incoming: number;
+    committed: number;
+    downed: number;
+    can: Record<Step, boolean>;
+    auto: Record<Step, number>;
+  };
   bots: Record<BotId, BotSnapshot>;
   jobs: Record<JobId, JobSnapshot>;
   problems: ProblemRow[];
@@ -227,6 +238,14 @@ function queueFor(state: GameState, job: JobId): { text: string; backedUp: boole
       return { text: `${h.downed.length} on water`, backedUp: h.downed.length >= 6 };
     case 'log':
       return { text: `${h.ledger.length} unlogged`, backedUp: h.ledger.length >= 10 };
+    case 'fDecoys':
+      return { text: `${state.field.decoys}/${spreadSize(state, 'field')} staked`, backedUp: state.field.decoys < spreadSize(state, 'field') / 2 };
+    case 'flag':
+      return { text: `${state.field.incoming.length} circling`, backedUp: state.field.incoming.length >= maxIncoming(state, 'field') };
+    case 'fShoot':
+      return { text: `${state.field.committed.length} over the spread`, backedUp: state.field.committed.length >= maxCommitted(state, 'field') };
+    case 'fRetrieve':
+      return { text: `${state.field.downed.length} in the stubble`, backedUp: state.field.downed.length >= 6 };
     case 'foreman': {
       const open = state.problems.open.length;
       return { text: `${open} open`, backedUp: open > foremanCapacity(state) };
@@ -409,6 +428,16 @@ export function snapshot(state: GameState): HudSnapshot {
       shoot: jobRate(state, 'shoot'),
       retrieve: jobRate(state, 'retrieve'),
       log: jobRate(state, 'log'),
+    },
+    field: {
+      open: fieldOpen(state),
+      decoys: state.field.decoys,
+      spread: spreadSize(state, 'field'),
+      incoming: state.field.incoming.length,
+      committed: state.field.committed.length,
+      downed: state.field.downed.length,
+      can: { decoys: canDo(state, 'fDecoys'), call: canDo(state, 'flag'), shoot: canDo(state, 'fShoot'), retrieve: canDo(state, 'fRetrieve') },
+      auto: { decoys: jobRate(state, 'fDecoys'), call: jobRate(state, 'flag'), shoot: jobRate(state, 'fShoot'), retrieve: jobRate(state, 'fRetrieve') },
     },
     bots,
     jobs,

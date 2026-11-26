@@ -4,11 +4,9 @@ import { BlindLayer } from './layers/BlindLayer';
 import { CloudLayer } from './layers/CloudLayer';
 import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
-import { HintLayer, type HintTarget } from './layers/HintLayer';
+import { HintLayer, chooseHint } from './layers/HintLayer';
 import type { Floater } from './layers/DuckLayer';
-import type { HuntStage } from '../data/economy';
-import { incomingPatience, maxCommitted, spreadSize } from '../sim/economy';
-import { LAB_NAME } from '../data/goals';
+import { FIELD_BOTS, type GroundId, type HuntStage } from '../data/economy';
 import { EffectsLayer } from './layers/EffectsLayer';
 import { FogLayer } from './layers/FogLayer';
 import { LandLayer } from './layers/LandLayer';
@@ -27,12 +25,11 @@ import type { SimEvent } from '../sim/events';
 import type { GameState } from '../sim/state';
 import type { FrameContext, Layer, Point, SceneLayout } from './types';
 
-/** How many times each kind of tap is hinted before the hints stop. */
-const HINT_TAPS = 2;
-
 /** What a tap on the marsh means. */
 export interface TapTarget {
+  /** Which hunt step, on which ground (the marsh unless it says field). */
   job: Exclude<HuntStage, 'log'> | null;
+  ground?: GroundId;
   flockId?: number;
   floater?: Floater;
   at: Point;
@@ -136,33 +133,6 @@ export class MarshScene {
     return { job: 'decoys', at: { x, y } };
   }
 
-  /** Pick what the hint ring should point at next. */
-  private chooseHint(state: GameState): HintTarget | null {
-    const h = state.hunt;
-    const words = this.hintLabels;
-    // Each kind of tap gets a nudge the first couple of times, then never again.
-    const done = state.stats.manualByJob;
-    const fresh = (j: string) => (done[j] ?? 0) < HINT_TAPS;
-    if (!fresh('decoys') && !fresh('call') && !fresh('shoot') && !fresh('retrieve')) return null;
-    const pick = this.pickHint(state, words);
-    if (!pick) return null;
-    const job = pick.kind === 'water' ? 'decoys' : pick.kind === 'floater' ? 'retrieve' : h.committed.some((f) => f.id === pick.id) ? 'shoot' : 'call';
-    return fresh(job) ? pick : null;
-  }
-
-  private pickHint(state: GameState, words: boolean): HintTarget | null {
-    const h = state.hunt;
-    if (h.committed.length > 0) return { kind: 'flock', id: h.committed[0]!.id, label: words ? 'Tap to shoot!' : '' };
-    const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < maxCommitted(state);
-    const callFlock = { kind: 'flock', id: h.incoming[0]?.id ?? -1, label: words ? 'Tap the flock to call it in' : '' } as const;
-    // A flock about to give up beats a bird that can wait on the water.
-    if (canCall && h.incoming[0]!.age > incomingPatience(state) * 0.5) return callFlock;
-    if (h.downed.length > 0 && this.ducks.firstFreeFloater()) return { kind: 'floater', label: words ? `Tap the bird for ${LAB_NAME}` : '' };
-    if (canCall) return callFlock;
-    if (h.decoys < Math.min(3, spreadSize(state))) return { kind: 'water', label: words ? 'Tap the water to set decoys' : '' };
-    return null;
-  }
-
   resize(w: number, h: number): void {
     const l = this.layout;
     l.w = w;
@@ -179,6 +149,9 @@ export class MarshScene {
    * HUD can show feedback (e.g. "+5 coins"), or null.
    */
   handle(e: SimEvent): Point | null {
+    // Field crew live in the goose field scene; the marsh ignores them.
+    if ('bot' in e && FIELD_BOTS.includes(e.bot)) return null;
+    if ('ground' in e && e.ground === 'field') return null;
     switch (e.type) {
       case 'decoySet':
         this.blind.tossDecoy(this.crew.decoyFrom(e.source));
@@ -283,7 +256,7 @@ export class MarshScene {
     this.crew.sync(state);
     this.shore.setLevel(state.lodge);
     this.props.sync(state);
-    this.hint.target = this.chooseHint(state);
+    this.hint.target = chooseHint(state, 'marsh', this.ducks, this.hintLabels);
     const w = state.environment.weather;
     this.weather.weather = w;
     for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;

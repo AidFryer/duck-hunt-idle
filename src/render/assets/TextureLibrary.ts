@@ -56,6 +56,9 @@ const recipes: Record<string, Recipe> = {
   'bot.ledger': { paint: () => P.paintDecoyBot('ledger'), resolution: PAINT_SCALE },
   'bot.foreman': { paint: () => P.paintDecoyBot('foreman'), resolution: PAINT_SCALE },
   'bot.tinker': { paint: () => P.paintDecoyBot('tinker'), resolution: PAINT_SCALE },
+  'bot.staker': { paint: () => P.paintDecoyBot('staker'), resolution: PAINT_SCALE },
+  'bot.flagger': { paint: () => P.paintDecoyBot('flagger'), resolution: PAINT_SCALE },
+  'bot.layout': { paint: () => P.paintDecoyBot('layout'), resolution: PAINT_SCALE },
   alert: { paint: P.paintAlertBubble, resolution: PAINT_SCALE },
   rain: { paint: P.paintRainStreak, resolution: 2 },
 };
@@ -78,6 +81,11 @@ for (let i = 0; i < 3; i++) recipes[`leaf${i}`] = { paint: () => P.paintLeaf(i),
  * "duck.fly.woodDuck.drake", "duck.wing.teal.hen", "duck.swim.pintail.drake".
  */
 function speciesRecipe(key: string): Recipe | undefined {
+  const d = /^decoy\.species\.(\w+)$/.exec(key);
+  if (d) {
+    const def = SPECIES[d[1] as SpeciesId];
+    return def ? { paint: () => P.paintDuckSwim(def.drake, true), resolution: PAINT_SCALE } : undefined;
+  }
   const m = /^duck\.(fly|wing|swim)\.(\w+)\.(drake|hen)$/.exec(key);
   if (!m) return undefined;
   const def = SPECIES[m[2] as SpeciesId];

@@ -27,7 +27,11 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
         </div>
       </div>
       {BOT_ORDER.map((id) => (
-        <BotCard id={id} hud={hud} controls={controls} notation={notation} mode={mode} />
+        <>
+          {id === 'staker' && <h4 class="group-head">Goose field crew</h4>}
+          {id === 'foreman' && <h4 class="group-head">Lodge crew</h4>}
+          <BotCard id={id} hud={hud} controls={controls} notation={notation} mode={mode} />
+        </>
       ))}
     </div>
   );

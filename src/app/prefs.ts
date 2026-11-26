@@ -15,6 +15,8 @@ export interface Prefs {
   screenShake: boolean;
   /** The first-run tutorial has been finished or skipped. */
   tutorialDone: boolean;
+  /** Which hunting ground was on screen last. */
+  ground: 'marsh' | 'field';
 }
 
 const KEY = 'duck-hunt-idle.prefs';
@@ -31,6 +33,7 @@ export function loadPrefs(): Prefs {
     muted: false,
     screenShake: !reduced,
     tutorialDone: false,
+    ground: 'marsh',
   };
   try {
     const raw = localStorage.getItem(KEY);

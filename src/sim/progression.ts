@@ -3,7 +3,7 @@
  * Pure state transitions plus read helpers the economy uses for effects.
  */
 import Decimal from 'break_infinity.js';
-import { BOT_ORDER, type BotId, type JobId } from '../data/economy';
+import { BOT_ORDER, type BotId, type GroundId, type JobId } from '../data/economy';
 import { FEATURES, type FeatureId } from '../data/features';
 import {
   LODGE_LEVELS, MAX_LODGE, PLANS, RUNG_ORDER, RUNGS, SPECIES_DRAW,
@@ -29,6 +29,11 @@ export function counter(s: GameState, id: CounterId): number {
     case 'logged': return s.stats.lifetimeLogged;
     case 'species': return speciesFound(s);
     case 'bots': return BOT_ORDER.reduce((a, b) => a + s.bots[b].owned, 0);
+    case 'handStakes': return hand.fDecoys ?? 0;
+    case 'handFlags': return hand.flag ?? 0;
+    case 'handFieldShots': return hand.fShoot ?? 0;
+    case 'handPickups': return hand.fRetrieve ?? 0;
+    case 'geese': return s.stats.geese;
   }
 }
 
@@ -138,7 +143,6 @@ export function buyRung(s: GameState, id: RungId, events?: EventSink): boolean {
   s.currencies.coins = s.currencies.coins.sub(p.coins);
   s.currencies.feathers = s.currencies.feathers.sub(p.feathers);
   s.rungs[id] = true;
-  fxCache = null;
   events?.push({ type: 'rungBuilt', rung: id });
   return true;
 }
@@ -156,19 +160,25 @@ interface Fx {
   coins: number;
 }
 
-let fxCache: Fx | null = null;
+const fxCache: Record<GroundId, Fx | null> = { marsh: null, field: null };
 
-/** Combined effects of every rung owned (cached until the set changes). */
-export function rungFx(s: GameState): Fx {
+/**
+ * Combined effects of every rung owned (cached until the set changes).
+ * Job speed multipliers come from every rung; ground-wide effects (draw,
+ * spread, patience…) only from that ground's rungs.
+ */
+export function rungFx(s: GameState, g: GroundId = 'marsh'): Fx {
   let key = '';
   for (const id of RUNG_ORDER) if (s.rungs[id]) key += id[0]! + id.length;
-  if (fxCache && fxCache.key === key) return fxCache;
+  const cached = fxCache[g];
+  if (cached && cached.key === key) return cached;
   const fx: Fx = { key, jobMult: {}, draw: 1, spread: 0, committed: 0, patience: 1, committedPatience: 1, shot: 0, rare: 1, coins: 1 };
   for (const id of RUNG_ORDER) {
     if (!s.rungs[id]) continue;
     const r = RUNGS[id];
     const e: RungEffect = r.fx;
     if (e.mult) fx.jobMult[r.job] = (fx.jobMult[r.job] ?? 1) * e.mult;
+    if ((r.ground ?? 'marsh') !== g) continue;
     if (e.draw) fx.draw *= e.draw;
     if (e.spread) fx.spread += e.spread;
     if (e.committed) fx.committed += e.committed;
@@ -178,7 +188,7 @@ export function rungFx(s: GameState): Fx {
     if (e.rare) fx.rare *= e.rare;
     if (e.coins) fx.coins *= e.coins;
   }
-  fxCache = fx;
+  fxCache[g] = fx;
   return fx;
 }
 

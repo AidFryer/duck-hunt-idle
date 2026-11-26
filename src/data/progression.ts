@@ -14,7 +14,8 @@ import type { UpgradeId } from './upgrades';
 /** Things the game counts, used by plans, rungs and lodge levels. */
 export type CounterId =
   | 'handDecoys' | 'handCalls' | 'handShots' | 'handFetches' | 'handFixes'
-  | 'birds' | 'flocksCalled' | 'shots' | 'logged' | 'species' | 'bots';
+  | 'birds' | 'flocksCalled' | 'shots' | 'logged' | 'species' | 'bots'
+  | 'handStakes' | 'handFlags' | 'handFieldShots' | 'handPickups' | 'geese';
 
 export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   handDecoys: (n) => `Set ${n} decoys by hand`,
@@ -28,6 +29,11 @@ export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   logged: (n) => `Log ${n} birds at the lodge`,
   species: (n) => `Find ${n} kinds of duck`,
   bots: (n) => `Own ${n} bots`,
+  handStakes: (n) => `Stake ${n} goose decoys by hand`,
+  handFlags: (n) => `Flag in ${n} flocks by hand`,
+  handFieldShots: (n) => `Take ${n} shots from the layout blind`,
+  handPickups: (n) => `Pick up ${n} geese by hand`,
+  geese: (n) => `Bring in ${n} geese and cranes`,
 };
 
 // ---------------------------------------------------------------- lodge
@@ -77,8 +83,9 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 2_500, species: 7, coins: 25_000, feathers: 1_200, opens: ['workflows'],
+    birds: 2_500, species: 7, coins: 25_000, feathers: 1_200, opens: ['field', 'workflows'],
     points: [
+      'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch to it from the marsh.',
       'Workflows: tie the jobs together with rope for big crew bonuses.',
       'Scout and Foreman plans.',
       'Third rungs: Decoy Skiff, Long Call, Twin Blinds, Retriever Skiff, Front Desk.',
@@ -119,6 +126,10 @@ export const PLANS: Record<BotId, PlanDef> = {
   scout: { lodge: 4, counter: 'flocksCalled', count: 1_500 },
   foreman: { lodge: 4, counter: 'handFixes', count: 12 },
   tinker: { lodge: 5, counter: 'bots', count: 120 },
+  staker: { lodge: 4, counter: 'handStakes', count: 25 },
+  flagger: { lodge: 4, counter: 'handFlags', count: 40 },
+  layout: { lodge: 4, counter: 'handFieldShots', count: 40 },
+  fieldDog: { lodge: 4, counter: 'handPickups', count: 100 },
 };
 
 // ---------------------------------------------------------------- ladder
@@ -129,7 +140,11 @@ export type RungId =
   | 'steadyBlind' | 'twinBlinds' | 'marksman'
   | 'kennelPack' | 'retrieverSkiff' | 'retrieverBoat'
   | 'frontDesk' | 'guestWing'
-  | 'lookoutTower';
+  | 'lookoutTower'
+  | 'silhouetteSpread' | 'fullBodyFleet'
+  | 'kiteFlag' | 'honkerChorus'
+  | 'stubbleBlinds' | 'pitBlind'
+  | 'fieldKennel' | 'muleCart';
 
 export interface RungEffect {
   /** × the job's bot output. */
@@ -154,6 +169,8 @@ export interface RungEffect {
 
 export interface RungDef {
   id: RungId;
+  /** Which hunt its marsh-wide effects apply to (default: the marsh). */
+  ground?: 'field';
   job: JobId;
   /** The bot whose crew this rung improves. */
   bot: BotId;
@@ -175,6 +192,9 @@ export interface RungDef {
 const T2 = { lodge: 3, owned: 10, coins: 5_000, feathers: 300 } as const;
 const T3 = { lodge: 4, owned: 25, coins: 80_000, feathers: 3_000 } as const;
 const T4 = { lodge: 5, owned: 50, coins: 400_000, feathers: 15_000 } as const;
+/** Field rungs: the field opens at lodge 4, so its ladder is shorter and pricier. */
+const F2 = { ground: 'field', tier: 2, lodge: 4, owned: 10, coins: 120_000, feathers: 6_000 } as const;
+const F3 = { ground: 'field', tier: 3, lodge: 5, owned: 25, coins: 900_000, feathers: 30_000 } as const;
 
 export const RUNGS: Record<RungId, RungDef> = {
   spinningWing: {
@@ -252,6 +272,46 @@ export const RUNGS: Record<RungId, RungDef> = {
     name: 'Lookout Tower', blurb: 'A cedar tower over the reeds. The scouts can see clear to the river.',
     effect: 'Scouts ×3 · +10% flocks', fx: { mult: 3, draw: 1.1 },
   },
+  silhouetteSpread: {
+    id: 'silhouetteSpread', job: 'fDecoys', bot: 'staker', ...F2, counter: 'geese', count: 800,
+    name: 'Silhouette Spread', blurb: 'Dozens of flat, painted silhouettes fan out behind the full-bodies. From the air it looks like a whole field of geese.',
+    effect: 'Stakers ×2 · +6 decoys · Ross\'s geese', fx: { mult: 2, spread: 6 },
+  },
+  fullBodyFleet: {
+    id: 'fullBodyFleet', job: 'fDecoys', bot: 'staker', ...F3, counter: 'geese', count: 5_000,
+    name: 'Full-body Fleet', blurb: 'A trailer of hand-flocked full-bodies, feeders and sentries and sleepers.',
+    effect: 'Stakers ×3 · +25% goose flocks · blue geese', fx: { mult: 3, draw: 1.25 },
+  },
+  kiteFlag: {
+    id: 'kiteFlag', job: 'flag', bot: 'flagger', ...F2, counter: 'geese', count: 800,
+    name: 'Kite Flags', blurb: 'Goose-shaped kites that hover and bob over the spread like birds settling in.',
+    effect: 'Flaggers ×2 · geese circle 40% longer · white-fronts', fx: { mult: 2, patience: 1.4 },
+  },
+  honkerChorus: {
+    id: 'honkerChorus', job: 'flag', bot: 'flagger', ...F3, counter: 'geese', count: 5_000,
+    name: 'Honker Chorus', blurb: 'A whole line of flaggers calling in harmony: clucks, moans and the double honk.',
+    effect: 'Flaggers ×3 · rare geese ×1.5 · the Emperor Goose', fx: { mult: 3, rare: 1.5 },
+  },
+  stubbleBlinds: {
+    id: 'stubbleBlinds', job: 'fShoot', bot: 'layout', ...F2, counter: 'geese', count: 800,
+    name: 'Stubbled Blinds', blurb: 'Layout blinds brushed in with real corn stubble. Even a crane can\'t pick them out.',
+    effect: 'Layout Bots ×2 · +6% of each flock per shot · cranes', fx: { mult: 2, shot: 0.06 },
+  },
+  pitBlind: {
+    id: 'pitBlind', job: 'fShoot', bot: 'layout', ...F3, counter: 'geese', count: 5_000,
+    name: 'Pit Blind', blurb: 'A dug-in pit with a sliding lid, a heater and a bench for the whole crew.',
+    effect: 'Layout Bots ×3 · geese stay 50% longer over the spread', fx: { mult: 3, committedPatience: 1.5 },
+  },
+  fieldKennel: {
+    id: 'fieldKennel', job: 'fRetrieve', bot: 'fieldDog', ...F2, counter: 'geese', count: 800,
+    name: 'Field Kennel', blurb: 'A warm doghouse at the field edge with straw and a water bowl.',
+    effect: 'Field Pups ×2', fx: { mult: 2 },
+  },
+  muleCart: {
+    id: 'muleCart', job: 'fRetrieve', bot: 'fieldDog', ...F3, counter: 'geese', count: 5_000,
+    name: 'Mule Cart', blurb: 'A patient clockwork mule pulls a cart along the rows. The pups just load it up.',
+    effect: 'Field Pups ×3', fx: { mult: 3 },
+  },
 };
 
 export const RUNG_ORDER: readonly RungId[] = [
@@ -260,6 +320,7 @@ export const RUNG_ORDER: readonly RungId[] = [
   'steadyBlind', 'twinBlinds', 'marksman',
   'kennelPack', 'retrieverSkiff', 'retrieverBoat',
   'frontDesk', 'guestWing', 'lookoutTower',
+  'silhouetteSpread', 'fullBodyFleet', 'kiteFlag', 'honkerChorus', 'stubbleBlinds', 'pitBlind', 'fieldKennel', 'muleCart',
 ];
 
 /** The automation ladder for each bot, bottom to top. */
@@ -288,4 +349,12 @@ export const SPECIES_DRAW: Partial<Record<SpeciesId, readonly Draw[]>> = {
   cinnamonTeal: [{ upgrade: 'rice' }, { flyway: 'central' }],
   harlequin: [{ rung: 'lureMaster' }],
   kingEider: [{ rung: 'floatingRig' }],
+  cacklingGoose: [{ upgrade: 'cornStubble' }],
+  snowGoose: [{ upgrade: 'winterWheat' }],
+  rossGoose: [{ upgrade: 'winterWheat' }, { rung: 'silhouetteSpread' }],
+  blueGoose: [{ upgrade: 'winterWheat' }, { rung: 'fullBodyFleet' }],
+  whiteFront: [{ upgrade: 'winterWheat' }, { rung: 'kiteFlag' }],
+  brant: [{ upgrade: 'roostPond' }],
+  sandhillCrane: [{ upgrade: 'roostPond' }, { rung: 'stubbleBlinds' }],
+  emperorGoose: [{ rung: 'honkerChorus' }],
 };

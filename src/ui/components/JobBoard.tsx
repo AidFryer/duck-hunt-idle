@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { BOTS, JOB_ORDER, type BotId, type JobId, type Slot } from '../../data/economy';
+import { BOTS, FIELD_JOBS, JOB_ORDER, type BotId, type FieldJob, type JobId, type Slot } from '../../data/economy';
 import { formatRate } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot, JobSnapshot } from '../hudState';
@@ -58,7 +58,7 @@ export function JobBoard({ hud, controls }: { hud: HudSnapshot; controls: GameCo
       )}
 
       <div class="board">
-        {JOB_ORDER.map((j, i) => (
+        {JOB_ORDER.filter((j) => hud.field.open || !FIELD_JOBS.includes(j as FieldJob)).map((j, i) => (
           <JobCard
             job={hud.jobs[j]}
             tilt={TILT[i % TILT.length]!}

@@ -18,7 +18,8 @@ import { buyAcre, buyBot, levelUpBot } from './sim/economy';
 import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
-import { canDo, doAction } from './sim/hunt';
+import { canDo, doAction, fieldOpen, type ActionJob } from './sim/hunt';
+import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung } from './sim/progression';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
@@ -117,6 +118,8 @@ setInterval(() => {
   hud.set(snapshot(state));
   // Words next to the hint ring until the player has the hang of it.
   if (renderer?.scene) renderer.scene.hintLabels = true;
+  // Leaving the field open after a reset or import is not possible: fall back.
+  if (prefs.get().ground === 'field' && !fieldOpen(state) && renderer?.ground === 'field') controls.setGround('marsh');
 }, 200);
 
 // --- Autosave ---------------------------------------------------------------
@@ -298,21 +301,25 @@ function tapNote(text: string, at: Point): void {
 /** The player tapped the marsh: work out what they meant and do it. */
 function onSceneTap(t: TapTarget): void {
   lastTapAt = t.at;
-  let job = t.job;
-  if (!job) return;
-  // A tap on the water when the spread is full fetches a bird if there is
-  // one; otherwise it's just a splash, no nagging.
-  if (job === 'decoys' && !canDo(state, 'decoys')) {
-    if (canDo(state, 'retrieve')) job = 'retrieve';
-    else {
-      renderer?.scene.fx.ripple(t.at.x, t.at.y, 0.5, 1.2);
-      return;
-    }
+  let step = t.job;
+  if (!step) return;
+  const g = t.ground ?? 'marsh';
+  const jobs = GROUND_JOBS[g];
+  const view = renderer?.view;
+  const splash = (big: boolean) => {
+    if (g === 'marsh') view?.fx.ripple(t.at.x, t.at.y, big ? 0.7 : 0.5, big ? 1.4 : 1.2);
+    else view?.fx.featherPuff(t.at.x, t.at.y, (view?.layout.scale ?? 1) * 0.35, 2);
+  };
+  // A tap on the water (or field) when the spread is full fetches a bird if
+  // there is one; otherwise it's just a splash, no nagging.
+  if (step === 'decoys' && !canDo(state, jobs.decoys)) {
+    if (canDo(state, jobs.retrieve)) step = 'retrieve';
+    else return splash(false);
   }
-  if (job === 'call' && !canDo(state, 'call')) return tapNote('Shoot the low flock first', t.at);
-  if (job === 'retrieve' && t.floater) renderer?.scene.ducks.prefer(t.floater);
-  if (job === 'decoys') renderer?.scene.fx.ripple(t.at.x, t.at.y, 0.7, 1.4);
-  doAction(state, job, 'manual', runner.sink, t.flockId);
+  if (step === 'call' && !canDo(state, jobs.call)) return tapNote(g === 'field' ? 'Shoot the geese over the spread first' : 'Shoot the low flock first', t.at);
+  if (step === 'retrieve' && t.floater) view?.ducks.prefer(t.floater);
+  if (step === 'decoys') splash(true);
+  doAction(state, jobs[step] as ActionJob, 'manual', runner.sink, t.flockId);
   hud.set(snapshot(state));
 }
 
@@ -325,7 +332,7 @@ window.addEventListener('keydown', (e) => {
   const job = KEYS[e.key.toLowerCase()];
   if (!job) return;
   lastTapAt = null;
-  controls.act(job);
+  controls.act(job, prefs.get().ground);
 });
 
 /** First Light: a small gift on the first visit of each calendar day. */
@@ -339,9 +346,10 @@ void SPECIES;
 void FLYWAYS;
 
 const controls: GameControls = {
-  act(stage) {
-    const ok = doAction(state, stage, 'manual', runner.sink);
-    if (!ok && stage === 'retrieve' && performance.now() - lastNudge > 10_000) {
+  act(stage, g = 'marsh') {
+    const job = stage === 'log' ? 'log' : (GROUND_JOBS[g][stage] as ActionJob);
+    const ok = doAction(state, job, 'manual', runner.sink);
+    if (!ok && stage === 'retrieve' && g === 'marsh' && performance.now() - lastNudge > 10_000) {
       lastNudge = performance.now();
       feedback.toast(`Nothing on the water for ${LAB_NAME} yet.`);
     }
@@ -367,6 +375,12 @@ const controls: GameControls = {
     const ok = buyUpgrade(state, id, runner.sink);
     hud.set(snapshot(state));
     return ok;
+  },
+  setGround(g: GroundId) {
+    const next = g === 'field' && fieldOpen(state) ? 'field' : 'marsh';
+    updatePrefs({ ...prefs.get(), ground: next });
+    renderer?.setGround(next);
+    hud.set(snapshot(state));
   },
   buildLodge() {
     const ok = buildLodge(state, runner.sink);
@@ -504,6 +518,7 @@ async function startScene(host: HTMLElement): Promise<void> {
   renderer.onFix = (bot) => controls.fixBot(bot);
   renderer.onTap = onSceneTap;
   await renderer.init();
+  if (prefs.get().ground === 'field' && fieldOpen(state)) renderer.setGround('field');
   document.body.classList.add('is-ready');
   if (loaded.kind === 'loaded') {
     const away = (Date.now() - state.meta.lastSaved) / 1000;

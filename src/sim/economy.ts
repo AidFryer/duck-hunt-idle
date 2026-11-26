@@ -1,7 +1,7 @@
 import Decimal from 'break_infinity.js';
 import {
-  ACRES, BOT_MILESTONES, BOTS, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
-  type BotId, type SpeciesId,
+  ACRES, BOT_MILESTONES, BOTS, FIELD, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
+  type BotId, type GroundId, type SpeciesId,
 } from '../data/economy';
 import type { EventSink } from './events';
 import type { GameState } from './state';
@@ -143,48 +143,60 @@ export function buyAcre(state: GameState, events?: EventSink): boolean {
 
 // ---------------------------------------------------------------- marsh
 
-export function spreadSize(state: GameState): number {
+/** Is a ground the goose field? (keeps the call sites short) */
+const isField = (g: GroundId) => g === 'field';
+
+export function spreadSize(state: GameState, g: GroundId = 'marsh'): number {
+  if (isField(g)) return FIELD.baseSpreadSize + rungFx(state, 'field').spread;
   return HUNT.baseSpreadSize + UPGRADE_EFFECTS.decoyQualitySpread * (state.upgrades.decoyQuality ?? 0) + rungFx(state).spread;
 }
 
 /** Seconds a circling flock waits for a call. */
-export function incomingPatience(state: GameState): number {
+export function incomingPatience(state: GameState, g: GroundId = 'marsh'): number {
+  if (isField(g)) return FIELD.incomingPatience * rungFx(state, 'field').patience;
   const base = HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0) + (state.legacy.perks.keenEyes ? 5 : 0);
   return base * rungFx(state).patience;
 }
 
 /** Seconds a called flock works the decoys before flaring off. */
-export function committedPatience(state: GameState): number {
-  return HUNT.committedPatience * rungFx(state).committedPatience;
+export function committedPatience(state: GameState, g: GroundId = 'marsh'): number {
+  return (isField(g) ? FIELD.committedPatience : HUNT.committedPatience) * rungFx(state, g).committedPatience;
 }
 
 /** Flocks that can work the decoys at once. */
-export function maxCommitted(state: GameState): number {
-  return HUNT.maxCommitted + rungFx(state).committed;
+export function maxCommitted(state: GameState, g: GroundId = 'marsh'): number {
+  return (isField(g) ? FIELD.maxCommitted : HUNT.maxCommitted) + rungFx(state, g).committed;
 }
 
 /** How many flocks can circle at once. */
-export function maxIncoming(state: GameState): number {
-  return HUNT.maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0);
+export function maxIncoming(state: GameState, g: GroundId = 'marsh'): number {
+  return (isField(g) ? FIELD.maxIncoming : HUNT.maxIncoming) + (state.legacy.perks.keenEyes ? 1 : 0);
 }
 
 /** Fraction of a flock taken by one shot. */
-export function shotFraction(state: GameState): number {
+export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
+  if (isField(g)) return FIELD.shotFraction + rungFx(state, 'field').shot;
   return HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot;
 }
 
 /** Extra birds per flock from food plots and weather. */
-export function extraFlockSize(state: GameState): number {
+export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number {
+  if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + WEATHER[state.environment.weather].flockSize;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
   return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize + cold;
 }
 
 /** Flocks per second right now, before the activity curve. */
-export function flockDraw(state: GameState): number {
-  const fill = state.hunt.decoys / spreadSize(state);
-  const spread = HUNT.emptySpreadFloor + (1 - HUNT.emptySpreadFloor) * Math.pow(fill, HUNT.spreadExponent);
-  const acreBonus = 1 + ACRES.flockRatePerAcre * (state.acres - ACRES.start);
+export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
+  const P = isField(g) ? FIELD : HUNT;
+  const fill = (isField(g) ? state.field.decoys : state.hunt.decoys) / spreadSize(state, g);
+  const spread = P.emptySpreadFloor + (1 - P.emptySpreadFloor) * Math.pow(fill, P.spreadExponent);
   const u = state.upgrades;
+  if (isField(g)) {
+    const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));
+    return P.baseFlockRate * spread * field * WEATHER[state.environment.weather].flockRate * rungFx(state, 'field').draw;
+  }
+  const acreBonus = 1 + ACRES.flockRatePerAcre * (state.acres - ACRES.start);
   const marsh =
     (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) *
     (1 + UPGRADE_EFFECTS.milletFlockRate * (u.millet ?? 0)) *

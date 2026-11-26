@@ -62,6 +62,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const botsAlert = BOT_ORDER.some((id) => hud.bots[id].revealed && hud.bots[id].affordable);
   const upgradesAlert = hud.acreAffordable || hud.upgrades.some((u) => u.revealed && u.affordable);
   const n = prefs.notation;
+  const ground = hud.field.open ? prefs.ground : 'marsh';
 
   return (
     <div class={`layout ${tab === 'marsh' ? 'layout--marsh' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
@@ -72,6 +73,11 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <div class="toasts" ref={toastRef} aria-live="polite" />
         <Moments onOpen={(f) => setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId)} />
         <RhythmMeter hud={hud} />
+        {hud.field.open && (
+          <button class="ground-switch" onClick={() => controls.setGround(ground === 'field' ? 'marsh' : 'field')}>
+            {ground === 'field' ? '‹ Back to the marsh' : 'To the goose field ›'}
+          </button>
+        )}
       </section>
 
       <aside class="panel">
@@ -104,6 +110,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               controls={controls}
               devTools={prefs.devTools}
               notation={n}
+              ground={ground}
               tutorial={tutorialOn ? (
                 <Tutorial
                   step={tStep}

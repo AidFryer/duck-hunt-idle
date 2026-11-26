@@ -8,7 +8,7 @@ const cache = new Map<BotId, string>();
 export function portrait(id: BotId): string {
   let url = cache.get(id);
   if (!url) {
-    const canvas = id === 'retriever' ? paintDogBody('robo') : paintDecoyBot(id);
+    const canvas = id === 'retriever' || id === 'fieldDog' ? paintDogBody('robo') : paintDecoyBot(id);
     url = canvas.toDataURL();
     cache.set(id, url);
   }

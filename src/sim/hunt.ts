@@ -1,4 +1,4 @@
-import { ACRES, BOTS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type HuntStage, type JobId } from '../data/economy';
+import { ACRES, BOTS, FIELD, FIELD_JOBS, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -13,30 +13,54 @@ import type { ActionSource, EventSink } from './events';
 import { pickFrom, rateTable, type RateTable } from './jobs';
 import { advanceMetrics, recordJob } from './metrics';
 import { raiseProblem, stepForemen } from './problems';
-import { rand, type GameState } from './state';
+import { rand, type GameState, type GroundState } from './state';
 
 /**
  * The hunt pipeline: Scout → Set Decoys → Call → Shoot → Retrieve → Log.
  * Each action is a pure state transition used by taps, Gus, and bots.
  */
 
-type ActionJob = HuntStage | 'scout';
+export type ActionJob = HuntStage | 'scout' | FieldJob;
+
+/** Which ground and which of the four steps a pipeline job is. */
+const JOB_STEP: Partial<Record<JobId, { g: GroundId; step: Step }>> = {
+  decoys: { g: 'marsh', step: 'decoys' },
+  call: { g: 'marsh', step: 'call' },
+  shoot: { g: 'marsh', step: 'shoot' },
+  retrieve: { g: 'marsh', step: 'retrieve' },
+  fDecoys: { g: 'field', step: 'decoys' },
+  flag: { g: 'field', step: 'call' },
+  fShoot: { g: 'field', step: 'shoot' },
+  fRetrieve: { g: 'field', step: 'retrieve' },
+};
+
+export function ground(state: GameState, g: GroundId): GroundState {
+  return g === 'field' ? state.field : state.hunt;
+}
+
+/** Is the goose field open? */
+export function fieldOpen(state: GameState): boolean {
+  return state.unlocks.field !== undefined || state.lodge >= 4;
+}
+
+/** Tag events from the field so the right scene animates them. */
+const tag = (g: GroundId) => (g === 'field' ? { ground: 'field' as const } : {});
 
 export function canDo(state: GameState, job: ActionJob): boolean {
-  const h = state.hunt;
-  switch (job) {
-    case 'scout':
-      return h.incoming.length < maxIncoming(state);
+  if (job === 'scout') return state.hunt.incoming.length < maxIncoming(state);
+  if (job === 'log') return state.hunt.ledger.length > 0;
+  const js = JOB_STEP[job]!;
+  if (js.g === 'field' && !fieldOpen(state)) return false;
+  const h = ground(state, js.g);
+  switch (js.step) {
     case 'decoys':
-      return h.decoys < spreadSize(state);
+      return h.decoys < spreadSize(state, js.g);
     case 'call':
-      return h.incoming.length > 0 && h.committed.length < maxCommitted(state);
+      return h.incoming.length > 0 && h.committed.length < maxCommitted(state, js.g);
     case 'shoot':
       return h.committed.length > 0;
     case 'retrieve':
       return h.downed.length > 0;
-    case 'log':
-      return h.ledger.length > 0;
   }
 }
 
@@ -51,17 +75,21 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
     state.stats.manualByJob[job] = (state.stats.manualByJob[job] ?? 0) + 1;
     bumpStreak(state, events);
   }
-  const h = state.hunt;
+  const hunt = state.hunt;
   const src = source === 'keeper' ? 'manual' : source;
-  switch (job) {
-    case 'scout': {
-      h.flockCountdown = Math.max(-maxIncoming(state), h.flockCountdown - SCOUT.spotPower * FLYWAYS[state.flyway].scoutPower);
-      events.push({ type: 'scouted', source: src });
-      break;
-    }
+  if (job === 'scout') {
+    hunt.flockCountdown = Math.max(-maxIncoming(state), hunt.flockCountdown - SCOUT.spotPower * FLYWAYS[state.flyway].scoutPower);
+    events.push({ type: 'scouted', source: src });
+    recordJob(state, job, true);
+    return true;
+  }
+  const js = job === 'log' ? null : JOB_STEP[job]!;
+  const g: GroundId = js?.g ?? 'marsh';
+  const h = ground(state, g);
+  switch (js?.step ?? 'log') {
     case 'decoys': {
       h.decoys += 1;
-      events.push({ type: 'decoySet', decoys: h.decoys, source: src });
+      events.push({ type: 'decoySet', decoys: h.decoys, source: src, ...tag(g) });
       break;
     }
     case 'call': {
@@ -69,31 +97,31 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       const flock = h.incoming.splice(idx, 1)[0]!;
       flock.age = 0;
       h.committed.push(flock);
-      state.stats.flocksCalled += 1;
-      events.push({ type: 'flockCalled', flockId: flock.id, source: src });
+      if (g === 'marsh') state.stats.flocksCalled += 1;
+      events.push({ type: 'flockCalled', flockId: flock.id, source: src, ...tag(g) });
       break;
     }
     case 'shoot': {
       const idx = targetId !== undefined ? Math.max(0, h.committed.findIndex((f) => f.id === targetId)) : 0;
       const flock = h.committed.splice(idx, 1)[0]!;
-      const room = HUNT.maxDowned - h.downed.length;
-      const downed = Math.max(0, Math.min(room, Math.max(1, Math.ceil(flock.size * shotFraction(state)))));
+      const room = (g === 'field' ? FIELD.maxDowned : HUNT.maxDowned) - h.downed.length;
+      const downed = Math.max(0, Math.min(room, Math.max(1, Math.ceil(flock.size * shotFraction(state, g)))));
       for (let i = 0; i < downed; i++) h.downed.push(flock.species);
-      state.stats.shots += 1;
-      events.push({ type: 'shot', flockId: flock.id, downed, source: src });
+      if (g === 'marsh') state.stats.shots += 1;
+      events.push({ type: 'shot', flockId: flock.id, downed, source: src, ...tag(g) });
       break;
     }
     case 'retrieve':
     case 'log': {
-      const species = job === 'retrieve' ? h.downed[0] : undefined;
-      doMany(state, job, 1, source, events);
+      const species = job === 'log' ? undefined : h.downed[0];
+      doMany(state, job as 'retrieve' | 'log' | 'fRetrieve', 1, source, events);
       // Hunter's Rhythm pays a bonus on birds you fetch by hand.
-      if (source === 'manual' && species && h.streak > 1) {
-        const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * h.streak * 100) / 100;
+      if (source === 'manual' && species && hunt.streak > 1) {
+        const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * hunt.streak * 100) / 100;
         state.currencies.coins = state.currencies.coins.add(bonus);
         state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(bonus);
         state.season.coins = state.season.coins.add(bonus);
-        events.push({ type: 'streak', level: h.streak, bonus });
+        events.push({ type: 'streak', level: hunt.streak, bonus });
       }
       return true;
     }
@@ -141,13 +169,15 @@ const EVENT_CAP = 3;
  * catch-up). Returns how many were done. Emits individual events for the
  * first few (for animations) and one combined event for the rest.
  */
-export function doMany(state: GameState, job: 'retrieve' | 'log', count: number, source: ActionSource | 'keeper', events: EventSink): number {
+export function doMany(state: GameState, job: 'retrieve' | 'log' | 'fRetrieve', count: number, source: ActionSource | 'keeper', events: EventSink): number {
   const h = state.hunt;
   const src = source === 'keeper' ? 'manual' : source;
-  if (job === 'retrieve') {
-    const n = Math.min(count, h.downed.length);
+  if (job === 'retrieve' || job === 'fRetrieve') {
+    const g: GroundId = job === 'fRetrieve' ? 'field' : 'marsh';
+    const gr = ground(state, g);
+    const n = Math.min(count, gr.downed.length);
     if (n <= 0) return 0;
-    const birds = h.downed.splice(0, n);
+    const birds = gr.downed.splice(0, n);
     const hour = clockAt(state.clock.dayTime).hour;
     const night = hour >= 20 || hour < 5;
     const w = state.environment.weather;
@@ -165,18 +195,19 @@ export function doMany(state: GameState, job: 'retrieve' | 'log', count: number,
         state.guide[species] = { count: 1, firstAt: state.elapsed };
         events.push({ type: 'newSpecies', species, ...discoveryReward(state, species) });
       }
-      if (i < EVENT_CAP) events.push({ type: 'retrieved', species, feathers: v.feathers, count: 1, source: src });
+      if (i < EVENT_CAP) events.push({ type: 'retrieved', species, feathers: v.feathers, count: 1, source: src, ...tag(g) });
       else {
         restFeathers += v.feathers;
         restSpecies = species;
       }
     }
-    if (n > EVENT_CAP) events.push({ type: 'retrieved', species: restSpecies, feathers: restFeathers, count: n - EVENT_CAP, source: src });
+    if (n > EVENT_CAP) events.push({ type: 'retrieved', species: restSpecies, feathers: restFeathers, count: n - EVENT_CAP, source: src, ...tag(g) });
     state.stats.lifetimeBirds += n;
+    if (g === 'field') state.stats.geese += n;
     h.bag += n;
     state.stats.birdsByWeather[w] = (state.stats.birdsByWeather[w] ?? 0) + n;
     if (night) state.stats.nightBirds += n;
-    recordJobMany(state, 'retrieve', n);
+    recordJobMany(state, job, n);
     return n;
   }
   const n = Math.min(count, h.ledger.length);
@@ -208,68 +239,8 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   advanceMetrics(state);
   decayStreak(state);
 
-  // Decoys slowly drift loose, faster in wind.
-  if (h.decoys > 0) {
-    const drift = WEATHER[state.environment.weather].decoyDrift;
-    const vane = 1 + UPGRADE_EFFECTS.weathervaneDrift * (state.upgrades.weathervane ?? 0);
-    h.decoyDrift += (dt * drift * (1 + state.environment.wind * HUNT.decoyDriftWind)) / (HUNT.decoyDriftSeconds * vane);
-    if (h.decoyDrift >= 1) {
-      h.decoyDrift -= 1;
-      h.decoys -= 1;
-      events.push({ type: 'decoyDrift', decoys: h.decoys });
-    }
-  } else {
-    h.decoyDrift = 0;
-  }
-
-  // Flock arrivals: an exponential countdown scaled by draw × activity.
-  // Lantern posts keep a few flocks coming after dark.
-  const lit = Math.max(activity, UPGRADE_EFFECTS.lanternsNight * (state.upgrades.lanterns ?? 0));
-  h.flockCountdown -= dt * flockDraw(state) * lit;
-  // Never let a big batch of scouting queue up more arrivals than can matter.
-  if (h.flockCountdown < -maxIncoming(state)) h.flockCountdown = -maxIncoming(state);
-  let arrivals = 0;
-  while (h.flockCountdown <= 0 && arrivals++ <= maxIncoming(state) + 2) {
-    h.flockCountdown += Math.min(2.5, Math.max(0.3, -Math.log(1 - rand(state) * 0.999)));
-    const species = pickSpecies(state, clockAt(state.clock.dayTime).hour);
-    const extra = ACRES.flockSizePerAcre * (state.acres - ACRES.start) + extraFlockSize(state);
-    const raw = HUNT.flockSizeMin + rand(state) * (HUNT.flockSizeMax - HUNT.flockSizeMin + extra);
-    const size = Math.max(1, Math.round(raw * SPECIES[species].flockSize));
-    if (h.incoming.length < maxIncoming(state)) {
-      const flock = { id: h.nextFlockId++, species, size, age: 0 };
-      h.incoming.push(flock);
-      events.push({ type: 'flockArrived', flockId: flock.id, size, species: flock.species });
-    } else {
-      state.stats.lostToday += 1;
-      events.push({ type: 'flockPassed', size });
-    }
-  }
-
-  // Patience: circling flocks move on; called flocks flare off.
-  for (const f of h.incoming) f.age += dt;
-  for (const f of h.committed) f.age += dt;
-  while (h.incoming.length > 0 && h.incoming[0]!.age > incomingPatience(state)) {
-    const left = h.incoming.shift()!;
-    events.push({ type: 'flockLeft', flockId: left.id });
-    // Big-sky flyways: some flocks circle back for another look.
-    if (rand(state) < FLYWAYS[state.flyway].returnChance) {
-      state.returning.push({ flock: { ...left, age: 0 }, at: state.elapsed + 15 + rand(state) * 20 });
-    } else {
-      state.stats.lostToday += 1;
-    }
-  }
-  while (state.returning.length > 0 && state.returning[0]!.at <= state.elapsed && h.incoming.length < maxIncoming(state)) {
-    const back = state.returning.shift()!.flock;
-    h.incoming.push(back);
-    events.push({ type: 'flockArrived', flockId: back.id, size: back.size, species: back.species });
-    events.push({ type: 'flockReturned', flockId: back.id });
-  }
-  const hold = committedPatience(state);
-  while (h.committed.length > 0 && h.committed[0]!.age > hold) {
-    state.stats.flocksFlared += 1;
-    state.stats.lostToday += 1;
-    events.push({ type: 'flockFlared', flockId: h.committed.shift()!.id });
-  }
+  stepGround(state, 'marsh', dt, activity, events);
+  if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
 
   // Gus keeps the ledger himself at a gentle pace.
   h.keeperProgress = Math.min(1, h.keeperProgress + LEDGER.keeperRate * dt);
@@ -278,6 +249,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   // Bots: downstream jobs first so the pipeline drains toward the lodge.
   const table = rateTable(state);
   for (let i = PIPELINE_JOBS.length - 1; i >= 0; i--) runJob(state, table, PIPELINE_JOBS[i]!, dt, events);
+  if (fieldOpen(state)) for (let i = FIELD_JOBS.length - 1; i >= 0; i--) runJob(state, table, FIELD_JOBS[i]!, dt, events);
 
   stepForemen(state, events, table.total.foreman ?? 0);
   stepTinkers(state, dt, events, table.total.tinker ?? 0);
@@ -287,6 +259,79 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
     checkAchievements(state, events);
     checkUnlocks(state, events);
     checkPlans(state, events);
+  }
+}
+
+/** Decoy drift, arrivals and patience for one hunting ground. */
+function stepGround(state: GameState, g: GroundId, dt: number, activity: number, events: EventSink): void {
+  const h = ground(state, g);
+  const field = g === 'field';
+  const P = field ? FIELD : HUNT;
+  const nextId = () => state.hunt.nextFlockId++;
+
+  // Decoys slowly drift loose (or blow over in the field), faster in wind.
+  if (h.decoys > 0) {
+    const drift = WEATHER[state.environment.weather].decoyDrift;
+    const vane = field ? 1 : 1 + UPGRADE_EFFECTS.weathervaneDrift * (state.upgrades.weathervane ?? 0);
+    h.decoyDrift += (dt * drift * (1 + state.environment.wind * P.decoyDriftWind)) / (P.decoyDriftSeconds * vane);
+    if (h.decoyDrift >= 1) {
+      h.decoyDrift -= 1;
+      h.decoys -= 1;
+      events.push({ type: 'decoyDrift', decoys: h.decoys, ...tag(g) });
+    }
+  } else {
+    h.decoyDrift = 0;
+  }
+
+  // Flock arrivals: an exponential countdown scaled by draw × activity.
+  // Lantern posts keep a few marsh flocks coming after dark.
+  const lit = field ? activity : Math.max(activity, UPGRADE_EFFECTS.lanternsNight * (state.upgrades.lanterns ?? 0));
+  const cap = maxIncoming(state, g);
+  h.flockCountdown -= dt * flockDraw(state, g) * lit;
+  // Never let a big batch of scouting queue up more arrivals than can matter.
+  if (h.flockCountdown < -cap) h.flockCountdown = -cap;
+  let arrivals = 0;
+  while (h.flockCountdown <= 0 && arrivals++ <= cap + 2) {
+    h.flockCountdown += Math.min(2.5, Math.max(0.3, -Math.log(1 - rand(state) * 0.999)));
+    const species = pickSpecies(state, clockAt(state.clock.dayTime).hour, g);
+    const extra = (field ? 0 : ACRES.flockSizePerAcre * (state.acres - ACRES.start)) + extraFlockSize(state, g);
+    const raw = P.flockSizeMin + rand(state) * (P.flockSizeMax - P.flockSizeMin + extra);
+    const size = Math.max(1, Math.round(raw * SPECIES[species].flockSize));
+    if (h.incoming.length < cap) {
+      const flock = { id: nextId(), species, size, age: 0 };
+      h.incoming.push(flock);
+      events.push({ type: 'flockArrived', flockId: flock.id, size, species: flock.species, ...tag(g) });
+    } else {
+      state.stats.lostToday += 1;
+      events.push({ type: 'flockPassed', size, ...tag(g) });
+    }
+  }
+
+  // Patience: circling flocks move on; called flocks flare off.
+  for (const f of h.incoming) f.age += dt;
+  for (const f of h.committed) f.age += dt;
+  const wait = incomingPatience(state, g);
+  while (h.incoming.length > 0 && h.incoming[0]!.age > wait) {
+    const left = h.incoming.shift()!;
+    events.push({ type: 'flockLeft', flockId: left.id, ...tag(g) });
+    // Big-sky flyways: some marsh flocks circle back for another look.
+    if (!field && rand(state) < FLYWAYS[state.flyway].returnChance) {
+      state.returning.push({ flock: { ...left, age: 0 }, at: state.elapsed + 15 + rand(state) * 20 });
+    } else {
+      state.stats.lostToday += 1;
+    }
+  }
+  while (!field && state.returning.length > 0 && state.returning[0]!.at <= state.elapsed && h.incoming.length < cap) {
+    const back = state.returning.shift()!.flock;
+    h.incoming.push(back);
+    events.push({ type: 'flockArrived', flockId: back.id, size: back.size, species: back.species });
+    events.push({ type: 'flockReturned', flockId: back.id });
+  }
+  const hold = committedPatience(state, g);
+  while (h.committed.length > 0 && h.committed[0]!.age > hold) {
+    state.stats.flocksFlared += 1;
+    state.stats.lostToday += 1;
+    events.push({ type: 'flockFlared', flockId: h.committed.shift()!.id, ...tag(g) });
   }
 }
 
@@ -304,7 +349,7 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
     return;
   }
   j.progress += rate * dt;
-  if (job === 'retrieve' || job === 'log' || job === 'scout') {
+  if (job === 'retrieve' || job === 'fRetrieve' || job === 'log' || job === 'scout') {
     runBatch(state, t, job, events);
     return;
   }
@@ -326,12 +371,16 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
 }
 
 /** Batched version of runJob for high-volume jobs. */
-function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'log' | 'scout', events: EventSink): void {
+function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'fRetrieve' | 'log' | 'scout', events: EventSink): void {
   const j = state.jobs[job];
   const want = Math.floor(j.progress);
   if (want <= 0) return;
   const h = state.hunt;
-  const avail = job === 'retrieve' ? h.downed.length : job === 'log' ? h.ledger.length : h.incoming.length < maxIncoming(state) ? want : 0;
+  const avail =
+    job === 'retrieve' ? h.downed.length
+    : job === 'fRetrieve' ? state.field.downed.length
+    : job === 'log' ? h.ledger.length
+    : h.incoming.length < maxIncoming(state) ? want : 0;
   const k = Math.min(want, avail);
   j.progress -= k;
   if (k < want) j.progress = Math.min(j.progress, 1);

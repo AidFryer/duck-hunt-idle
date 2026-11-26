@@ -9,7 +9,7 @@ import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
 import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, canAfford, levelPrice, levelUpBot, spreadSize, type Price } from './economy';
 import type { SimEvent } from './events';
-import { doAction, canDo } from './hunt';
+import { doAction, canDo, fieldOpen, type ActionJob } from './hunt';
 import { fixAll } from './problems';
 import { closeSeason, nextFlyway, starsFor } from './prestige';
 import type { GameState } from './state';
@@ -75,6 +75,13 @@ function wanted(s: GameState): BotId[] {
   if (own('scout') < Math.ceil(own('caller') / 2)) out.push('scout');
   if (s.problems.total > 3 && own('foreman') < Math.ceil(totalBots(s) / 40)) out.push('foreman');
   if (own('tinker') < Math.floor(totalBots(s) / 60)) out.push('tinker');
+  if (fieldOpen(s)) {
+    const f = s.field;
+    if (f.downed.length > 3 || own('fieldDog') < own('layout')) out.push('fieldDog');
+    if (f.committed.length >= 1 || own('layout') < own('flagger')) out.push('layout');
+    if (f.incoming.length >= 2 || own('flagger') < 1) out.push('flagger');
+    if (f.decoys < spreadSize(s, 'field') - 2 || own('staker') < Math.ceil(own('flagger') / 4)) out.push('staker');
+  }
   return out.filter((id) => !!s.plans[id]);
 }
 
@@ -148,6 +155,7 @@ function buildChain(s: GameState): void {
 }
 
 const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve', 'decoys'];
+const FIELD_TAPS: ActionJob[] = ['fShoot', 'flag', 'fRetrieve', 'fDecoys'];
 
 export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
   const dt = opts.dt ?? 0.5;
@@ -175,7 +183,10 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
         fixAll(s, events);
         continue;
       }
-      const stage = TAP_ORDER.find((st) => canDo(s, st));
+      // Alternate between grounds once the field is open.
+      const fieldFirst = fieldOpen(s) && (i & 1) === 1;
+      const order: ActionJob[] = fieldFirst ? [...FIELD_TAPS, ...TAP_ORDER] : fieldOpen(s) ? [...TAP_ORDER, ...FIELD_TAPS] : TAP_ORDER;
+      const stage = order.find((st) => canDo(s, st));
       if (!stage) break;
       doAction(s, stage, 'manual', events);
     }
