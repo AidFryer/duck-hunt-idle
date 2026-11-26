@@ -27,7 +27,7 @@ export interface UpgradeDef {
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   timber: {
     id: 'timber', name: 'Flooded Timber', blurb: 'Flood a stand of oaks. Wood ducks love the cover.',
-    effect: '+10% flocks, brings black ducks', maxLevel: 5,
+    effect: '+10% flocks, brings black ducks', maxLevel: 8,
     costCoins: 1200, costFeathers: 90, costGrowth: 2.4, revealAtCoins: 150, lodge: 3,
   },
   rice: {
@@ -42,22 +42,22 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
   blinds: {
     id: 'blinds', name: 'Better Blinds', blurb: 'Fresh brush and a sturdier frame.',
-    effect: '+6% of each flock taken per shot', maxLevel: 5,
+    effect: '+6% of each flock taken per shot', maxLevel: 10,
     costCoins: 2400, costFeathers: 180, costGrowth: 2.6, revealAtCoins: 400, lodge: 3,
   },
   decoyQuality: {
     id: 'decoyQuality', name: 'Decoy Quality', blurb: 'Hand-painted decoys with real feather detail.',
-    effect: '+2 decoys in the spread, flocks wait longer', maxLevel: 3,
+    effect: '+2 decoys in the spread, flocks wait longer', maxLevel: 6,
     costCoins: 450, costFeathers: 40, costGrowth: 3, revealAtCoins: 120, lodge: 1,
   },
   lodgeRooms: {
     id: 'lodgeRooms', name: 'Lodge Rooms', blurb: 'Fix up the guest rooms upstairs.',
-    effect: '+12% coins from every logged bird', maxLevel: 10,
+    effect: '+12% coins from every logged bird', maxLevel: 25,
     costCoins: 3000, costFeathers: 120, costGrowth: 2.2, revealAtCoins: 500, lodge: 3,
   },
   coffee: {
     id: 'coffee', name: 'The Coffee Pot', blurb: 'A better pot for the blind. Everybody perks up.',
-    effect: '+4% speed for every bot', maxLevel: 5,
+    effect: '+4% speed for every bot', maxLevel: 10,
     costCoins: 750, costFeathers: 60, costGrowth: 2.8, revealAtCoins: 100, lodge: 2,
   },
   cot: {
@@ -77,7 +77,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
   celeryBeds: {
     id: 'celeryBeds', name: 'Wild Celery Beds', blurb: 'Plant wild celery in the quiet water. Divers and wigeon go wild for it.',
-    effect: '+6% flocks, brings wigeon & ring-necks', maxLevel: 4,
+    effect: '+6% flocks, brings wigeon & ring-necks', maxLevel: 6,
     costCoins: 4_500, costFeathers: 300, costGrowth: 2.4, revealAtCoins: 0, lodge: 3,
   },
   boatHouse: {
@@ -97,12 +97,12 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
   guestDock: {
     id: 'guestDock', name: 'Guest Dock', blurb: 'A long dock with rocking chairs. Guests tell their friends.',
-    effect: 'Reputation grows 15% faster', maxLevel: 5,
+    effect: 'Reputation grows 15% faster', maxLevel: 10,
     costCoins: 50_000, costFeathers: 2_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
   },
   smokehouse: {
     id: 'smokehouse', name: 'Smokehouse', blurb: 'A little smokehouse out back. Every bird is worth more feathers.',
-    effect: '+15% feathers per bird', maxLevel: 5,
+    effect: '+15% feathers per bird', maxLevel: 10,
     costCoins: 40_000, costFeathers: 1_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
   },
   carvingShed: {

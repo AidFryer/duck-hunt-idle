@@ -275,7 +275,7 @@ export const BOT_ORDER: readonly BotId[] = ['setter', 'caller', 'blind', 'retrie
 export const FIELD_BOTS: readonly BotId[] = ['staker', 'flagger', 'layout', 'fieldDog'];
 
 /** Owned counts that double a bot type's output. */
-export const BOT_MILESTONES: readonly number[] = [10, 25, 50, 100, 200];
+export const BOT_MILESTONES: readonly number[] = [10, 25, 50, 100, 200, 300, 400, 500, 750, 1000];
 export const MILESTONE_MULTIPLIER = 2;
 
 /** Reliability gained per tune-up level (capped at RELIABILITY_CAP). */
@@ -382,9 +382,15 @@ export const ACRES = {
   /** You start with one restored acre. */
   start: 1,
   costCoins: 250,
-  costGrowth: 1.8,
-  /** Flock arrival rate bonus per acre beyond the first. */
-  flockRatePerAcre: 0.3,
+  costGrowth: 1.6,
+  /** Flock arrivals multiply by this for every acre beyond the first (it compounds). */
+  flockRateGrowth: 1.2,
+  /** One more flock can circle for every this many acres beyond the first. */
+  acresPerCircling: 2,
+  maxExtraCircling: 6,
+  /** One more flock can work the decoys for every this many acres. */
+  acresPerCommitted: 4,
+  maxExtraCommitted: 3,
   /** Average extra birds per flock per acre beyond the first. */
   flockSizePerAcre: 0.6,
   /** Coins earned before the acre upgrade is offered. */

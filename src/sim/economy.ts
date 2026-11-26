@@ -167,18 +167,20 @@ export function committedPatience(state: GameState, g: GroundId = 'marsh'): numb
 
 /** Flocks that can work the decoys at once. */
 export function maxCommitted(state: GameState, g: GroundId = 'marsh'): number {
-  return (isField(g) ? FIELD.maxCommitted : HUNT.maxCommitted) + rungFx(state, g).committed;
+  const marsh = isField(g) ? 0 : Math.min(ACRES.maxExtraCommitted, Math.floor((state.acres - ACRES.start) / ACRES.acresPerCommitted));
+  return (isField(g) ? FIELD.maxCommitted : HUNT.maxCommitted) + rungFx(state, g).committed + marsh;
 }
 
 /** How many flocks can circle at once. */
 export function maxIncoming(state: GameState, g: GroundId = 'marsh'): number {
-  return (isField(g) ? FIELD.maxIncoming : HUNT.maxIncoming) + (state.legacy.perks.keenEyes ? 1 : 0);
+  const marsh = isField(g) ? 0 : Math.min(ACRES.maxExtraCircling, Math.floor((state.acres - ACRES.start) / ACRES.acresPerCircling));
+  return (isField(g) ? FIELD.maxIncoming : HUNT.maxIncoming) + (state.legacy.perks.keenEyes ? 1 : 0) + marsh;
 }
 
 /** Fraction of a flock taken by one shot. */
 export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
-  if (isField(g)) return FIELD.shotFraction + rungFx(state, 'field').shot;
-  return HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot;
+  if (isField(g)) return Math.min(1, FIELD.shotFraction + rungFx(state, 'field').shot);
+  return Math.min(1, HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot);
 }
 
 /** Extra birds per flock from food plots and weather. */
@@ -199,7 +201,7 @@ export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
     const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));
     return P.baseFlockRate * spread * field * WEATHER[state.environment.weather].flockRate * rungFx(state, 'field').draw;
   }
-  const acreBonus = 1 + ACRES.flockRatePerAcre * (state.acres - ACRES.start);
+  const acreBonus = Math.pow(ACRES.flockRateGrowth, state.acres - ACRES.start);
   const marsh =
     (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) *
     cropFlockRate(state) *

@@ -23,9 +23,10 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
           </div>
           <div class="bot-card__info">
             <h4>Wetland Acres</h4>
-            <p>Restore another acre of marsh. More water draws more flocks, and bigger ones.</p>
+            <p>Restore another acre of marsh. Every acre multiplies the flocks that come in, makes them bigger, and lets more circle at once.</p>
             <dl class="stats">
-              <div><dt>Flocks</dt><dd>+{Math.round(ACRES.flockRatePerAcre * 100 * (hud.acres - 1))}%</dd></div>
+              <div><dt>Flocks</dt><dd>×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)}</dd></div>
+              <div><dt>Circling at once</dt><dd>{hud.maxCircling}</dd></div>
               <div><dt>Flock size</dt><dd>+{formatNumber(ACRES.flockSizePerAcre * (hud.acres - 1), notation)}</dd></div>
             </dl>
             <div class="btn-row">

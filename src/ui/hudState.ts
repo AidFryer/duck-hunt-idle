@@ -186,6 +186,7 @@ export interface HudSnapshot {
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string }[];
   lodge: LodgeSnapshot;
   profile: { name: string; avatar: string };
+  maxCircling: number;
   plots: {
     open: number;
     /** Lodge that opens the next plot (null when all four are open). */
@@ -519,6 +520,7 @@ export function snapshot(state: GameState): HudSnapshot {
     }),
     lodge: lodgeSnap(state),
     profile: { ...state.profile },
+    maxCircling: maxIncoming(state),
     plots: {
       open: plotCount(state.lodge),
       nextLodgeName: plotCount(state.lodge) < 4 ? lodgeDef(Math.max(2, state.lodge + 1)).name : null,
