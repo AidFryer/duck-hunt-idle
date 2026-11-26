@@ -10,6 +10,7 @@ import { WEATHER } from '../data/weather';
 import { starMultiplier } from './prestige';
 import { workflowEval } from './workflow';
 import { rungFx } from './progression';
+import { FLYWAYS } from '../data/flyways';
 
 export interface Price {
   coins: Decimal;
@@ -183,7 +184,8 @@ export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
 export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number {
   if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + WEATHER[state.environment.weather].flockSize;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
-  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize + cold;
+  const flyway = FLYWAYS[state.flyway].flockSizeBonus ?? 0;
+  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize + cold + flyway;
 }
 
 /** Flocks per second right now, before the activity curve. */

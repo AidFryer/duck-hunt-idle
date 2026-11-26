@@ -197,7 +197,7 @@ export function rungFx(s: GameState, g: GroundId = 'marsh'): Fx {
 function drawMet(s: GameState, d: Draw): boolean {
   if ('upgrade' in d) return (s.upgrades[d.upgrade] ?? 0) > 0;
   if ('rung' in d) return hasRung(s, d.rung);
-  return s.flyway === d.flyway;
+  return d.flyway.includes(s.flyway);
 }
 
 /** Will this species visit the marsh at all right now? */

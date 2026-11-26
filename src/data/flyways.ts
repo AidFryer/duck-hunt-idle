@@ -29,6 +29,10 @@ export interface FlywayDef {
   scoutPower: number;
   /** Chance a flock that gave up waiting circles back later. */
   returnChance: number;
+  /** Extra birds in every marsh flock. */
+  flockSizeBonus?: number;
+  /** × how often golden flocks show up. */
+  goldenMult?: number;
 }
 
 export const FLYWAYS: Record<FlywayId, FlywayDef> = {
@@ -53,19 +57,29 @@ export const FLYWAYS: Record<FlywayId, FlywayDef> = {
   },
   pacific: {
     id: 'pacific', name: 'Pacific Flyway',
-    blurb: 'Misty coast and flooded rice fields.',
-    twist: 'Coming in a future update.',
-    available: false, land: 'coast', horizon: 0.52,
+    blurb: 'Flooded rice fields under snowy mountains, with fog rolling in off the coast.',
+    twist: 'Rice country: every flock brings 2 more birds, and fog rolls in often. Eurasian wigeon visit.',
+    available: true, land: 'coast', horizon: 0.54,
     farLandTint: 0x7a9aa0, nearLandTint: 0x3a5a50, tintAmount: 0.3,
-    species: {}, weather: {}, scoutPower: 1, returnChance: 0,
+    species: {
+      woodDuck: 0.5, pintail: 2, wigeon: 1.6, teal: 1.3, cinnamonTeal: 1.5, shoveler: 1.4,
+      snowGoose: 1.8, rossGoose: 1.6, whiteFront: 1.5, blackDuck: 0.2,
+    },
+    weather: { fog: 2, drizzle: 1.5, coldFront: 0.7 },
+    scoutPower: 1, returnChance: 0, flockSizeBonus: 2,
   },
   atlantic: {
     id: 'atlantic', name: 'Atlantic Flyway',
-    blurb: 'Salt marsh and sea ducks.',
-    twist: 'Coming in a future update.',
-    available: false, land: 'saltmarsh', horizon: 0.52,
+    blurb: 'Salt marsh and a lighthouse on the point, where the sea ducks ride the cold fronts in.',
+    twist: 'Sea-duck coast: cold fronts come twice as often and golden flocks show up 50% more. Long-tailed ducks visit.',
+    available: true, land: 'saltmarsh', horizon: 0.56,
     farLandTint: 0x8a9aa8, nearLandTint: 0x4a5a5a, tintAmount: 0.3,
-    species: {}, weather: {}, scoutPower: 1, returnChance: 0,
+    species: {
+      blackDuck: 2.5, bufflehead: 1.6, scaup: 1.6, kingEider: 3, harlequin: 2, canvasback: 1.3,
+      brant: 2.5, woodDuck: 0.7, cinnamonTeal: 0, pintail: 0.8,
+    },
+    weather: { coldFront: 2, wind: 1.4, fog: 1.2 },
+    scoutPower: 1, returnChance: 0, goldenMult: 1.5,
   },
 };
 

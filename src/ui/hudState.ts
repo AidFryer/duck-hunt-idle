@@ -322,7 +322,7 @@ function rungSnap(state: GameState, id: RungId): RungSnapshot {
 function drawLabel(d: Draw): string {
   if ('upgrade' in d) return UPGRADES[d.upgrade].name;
   if ('rung' in d) return RUNGS[d.rung].name;
-  return FLYWAYS[d.flyway].name;
+  return d.flyway.map((f) => FLYWAYS[f].name).join(' or ');
 }
 
 const HELPER: Partial<Record<JobId, BotId>> = {

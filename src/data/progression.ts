@@ -329,7 +329,7 @@ export function ladderFor(bot: BotId): RungDef[] {
 
 // ---------------------------------------------------------------- species draws
 
-export type Draw = { upgrade: UpgradeId } | { rung: RungId } | { flyway: FlywayId };
+export type Draw = { upgrade: UpgradeId } | { rung: RungId } | { flyway: readonly FlywayId[] };
 
 /** What a species needs before it will visit at all. Starter birds need nothing. */
 export const SPECIES_DRAW: Partial<Record<SpeciesId, readonly Draw[]>> = {
@@ -345,7 +345,9 @@ export const SPECIES_DRAW: Partial<Record<SpeciesId, readonly Draw[]>> = {
   scaup: [{ rung: 'decoySkiff' }],
   bufflehead: [{ rung: 'decoySkiff' }],
   hoodedMerganser: [{ upgrade: 'timber' }, { rung: 'longCall' }],
-  cinnamonTeal: [{ upgrade: 'rice' }, { flyway: 'central' }],
+  cinnamonTeal: [{ upgrade: 'rice' }, { flyway: ['central', 'pacific'] }],
+  eurasianWigeon: [{ upgrade: 'celeryBeds' }, { flyway: ['pacific'] }],
+  longtail: [{ upgrade: 'deepPool' }, { flyway: ['atlantic'] }],
   harlequin: [{ rung: 'lureMaster' }],
   kingEider: [{ rung: 'floatingRig' }],
   cacklingGoose: [{ upgrade: 'cornStubble' }],

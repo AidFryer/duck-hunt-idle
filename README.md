@@ -24,7 +24,9 @@ computers, installs to your home screen, and plays offline.
   with a retry count and backoff you choose; a Problem Log.
 - **Workflows:** tie job cards together with rope for chain bonuses.
 - **The goose field:** a second hunting ground (opens with the Sporting Club) with full-body decoys, flagging, layout blinds, its own crew and ladder, and nine geese and cranes.
-- **Twenty-six species** (rarer birds only visit once you build what draws them) with a Field Guide, **weather** with a forecast, marsh
+- **Four flyways** (Mississippi, Central, Pacific, Atlantic), each with its own scenery, birds and twist.
+- **Golden flocks** the bots leave alone: shoot them yourself for a bonus.
+- **Twenty-eight species** (rarer birds only visit once you build what draws them) with a Field Guide, **weather** with a forecast, marsh
   upgrades, **20 achievement patches**, and offline progress with a
   "While you were away…" summary.
 - **Prestige:** Close the Season for Flyway Stars, spend them in the Lodge

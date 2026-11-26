@@ -30,7 +30,9 @@ export type SpeciesId =
   | 'whiteFront'
   | 'brant'
   | 'sandhillCrane'
-  | 'emperorGoose';
+  | 'emperorGoose'
+  | 'eurasianWigeon'
+  | 'longtail';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
@@ -474,11 +476,38 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
       tail: 0xf0ece4, bill: 0xe8a0b0, speculum: 0x5a6070, streaky: true,
     },
   },
+  eurasianWigeon: {
+    id: 'eurasianWigeon', name: 'Eurasian Wigeon', rarity: 'rare',
+    coins: 22, feathers: 4, weight: 8,
+    hours: [[9, 15]], weather: ['fog', 'clear'],
+    size: 0.95, flockSize: 0.5,
+    guide: 'An Old World cousin of the American wigeon, with a chestnut head and a cream forehead. A stray that rides in with Pacific wigeon flocks.',
+    hint: 'Only on the Pacific, mixed in with wigeon on the celery beds.',
+    drake: {
+      head: 0xa84a26, crown: 0xf0dca0, breast: 0xc8a4a0, flank: 0xb8b8b4, back: 0x8a8a88,
+      tail: 0x2a2622, bill: 0x9ab0c0, speculum: 0x2f7a5a,
+    },
+    hen: henBase(0x9a7a5e, 0xa8805e, 0x9ab0c0, 0x2f7a5a),
+  },
+  longtail: {
+    id: 'longtail', name: 'Long-tailed Duck', rarity: 'rare',
+    coins: 24, feathers: 4, weight: 8,
+    hours: [[7, 12]], weather: ['coldFront', 'wind'],
+    size: 0.95, flockSize: 0.8,
+    guide: 'A chattering sea duck in black, white and soft tan, trailing two long tail feathers. Dives deeper than almost any duck.',
+    hint: 'Only on the Atlantic, out over a deep pool.',
+    drake: {
+      head: 0xf0ece4, eyePatch: 0x6a5a4a, breast: 0x2a2622, flank: 0xe8e4dc, back: 0x3a3430,
+      tail: 0x1e1a18, bill: 0xe8a0b0, speculum: 0x3a3430, longTail: true,
+    },
+    hen: { ...henBase(0x8a7a6a, 0xd8ccb8, 0x4a4a4a, 0x5a4a3a), longTail: true },
+  },
 };
 
 export const SPECIES_ORDER: readonly SpeciesId[] = [
   'mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck',
   'redhead', 'scaup', 'bufflehead', 'canvasback', 'hoodedMerganser', 'cinnamonTeal', 'harlequin', 'kingEider',
+  'eurasianWigeon', 'longtail',
   'canadaGoose', 'cacklingGoose', 'snowGoose', 'rossGoose', 'blueGoose', 'whiteFront', 'brant', 'sandhillCrane', 'emperorGoose',
 ];
 

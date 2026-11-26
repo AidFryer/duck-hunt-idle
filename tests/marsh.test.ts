@@ -185,3 +185,17 @@ describe('species need the marsh to be ready', () => {
     expect(speciesWeights(s, 7).canvasback).toBeGreaterThan(0);
   });
 });
+
+describe('new flyways', () => {
+  it('each coast has its own visitor', () => {
+    const s = opened(createInitialState(6));
+    s.upgrades.celeryBeds = 1;
+    s.upgrades.deepPool = 1;
+    expect(speciesWeights(s, 10).eurasianWigeon).toBe(0);
+    s.flyway = 'pacific';
+    expect(speciesWeights(s, 10).eurasianWigeon).toBeGreaterThan(0);
+    expect(speciesWeights(s, 10).longtail).toBe(0);
+    s.flyway = 'atlantic';
+    expect(speciesWeights(s, 10).longtail).toBeGreaterThan(0);
+  });
+});

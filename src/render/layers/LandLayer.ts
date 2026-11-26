@@ -41,6 +41,14 @@ export class LandLayer implements Layer {
       this.layoutPrairie(l);
       return;
     }
+    if (this.land === 'coast') {
+      this.layoutCoast(l);
+      return;
+    }
+    if (this.land === 'saltmarsh') {
+      this.layoutSaltmarsh(l);
+      return;
+    }
 
     // Far treeline: soft rounded crowns.
     const far = this.far.clear();
@@ -156,6 +164,91 @@ export class LandLayer implements Layer {
     shore.rect(0, hz - 1, w, 3 * s).fill({ color: 0xffffff, alpha: 0.9 });
     this.farRefl.scale.y = -0.65;
     this.farRefl.y = hz * 1.65;
+    this.nearRefl.scale.y = -0.7;
+    this.nearRefl.y = hz * 1.7;
+  }
+
+  /** Pacific Flyway: snowy peaks over flat rice country, levees and tall poplars. */
+  private layoutCoast(l: SceneLayout): void {
+    const { w, horizon: hz, scale: s } = l;
+    const rnd = seededRandom(33);
+    const far = this.far.clear();
+    // Jagged mountain range with snowy tops (snow drawn slightly lighter via alpha).
+    far.moveTo(0, hz);
+    const peaks: [number, number][] = [];
+    for (let x = 0; x <= w + 20; x += 18 * s) {
+      const n = valueNoise1D(x / (140 * s), 4);
+      const y = hz - (30 + n * 70 + rnd() * 10) * s;
+      peaks.push([x, y]);
+      far.lineTo(x, y);
+    }
+    far.lineTo(w + 20, hz).closePath().fill(0xffffff);
+    for (const [x, y] of peaks) {
+      if (y > hz - 70 * s) continue;
+      far.poly([x - 7 * s, y + 9 * s, x, y, x + 7 * s, y + 9 * s]).fill({ color: 0xffffff, alpha: 0.55 });
+    }
+    // Near: flat rice checks with levee lines and rows of poplars.
+    const near = this.near.clear();
+    near.rect(0, hz - 4 * s, w, 5 * s).fill(0xffffff);
+    for (let x = 0; x < w; x += 70 * s) near.rect(x, hz - 6 * s, 30 * s, 2 * s).fill(0xffffff);
+    for (const fx of [0.08, 0.11, 0.14, 0.62, 0.65, 0.68, 0.71, 0.9]) {
+      const x = w * fx + (rnd() - 0.5) * 6 * s;
+      const h = (34 + rnd() * 16) * s;
+      near.ellipse(x, hz - 4 * s - h * 0.55, 4.5 * s, h * 0.5).fill(0xffffff);
+      near.rect(x - 0.8 * s, hz - 6 * s, 1.6 * s, 4 * s).fill(0xffffff);
+    }
+    // A barn
+    const bx = w * 0.4;
+    near.rect(bx, hz - 18 * s, 22 * s, 14 * s).fill(0xffffff);
+    near.poly([bx - 2 * s, hz - 17 * s, bx + 11 * s, hz - 27 * s, bx + 24 * s, hz - 17 * s]).fill(0xffffff);
+    const shore = this.shore.clear();
+    shore.rect(0, hz - 1, w, 3 * s).fill({ color: 0xffffff, alpha: 0.9 });
+    this.farRefl.scale.y = -0.5;
+    this.farRefl.y = hz * 1.5;
+    this.nearRefl.scale.y = -0.7;
+    this.nearRefl.y = hz * 1.7;
+  }
+
+  /** Atlantic Flyway: flat salt marsh, cedar hammocks, a shack on stilts and a lighthouse. */
+  private layoutSaltmarsh(l: SceneLayout): void {
+    const { w, horizon: hz, scale: s } = l;
+    const rnd = seededRandom(55);
+    const far = this.far.clear();
+    // Low dune line far off
+    far.moveTo(0, hz);
+    for (let x = 0; x <= w + 10; x += 8) far.lineTo(x, hz - (4 + valueNoise1D(x / (60 * s), 2) * 6) * s);
+    far.lineTo(w + 10, hz).closePath().fill(0xffffff);
+    // Lighthouse on the point
+    const lx = w * 0.82;
+    const base = hz - 4 * s;
+    const lh = 58 * s;
+    far.poly([lx - 6 * s, base, lx - 3.5 * s, base - lh, lx + 3.5 * s, base - lh, lx + 6 * s, base]).fill(0xffffff);
+    far.rect(lx - 5 * s, base - lh - 7 * s, 10 * s, 7 * s).fill(0xffffff);
+    far.poly([lx - 6 * s, base - lh - 7 * s, lx, base - lh - 13 * s, lx + 6 * s, base - lh - 7 * s]).fill(0xffffff);
+    far.rect(lx - 9 * s, base - 7 * s, 6 * s, 7 * s).fill(0xffffff);
+    // Near: spartina flats, cedar hammocks, a shack on stilts
+    const near = this.near.clear();
+    near.rect(0, hz - 3 * s, w, 4 * s).fill(0xffffff);
+    for (let x = 0; x < w; x += 2.5 * s) {
+      const h = (2 + rnd() * 4) * s;
+      near.moveTo(x, hz - 3 * s).lineTo(x + (rnd() - 0.5) * 2 * s, hz - 3 * s - h).stroke({ width: 0.8 * s, color: 0xffffff });
+    }
+    for (const fx of [0.05, 0.22, 0.5, 0.58]) {
+      const cx = w * fx;
+      for (let k = 0; k < 4; k++) {
+        const x = cx + (k - 1.5) * 7 * s;
+        const h = (14 + rnd() * 12) * s;
+        near.poly([x - 5 * s, hz - 3 * s, x, hz - 3 * s - h, x + 5 * s, hz - 3 * s]).fill(0xffffff);
+      }
+    }
+    const sx = w * 0.36;
+    for (const dx of [0, 16]) near.rect(sx + dx * s, hz - 10 * s, 1.5 * s, 8 * s).fill(0xffffff);
+    near.rect(sx - 2 * s, hz - 20 * s, 21 * s, 10 * s).fill(0xffffff);
+    near.poly([sx - 4 * s, hz - 19 * s, sx + 8.5 * s, hz - 27 * s, sx + 21 * s, hz - 19 * s]).fill(0xffffff);
+    const shore = this.shore.clear();
+    shore.rect(0, hz - 1, w, 3 * s).fill({ color: 0xffffff, alpha: 0.9 });
+    this.farRefl.scale.y = -0.6;
+    this.farRefl.y = hz * 1.6;
     this.nearRefl.scale.y = -0.7;
     this.nearRefl.y = hz * 1.7;
   }

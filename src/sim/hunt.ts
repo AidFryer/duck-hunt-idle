@@ -298,7 +298,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 /** Now and then, a golden flock (only while ducks are flying). */
 function stepGolden(state: GameState, dt: number, activity: number, events: EventSink): void {
   if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
-  state.goldenTimer -= dt * activity;
+  state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1);
   if (state.goldenTimer > 0) return;
   state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
   const g: GroundId = fieldOpen(state) && rand(state) < GOLDEN.fieldShare ? 'field' : 'marsh';
