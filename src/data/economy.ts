@@ -193,7 +193,7 @@ export const LEDGER = {
   /** Gus logs this many birds per second on his own. */
   keeperRate: 0.5,
   /** Coin bonus from reputation: 1 + k × sqrt(birds logged). */
-  reputationK: 0.02,
+  reputationK: 0.012,
 } as const;
 
 export const SCOUT = {

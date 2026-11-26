@@ -52,6 +52,29 @@ class Feedback {
     );
   }
 
+  /** Burst of little stars around a button (purchases, perks). */
+  sparkle(el: HTMLElement): void {
+    if (this.reducedMotion) return;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    for (let i = 0; i < 9; i++) {
+      const s = document.createElement('span');
+      s.className = 'sparkle';
+      s.textContent = i % 3 === 0 ? '✦' : '✧';
+      s.style.left = `${cx}px`;
+      s.style.top = `${cy}px`;
+      document.body.appendChild(s);
+      const a = (i / 9) * Math.PI * 2 + Math.random() * 0.4;
+      const d = 30 + Math.random() * 30;
+      gsap.fromTo(
+        s,
+        { x: 0, y: 0, scale: 0.4, opacity: 1, rotate: 0 },
+        { x: Math.cos(a) * d, y: Math.sin(a) * d - 10, scale: 1.1, opacity: 0, rotate: 180, duration: 0.7 + Math.random() * 0.3, ease: 'power2.out', onComplete: () => s.remove() },
+      );
+    }
+  }
+
   toast(text: string, tone: ToastTone = 'info', ms = 3200): void {
     const host = this.toastHost;
     if (!host) return;

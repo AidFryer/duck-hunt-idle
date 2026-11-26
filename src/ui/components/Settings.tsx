@@ -37,6 +37,17 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
         </header>
 
         <section class="drawer__section">
+          <h4>Sound</h4>
+          <Slider id="vol-music" label="Music" value={prefs.music} onChange={(v) => onPrefs({ ...prefs, music: v })} />
+          <Slider id="vol-ambience" label="Marsh sounds" value={prefs.ambience} onChange={(v) => onPrefs({ ...prefs, ambience: v })} />
+          <Slider id="vol-effects" label="Effects" value={prefs.effects} onChange={(v) => onPrefs({ ...prefs, effects: v })} />
+          <label class="row" for="opt-mute">
+            <span>Mute everything</span>
+            <input id="opt-mute" type="checkbox" checked={prefs.muted} onChange={(e) => onPrefs({ ...prefs, muted: (e.currentTarget as HTMLInputElement).checked })} />
+          </label>
+        </section>
+
+        <section class="drawer__section">
           <h4>Display</h4>
           <label class="row" for="opt-notation">
             <span>Big numbers</span>
@@ -65,6 +76,20 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
                 onPrefs({ ...prefs, reducedMotion: on });
               }}
             />
+          </label>
+          <label class="row" for="opt-shake">
+            <span>Screen shake on big moments</span>
+            <input
+              id="opt-shake"
+              type="checkbox"
+              checked={prefs.screenShake && !prefs.reducedMotion}
+              disabled={prefs.reducedMotion}
+              onChange={(e) => onPrefs({ ...prefs, screenShake: (e.currentTarget as HTMLInputElement).checked })}
+            />
+          </label>
+          <label class="row" for="opt-tutorial">
+            <span>Show the tutorial again</span>
+            <button id="opt-tutorial" class="btn btn--small" onClick={() => { onPrefs({ ...prefs, tutorialDone: false }); onClose(); }}>Replay</button>
           </label>
           <label class="row" for="opt-dev">
             <span>Preview controls (time-lapse)</span>
@@ -111,5 +136,22 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
         </section>
       </div>
     </div>
+  );
+}
+
+function Slider({ id, label, value, onChange }: { id: string; label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <label class="row" for={id}>
+      <span>{label}</span>
+      <input
+        id={id}
+        class="slider"
+        type="range"
+        min={0}
+        max={100}
+        value={Math.round(value * 100)}
+        onInput={(e) => onChange(Number((e.currentTarget as HTMLInputElement).value) / 100)}
+      />
+    </label>
   );
 }

@@ -66,6 +66,7 @@ export class Renderer {
       preference: 'webgl',
       powerPreference: 'high-performance',
     });
+    this.resolution = this.app.renderer.resolution;
     this.app.canvas.classList.add('scene-canvas');
     this.host.appendChild(this.app.canvas);
 
@@ -95,6 +96,36 @@ export class Renderer {
     this.ready = true;
   }
 
+  // ---- screen shake
+  private shakeAmt = 0;
+
+  /** A gentle shake for big moments (0–1 strength). */
+  shake(strength: number): void {
+    this.shakeAmt = Math.max(this.shakeAmt, strength);
+  }
+
+  // ---- adaptive resolution: step down if the device can't keep ~45 fps
+  private fpsTime = 0;
+  private fpsFrames = 0;
+  private slowStreak = 0;
+  /** Current render resolution. */
+  resolution = 1;
+
+  private watchPerformance(dt: number): void {
+    this.fpsTime += dt;
+    this.fpsFrames++;
+    if (this.fpsTime < 3) return;
+    const fps = this.fpsFrames / this.fpsTime;
+    this.fpsTime = 0;
+    this.fpsFrames = 0;
+    this.slowStreak = fps < 45 ? this.slowStreak + 1 : 0;
+    if (this.slowStreak >= 2 && this.resolution > 1) {
+      this.slowStreak = 0;
+      this.resolution = Math.max(1, Math.round((this.resolution - 0.5) * 2) / 2);
+      this.app.renderer.resize(this.app.screen.width, this.app.screen.height, this.resolution);
+    }
+  }
+
   private lastW = 0;
   private lastH = 0;
   private handleResize(): void {
@@ -111,6 +142,15 @@ export class Renderer {
     // Long gaps are left for the offline catch-up path in main.ts.
     if (this.runner.pendingMs() < 60_000) this.runner.update();
     this.time += dt;
+    this.watchPerformance(dt);
+    if (this.shakeAmt > 0.01) {
+      const k = this.shakeAmt * 7;
+      this.scene.root.position.set((Math.random() - 0.5) * k, (Math.random() - 0.5) * k);
+      this.shakeAmt *= Math.pow(0.02, dt);
+    } else if (this.shakeAmt > 0) {
+      this.shakeAmt = 0;
+      this.scene.root.position.set(0, 0);
+    }
     const state = this.runner.state;
     for (const e of this.runner.drain()) {
       const at = this.scene.handle(e);

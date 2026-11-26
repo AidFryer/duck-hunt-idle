@@ -29,6 +29,8 @@ export class EffectsLayer implements Layer {
   private l!: SceneLayout;
   /** Coffee pot upgrades make the mug steam more. */
   steamBoost = 1;
+  /** Animation intensity (reduced motion → fewer particles). */
+  private motion = 1;
   private smokeTimer = 0;
   private steamTimer = 0;
   private leafTimer = 2;
@@ -104,7 +106,8 @@ export class EffectsLayer implements Layer {
 
   /** Soft burst of feathers that drift down (harvest, never graphic). */
   featherPuff(x: number, y: number, s: number, count = 7): void {
-    for (let i = 0; i < count; i++) {
+    const n = Math.max(2, Math.round(count * this.motion));
+    for (let i = 0; i < n; i++) {
       const p = this.feathers.spawn();
       p.sprite.texture = this.confettiTex[0]!;
       const a = this.rnd() * Math.PI * 2;
@@ -122,7 +125,8 @@ export class EffectsLayer implements Layer {
 
   /** Feather-and-leaf confetti for milestones. */
   confetti(x: number, y: number, s: number, count = 26): void {
-    for (let i = 0; i < count; i++) {
+    const n = Math.max(4, Math.round(count * this.motion));
+    for (let i = 0; i < n; i++) {
       const p = this.feathers.spawn();
       p.sprite.texture = this.confettiTex[i % this.confettiTex.length]!;
       const a = -Math.PI / 2 + (this.rnd() - 0.5) * 2.2;
@@ -205,6 +209,7 @@ export class EffectsLayer implements Layer {
 
   update(f: FrameContext): void {
     const { dt, layout: l, sky, wind, time } = f;
+    this.motion = f.motion;
     const a = l.anchors;
     const lightTint = sky.light;
 

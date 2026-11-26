@@ -23,11 +23,11 @@ const GOAL_HINT: Record<string, HuntStage> = {
   retrieve: 'retrieve',
 };
 
-export function MarshTab({ hud, controls, devTools }: { hud: HudSnapshot; controls: GameControls; devTools: boolean }) {
+export function MarshTab({ hud, controls, devTools, tutorial }: { hud: HudSnapshot; controls: GameControls; devTools: boolean; tutorial: string | null }) {
   const [speed, setSpeed] = useState(controls.getTimeScale());
   return (
     <div class="tab-body">
-      <HuntPanel hud={hud} controls={controls} highlight={GOAL_HINT[hud.goalId] ?? null} />
+      <HuntPanel hud={hud} controls={controls} highlight={GOAL_HINT[tutorial ?? hud.goalId] ?? null} />
 
       <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">

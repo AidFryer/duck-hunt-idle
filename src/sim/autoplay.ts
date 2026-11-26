@@ -1,0 +1,195 @@
+/**
+ * A scripted "attentive player" used by the balance test. It taps like a
+ * person (a limited number of actions per second), fixes stuck bots,
+ * buys what the pipeline's bottleneck needs, builds the workflow chain and
+ * closes the season when it's worth a star. Pure: drives the sim directly.
+ */
+import Decimal from 'break_infinity.js';
+import { ACRES, BOT_ORDER, BOTS, HUNT, type BotId, type HuntStage } from '../data/economy';
+import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
+import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, canAfford, levelPrice, levelUpBot, spreadSize, type Price } from './economy';
+import type { SimEvent } from './events';
+import { doAction, canDo } from './hunt';
+import { fixAll } from './problems';
+import { closeSeason, nextFlyway, starsFor } from './prestige';
+import type { GameState } from './state';
+import { step } from './tick';
+import { buyUpgrade, upgradePrice } from './upgrades';
+import { addNode, connect, workflowEval, workflowUnlocked } from './workflow';
+
+export interface PaceReport {
+  /** Sim seconds when each milestone was first reached (null = not reached). */
+  firstBot: number | null;
+  coins1k: number | null;
+  coins10k: number | null;
+  coins100k: number | null;
+  firstStar: number | null;
+  /** Totals at the end. */
+  seasonCoins: Decimal;
+  lifetimeCoins: Decimal;
+  birds: number;
+  bots: number;
+  species: number;
+  /** Coins per second over the last 5 minutes. */
+  incomeAtEnd: number;
+  timeline: { t: number; coins: number; bots: number; birds: number }[];
+}
+
+export interface AutoplayOptions {
+  seconds: number;
+  /** Manual actions per second while "playing". */
+  tapsPerSecond?: number;
+  /** Sim step. */
+  dt?: number;
+  /** Close the season as soon as it's worth a star. */
+  prestige?: boolean;
+}
+
+const totalBots = (s: GameState) => BOT_ORDER.reduce((a, id) => a + s.bots[id].owned, 0);
+
+/** What the crew most needs right now (by queue pressure). */
+function wanted(s: GameState): BotId[] {
+  const h = s.hunt;
+  const out: BotId[] = [];
+  if (h.ledger.length > 6) out.push('ledger');
+  if (h.downed.length > 3) out.push('retriever');
+  if (h.committed.length >= 2) out.push('blind');
+  if (h.incoming.length >= 2) out.push('caller');
+  if (h.decoys < spreadSize(s) - 1) out.push('setter');
+  if (h.incoming.length === 0) out.push('scout');
+  // Keep a balanced crew underneath the bottleneck buys.
+  const own = (id: BotId) => s.bots[id].owned;
+  if (own('caller') < 1) out.push('caller');
+  if (own('blind') < own('caller')) out.push('blind');
+  if (own('retriever') < own('blind')) out.push('retriever');
+  if (own('setter') < Math.ceil(own('caller') / 4)) out.push('setter');
+  if (own('ledger') < Math.ceil(own('retriever') / 2)) out.push('ledger');
+  if (own('scout') < Math.ceil(own('caller') / 2)) out.push('scout');
+  if (s.problems.total > 3 && own('foreman') < Math.ceil(totalBots(s) / 40)) out.push('foreman');
+  if (own('tinker') < Math.floor(totalBots(s) / 60)) out.push('tinker');
+  return out.filter((id) => s.bots[id].owned > 0 || s.stats.lifetimeCoins.gte(BOTS[id].revealAtCoins));
+}
+
+interface Option {
+  price: Price;
+  buy: () => boolean;
+}
+
+function options(s: GameState): Option[] {
+  const opts: Option[] = [];
+  for (const id of new Set(wanted(s))) {
+    opts.push({ price: botPrice(id, s.bots[id].owned, 1, botPriceMult(s, id)), buy: () => buyBot(s, id, 1) > 0 });
+  }
+  if (s.stats.lifetimeCoins.gte(ACRES.revealAtCoins)) opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
+  for (const u of UPGRADE_ORDER) {
+    const lvl = s.upgrades[u] ?? 0;
+    if (lvl >= UPGRADES[u].maxLevel || s.stats.lifetimeCoins.lt(UPGRADES[u].revealAtCoins)) continue;
+    opts.push({ price: upgradePrice(u, lvl), buy: () => buyUpgrade(s, u) });
+  }
+  // Tune-ups for the most-owned types, when they are cheap relative to the crew.
+  for (const id of BOT_ORDER) {
+    const b = s.bots[id];
+    if (b.owned >= 5) opts.push({ price: levelPrice(id, b.level), buy: () => levelUpBot(s, id) });
+  }
+  return opts;
+}
+
+/** Buy the cheapest affordable useful thing, repeatedly. */
+function shop(s: GameState): void {
+  for (let guard = 0; guard < 50; guard++) {
+    const affordable = options(s).filter((o) => canAfford(s, o.price));
+    if (affordable.length === 0) return;
+    affordable.sort((a, b) => a.price.coins.cmp(b.price.coins));
+    if (!affordable[0]!.buy()) return;
+  }
+}
+
+function buildChain(s: GameState): void {
+  if (!workflowUnlocked(s) || workflowEval(s).complete) return;
+  const kinds = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log'] as const;
+  const ids: number[] = [];
+  for (const k of kinds) {
+    const existing = s.workflow.nodes.find((n) => n.kind === k);
+    ids.push(existing ? existing.id : addNode(s, k)!);
+  }
+  for (let i = 0; i + 1 < ids.length; i++) connect(s, ids[i]!, ids[i + 1]!);
+}
+
+const TAP_ORDER: HuntStage[] = ['retrieve', 'shoot', 'call', 'decoys', 'log'];
+
+export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
+  const dt = opts.dt ?? 0.5;
+  const taps = opts.tapsPerSecond ?? 1.5;
+  const steps = Math.floor(opts.seconds / dt);
+  const r: PaceReport = {
+    firstBot: null, coins1k: null, coins10k: null, coins100k: null, firstStar: null,
+    seasonCoins: new Decimal(0), lifetimeCoins: new Decimal(0), birds: 0, bots: 0, species: 0,
+    incomeAtEnd: 0, timeline: [],
+  };
+  const events: SimEvent[] = [];
+  let tapBudget = 0;
+  const start = s.elapsed;
+  let coinsFiveMinAgo = new Decimal(0);
+  for (let i = 0; i < steps; i++) {
+    step(s, dt, events);
+    events.length = 0;
+    const t = s.elapsed - start;
+
+    // Hands on the buttons.
+    tapBudget += taps * dt;
+    while (tapBudget >= 1) {
+      tapBudget -= 1;
+      if (s.problems.open.length > 0) {
+        fixAll(s, events);
+        continue;
+      }
+      const stage = TAP_ORDER.find((st) => canDo(s, st));
+      if (!stage) break;
+      doAction(s, stage, 'manual', events);
+    }
+
+    // Shopping and planning, about once a second.
+    if (i % Math.max(1, Math.round(1 / dt)) === 0) {
+      shop(s);
+      buildChain(s);
+      if (opts.prestige && starsFor(s.season.coins) >= 1) closeSeason(s, nextFlyway(s));
+    }
+
+    const sc = s.season.coins;
+    if (r.firstBot === null && totalBots(s) > 0) r.firstBot = t;
+    if (r.coins1k === null && sc.gte(1e3)) r.coins1k = t;
+    if (r.coins10k === null && sc.gte(1e4)) r.coins10k = t;
+    if (r.coins100k === null && sc.gte(1e5)) r.coins100k = t;
+    if (r.firstStar === null && (sc.gte(1e6) || s.stats.seasonsClosed > 0)) r.firstStar = t;
+    if (i % Math.round(300 / dt) === 0) {
+      r.timeline.push({ t, coins: sc.toNumber(), bots: totalBots(s), birds: s.stats.lifetimeBirds });
+      if (t >= opts.seconds - 300 - 1) coinsFiveMinAgo = s.stats.lifetimeCoins;
+    }
+  }
+  r.seasonCoins = s.season.coins;
+  r.lifetimeCoins = s.stats.lifetimeCoins;
+  r.birds = s.stats.lifetimeBirds;
+  r.bots = totalBots(s);
+  r.species = Object.values(s.guide).filter((g) => (g?.count ?? 0) > 0).length;
+  r.incomeAtEnd = s.stats.lifetimeCoins.sub(coinsFiveMinAgo).toNumber() / 300;
+  void HUNT;
+  return r;
+}
+
+export function formatPace(r: PaceReport): string {
+  const m = (t: number | null) => (t === null ? 'not reached' : `${(t / 60).toFixed(1)} min`);
+  const lines = [
+    `First bot:            ${m(r.firstBot)}`,
+    `1K season coins:      ${m(r.coins1k)}`,
+    `10K season coins:     ${m(r.coins10k)}`,
+    `100K season coins:    ${m(r.coins100k)}`,
+    `First Flyway Star:    ${m(r.firstStar)}`,
+    `Birds brought in:     ${r.birds}`,
+    `Bots owned at end:    ${r.bots}`,
+    `Species found:        ${r.species}`,
+    `Income at end:        ${r.incomeAtEnd.toFixed(1)} coins/s`,
+    'Timeline (min: season coins / bots / birds):',
+    ...r.timeline.map((p) => `  ${(p.t / 60).toFixed(0).padStart(4)}: ${Math.round(p.coins).toString().padStart(10)} / ${String(p.bots).padStart(4)} / ${p.birds}`),
+  ];
+  return lines.join('\n');
+}

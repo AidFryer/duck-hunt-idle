@@ -21,6 +21,7 @@ import { OfflineCard } from './components/OfflineCard';
 import { WorkflowEditor } from './components/WorkflowEditor';
 import { LegacyTab } from './components/LegacyTab';
 import { SeasonCeremony } from './components/SeasonCeremony';
+import { Tutorial, tutorialStep } from './components/Tutorial';
 
 interface AppProps {
   hud: Store<HudSnapshot>;
@@ -38,6 +39,10 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [tab, setTab] = useState<TabId>('marsh');
   const [settings, setSettings] = useState(false);
   const [problems, setProblems] = useState(false);
+  const [welcomed, setWelcomed] = useState(false);
+  const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
+  const tStep = tutorialStep(hud, welcomed);
+  const finishTutorial = () => onPrefs({ ...prefs, tutorialDone: true });
   const sceneRef = useRef<HTMLDivElement>(null);
   const floatRef = useRef<HTMLDivElement>(null);
   const toastRef = useRef<HTMLDivElement>(null);
@@ -60,6 +65,13 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
         <Moments />
+        {tutorialOn && tab === 'marsh' && (
+          <Tutorial
+            step={tStep}
+            onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
+            onSkip={finishTutorial}
+          />
+        )}
       </section>
 
       <aside class="panel">
@@ -83,7 +95,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           })}
         </nav>
         <div class="panel__content" role="tabpanel" key={tab}>
-          {tab === 'marsh' && <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} />}
+          {tab === 'marsh' && <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} tutorial={tutorialOn && welcomed ? tStep : null} />}
           {tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
           {tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}

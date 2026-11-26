@@ -45,7 +45,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
   lodgeRooms: {
     id: 'lodgeRooms', name: 'Lodge Rooms', blurb: 'Fix up the guest rooms upstairs.',
-    effect: '+20% coins from every logged bird', maxLevel: 10,
+    effect: '+12% coins from every logged bird', maxLevel: 10,
     costCoins: 1000, costFeathers: 40, costGrowth: 2.2, revealAtCoins: 500,
   },
   coffee: {
@@ -70,7 +70,7 @@ export const UPGRADE_EFFECTS = {
   blindsShotFraction: 0.06,
   decoyQualitySpread: 2,
   decoyQualityPatience: 4,
-  lodgeRoomsCoins: 0.2,
+  lodgeRoomsCoins: 0.12,
   coffeeSpeed: 0.04,
   cotHours: 1,
 } as const;

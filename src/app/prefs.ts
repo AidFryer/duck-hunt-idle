@@ -6,15 +6,31 @@ export interface Prefs {
   reducedMotion: boolean;
   /** Show preview/time controls on the Marsh tab. */
   devTools: boolean;
+  /** 0–1 volumes. */
+  music: number;
+  ambience: number;
+  effects: number;
+  muted: boolean;
+  /** Gentle screen shake on big moments. */
+  screenShake: boolean;
+  /** The first-run tutorial has been finished or skipped. */
+  tutorialDone: boolean;
 }
 
 const KEY = 'duck-hunt-idle.prefs';
 
 export function loadPrefs(): Prefs {
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const defaults: Prefs = {
     notation: 'letters',
-    reducedMotion: typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches,
+    reducedMotion: reduced,
     devTools: false,
+    music: 0.35,
+    ambience: 0.55,
+    effects: 0.7,
+    muted: false,
+    screenShake: !reduced,
+    tutorialDone: false,
   };
   try {
     const raw = localStorage.getItem(KEY);

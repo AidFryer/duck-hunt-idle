@@ -7,6 +7,8 @@ import type { HudSnapshot } from '../hudState';
 import { Cost } from './Cost';
 import { Icon } from './Icon';
 import { portrait } from '../portraits';
+import { feedback } from '../feedback';
+import { audio } from '../../audio/AudioEngine';
 
 type BuyMode = 1 | 10 | 'max';
 
@@ -111,4 +113,9 @@ export function pulse(el: HTMLElement, ok: boolean): void {
   el.classList.remove('is-pressed', 'is-nope');
   void el.offsetWidth;
   el.classList.add(ok ? 'is-pressed' : 'is-nope');
+  if (ok && (el.classList.contains('btn--buy') || el.classList.contains('perk'))) {
+    feedback.sparkle(el);
+    audio.play('buy');
+  }
+  if (!ok) audio.play('nope');
 }

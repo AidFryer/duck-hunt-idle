@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "build:artifact": "npm run build && node scripts/build-artifact.mjs"
+    "build:artifact": "npm run build && node scripts/build-artifact.mjs",
+    "balance": "vitest run tests/balance.test.ts"
   },
   "dependencies": {
     "@fontsource/nunito": "^5.3.0",

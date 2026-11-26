@@ -38,6 +38,9 @@ import type { GameControls } from './ui/controls';
 import { feedback } from './ui/feedback';
 import { snapshot } from './ui/hudState';
 import { Store } from './ui/store';
+import { audio, type Sfx } from './audio/AudioEngine';
+import { clockAt, duckActivityAt } from './sim/clock';
+import { computeSkyState } from './render/skyState';
 import { formatNumber } from './util/format';
 
 document.title = GAME_TITLE;
@@ -118,8 +121,39 @@ setInterval(() => {
 }, 700);
 let seenProblem = false;
 
+const EVENT_SOUND: Partial<Record<SimEvent['type'], Sfx>> = {
+  decoySet: 'decoy',
+  flockCalled: 'call',
+  shot: 'pop',
+  retrieved: 'splash',
+  logged: 'coin',
+  problem: 'problem',
+  problemFixed: 'fix',
+  botBought: 'buy',
+  botLevel: 'levelUp',
+  botMilestone: 'levelUp',
+  upgradeBought: 'levelUp',
+  acreRestored: 'levelUp',
+  newSpecies: 'chime',
+  achievement: 'chime',
+  perkBought: 'levelUp',
+  seasonClosed: 'season',
+};
+
+function shake(strength: number): void {
+  const p = prefs.get();
+  if (p.screenShake && !p.reducedMotion) renderer?.shake(strength);
+}
+
 function onEvent(e: SimEvent, at: Point | null): void {
   const n = prefs.get().notation;
+  const sfx = EVENT_SOUND[e.type];
+  // Bots doing routine work are quieter: only manual actions and big moments always sound.
+  const routine = 'source' in e && e.source !== 'manual' && (e.type === 'decoySet' || e.type === 'retrieved' || e.type === 'flockCalled');
+  if (sfx && (!routine || Math.random() < 0.35)) audio.play(sfx);
+  if (e.type === 'seasonClosed') shake(1);
+  if (e.type === 'botMilestone') shake(0.4);
+  if (e.type === 'newSpecies' && (SPECIES[e.species].rarity === 'legendary' || SPECIES[e.species].rarity === 'rare')) shake(0.6);
   switch (e.type) {
     case 'retrieved':
       if (at && e.count === 1) feedback.float(`+${formatNumber(e.feathers, n)} feather${e.feathers === 1 ? '' : 's'}`, at.x, at.y, 'feathers');
@@ -328,6 +362,37 @@ const controls: GameControls = {
 function updatePrefs(p: Prefs): void {
   prefs.set(p);
   savePrefs(p);
+  audio.setLevels({ music: p.music, ambience: p.ambience, effects: p.effects, muted: p.muted });
+  feedback.reducedMotion = p.reducedMotion;
+}
+
+// --- Audio: starts on the first tap (browser rule), follows the marsh ---------
+{
+  const p = prefs.get();
+  audio.setLevels({ music: p.music, ambience: p.ambience, effects: p.effects, muted: p.muted });
+  const unlock = () => {
+    audio.start();
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
+  window.addEventListener('pointerdown', unlock);
+  window.addEventListener('keydown', unlock);
+  document.addEventListener('visibilitychange', () => (document.hidden ? audio.suspend() : audio.resume()));
+  // Wooden click for every button press.
+  document.addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button');
+    if (b && !b.classList.contains('hunt-btn')) audio.play('click');
+  }, true);
+  setInterval(() => {
+    const hour = clockAt(state.clock.dayTime).hour;
+    audio.setEnvironment({
+      wind: state.environment.wind,
+      darkness: computeSkyState(hour).darkness,
+      activity: duckActivityAt(hour),
+      rain: state.environment.weather === 'drizzle',
+      hour,
+    });
+  }, 500);
 }
 
 async function startScene(host: HTMLElement): Promise<void> {

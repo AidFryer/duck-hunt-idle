@@ -26,6 +26,7 @@ Other commands:
 | `npm run typecheck` | Checks the TypeScript for mistakes |
 | `npm run build` | Makes a production build in `dist/` |
 | `npm run preview` | Serves the production build locally |
+| `npm run balance` | Plays two simulated hours with a scripted player and prints the pacing report |
 | `npm run build:artifact` | Production build plus `dist/artifact.html` for the claude.ai play page |
 
 New to Git on Windows? See **[docs/GETTING_STARTED_WINDOWS.md](docs/GETTING_STARTED_WINDOWS.md)**.
@@ -55,6 +56,21 @@ Rules the code follows:
   with zero image files. Every texture is requested by key from
   `TextureLibrary`, so real sprites can replace any of them later.
 
+## Balance
+
+`tests/balance.test.ts` plays two hours with a scripted attentive player
+(`src/sim/autoplay.ts`) and fails if the pace drifts. Current numbers:
+first bot within seconds, 1K coins in about 5 minutes, first Flyway Star in
+about an hour, and later seasons in about 20 minutes. `npm run balance`
+prints the full report.
+
+## Audio
+
+All sound is synthesized live with the Web Audio API (`src/audio/`): wind,
+water, crickets, rain and distant quacks; duck calls, soft pops, splashes,
+wooden clicks and chimes; and gentle generated music. It starts on the first
+tap and has separate Music / Marsh sounds / Effects sliders in Settings.
+
 ## Build status
 
 - [x] Phase 1: scaffold, palette, animated marsh (day cycle, water, reeds, fog, flocks), responsive layout
@@ -62,5 +78,5 @@ Rules the code follows:
 - [x] Phase 3: automation (job board, flock queue, exceptions, foremen)
 - [x] Phase 4: species, weather, upgrades, achievements, offline progress
 - [x] Phase 5: workflows and prestige (Central Flyway)
-- [ ] Phase 6: polish, audio, tutorial, balancing
+- [x] Phase 6: polish, audio, tutorial, balancing
 - [ ] Phase 7: PWA, GitHub Pages deploy, Capacitor

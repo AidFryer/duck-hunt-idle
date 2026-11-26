@@ -2695,3 +2695,94 @@ button {
     transform: translateY(-30px) scale(0.3) rotate(-90deg);
   }
 }
+
+/* ============================================================ Phase 6 */
+
+.slider {
+  width: 55%;
+  height: 28px;
+  accent-color: var(--c-rust);
+}
+
+.sparkle {
+  position: fixed;
+  z-index: 50;
+  translate: -50% -50%;
+  pointer-events: none;
+  color: var(--c-gold);
+  font-size: 15px;
+  text-shadow: 0 0 6px rgba(242, 196, 109, 0.9);
+}
+
+/* ------------------------------------------------------------ tutorial */
+
+.tutorial {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 6;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.tutorial > * {
+  pointer-events: auto;
+}
+
+.tutorial .keeper__portrait {
+  width: 64px;
+  height: 64px;
+}
+
+.tutorial__bubble {
+  position: relative;
+  flex: 1;
+  max-width: 460px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--c-cream);
+  box-shadow: 0 8px 22px rgba(20, 12, 6, 0.4), 0 0 0 3px var(--c-brass);
+  animation: pop-in 0.4s cubic-bezier(0.3, 0.7, 0.4, 1.4);
+}
+
+.tutorial__bubble::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  bottom: 18px;
+  border: 9px solid transparent;
+  border-right-color: var(--c-cream);
+  border-left: 0;
+}
+
+.tutorial__bubble p {
+  margin: 0 0 8px;
+  font-size: 14.5px;
+  line-height: 1.45;
+}
+
+.tutorial__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tutorial__actions .btn {
+  min-height: 40px;
+}
+
+.tutorial__hint {
+  flex: 1;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--c-rust);
+  animation: dot-pulse 1.4s ease-in-out infinite;
+}
+
+.tutorial__skip {
+  margin-left: auto;
+}
