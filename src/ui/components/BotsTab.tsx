@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { BOT_ORDER, BOTS, type BotId } from '../../data/economy';
+import { BOT_MILESTONES, BOT_ORDER, BOTS, type BotId } from '../../data/economy';
 import { botPrice } from '../../sim/economy';
 import { formatRate, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
@@ -69,7 +69,7 @@ function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSna
   const price = count === 1 ? b.price : botPrice(id, b.owned, count);
   const affordable = mode === 'max' ? b.maxAffordable > 0 : count === 1 ? b.affordable : b.maxAffordable >= count;
   const ms = b.nextMilestone;
-  const prevMs = [0, 10, 25, 50, 100, 200].filter((m) => m <= b.owned).pop() ?? 0;
+  const prevMs = [0, ...BOT_MILESTONES].filter((m) => m <= b.owned).pop() ?? 0;
   const msPct = ms ? ((b.owned - prevMs) / (ms - prevMs)) * 100 : 100;
   return (
     <div class={`bot-card bot-card--${id}`}>

@@ -119,13 +119,15 @@ describe('bots', () => {
     expect(maxAffordableBots(s, 'blind')).toBe(2);
   });
 
-  it('milestones double output at 10/25/50/100/200', () => {
+  it('milestones double output at 10/25/50/100/200 … 1000', () => {
     expect(milestoneMultiplier(9)).toBe(1);
     expect(milestoneMultiplier(10)).toBe(2);
     expect(milestoneMultiplier(25)).toBe(4);
     expect(milestoneMultiplier(200)).toBe(32);
     expect(nextMilestone(10)).toBe(25);
-    expect(nextMilestone(200)).toBeNull();
+    expect(nextMilestone(200)).toBe(300);
+    expect(milestoneMultiplier(1000)).toBe(1024);
+    expect(nextMilestone(1000)).toBeNull();
     const s = rich();
     const ev: SimEvent[] = [];
     buyBot(s, 'caller', 10, ev);
