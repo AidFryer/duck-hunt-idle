@@ -24,8 +24,8 @@ export function MarshTab({ hud, controls, devTools, tutorial, notation, ground =
   return (
     <div class="tab-body">
       {tutorial}
-      <HuntPanel hud={hud} controls={controls} ground={ground} />
       {!tutorial && <LodgePanel hud={hud} controls={controls} notation={notation} />}
+      <HuntPanel hud={hud} ground={ground} />
 
       {!tutorial && <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">

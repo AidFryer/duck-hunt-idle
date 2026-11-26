@@ -26,6 +26,9 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
           ))}
         </div>
       </div>
+      <p class={`crew-note ${hud.crewNote ? 'is-busy' : ''}`}>
+        {hud.crewNote ?? 'The crew is keeping up. Every job is moving.'}
+      </p>
       {BOT_ORDER.map((id) => (
         <>
           {id === 'staker' && <h4 class="group-head">Goose field crew</h4>}

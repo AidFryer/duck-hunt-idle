@@ -12,7 +12,14 @@ function isIosStandalone(): boolean {
   return ios && standalone;
 }
 
+/** iOS Safari (not the home-screen app): its toolbar floats over the bottom of the page. */
+function isIosBrowser(): boolean {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return ios && !isIosStandalone();
+}
+
 export function setupViewport(): void {
+  document.documentElement.classList.toggle('ios-browser', isIosBrowser());
   const apply = () => {
     let h = window.innerHeight;
     if (isIosStandalone()) {

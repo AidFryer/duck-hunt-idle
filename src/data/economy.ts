@@ -359,8 +359,8 @@ export const TINKER = {
 export const ACRES = {
   /** You start with one restored acre. */
   start: 1,
-  costCoins: 360,
-  costGrowth: 1.7,
+  costCoins: 250,
+  costGrowth: 1.8,
   /** Flock arrival rate bonus per acre beyond the first. */
   flockRatePerAcre: 0.3,
   /** Average extra birds per flock per acre beyond the first. */

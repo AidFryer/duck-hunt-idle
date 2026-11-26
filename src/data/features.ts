@@ -26,7 +26,7 @@ const lodge = (s: GameState) => s.lodge;
 
 export const FEATURES: Record<FeatureId, FeatureDef> = {
   bots: {
-    id: 'bots', stage: 3, lodge: 2, name: 'Workshop',
+    id: 'bots', stage: 4, lodge: 2, name: 'Workshop',
     requirement: "Build the Trapper's Cabin (lodge level 2) on the Marsh tab.",
     progress: (s) => [lodge(s), 2],
     intro: {
@@ -41,15 +41,14 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   upgrades: {
-    id: 'upgrades', stage: 3, lodge: 2, name: 'Upgrades',
-    requirement: "Build the Trapper's Cabin (lodge level 2) on the Marsh tab.",
-    progress: (s) => [lodge(s), 2],
+    id: 'upgrades', stage: 3, lodge: 1, name: 'Upgrades',
+    requirement: 'Earn 30 coins from logged birds.',
+    progress: (s) => [s.stats.lifetimeCoins.toNumber(), 30],
     intro: {
-      gus: 'The marsh itself can be improved. More water, more food, more ducks.',
+      gus: "Coins already? Good. There's plenty a shack can use: a weathervane, better decoys, more marsh.",
       points: [
-        'Wetland Acres bring more flocks, and bigger ones.',
-        'Food plots, nest boxes and flooded timber bring new kinds of duck. Rarer birds only come once the marsh is ready for them.',
-        'The Coffee Pot speeds up every bot. Lodge Rooms raise what guests pay.',
+        'Wetland Acres bring more flocks. A Weathervane keeps the decoys out longer.',
+        'Nest boxes bring wood ducks. Bigger lodges unlock food plots, timber and more.',
         'Upgrades have a few levels each and stay until you close the season.',
       ],
     },
@@ -83,7 +82,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   field: {
-    id: 'field', stage: 5, lodge: 4, name: 'The Goose Field',
+    id: 'field', stage: 6, lodge: 4, name: 'The Goose Field',
     requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
     progress: (s) => [lodge(s), 4],
     intro: {
@@ -92,7 +91,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   workflows: {
-    id: 'workflows', stage: 5, lodge: 4, name: 'Workflows',
+    id: 'workflows', stage: 6, lodge: 4, name: 'Workflows',
     requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
     progress: (s) => [lodge(s), 4],
     intro: {
@@ -106,7 +105,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   legacy: {
-    id: 'legacy', stage: 6, lodge: 5, name: 'Legacy',
+    id: 'legacy', stage: 7, lodge: 5, name: 'Legacy',
     requirement: 'Build the Grand Lodge (lodge level 5) on the Marsh tab.',
     progress: (s) => [lodge(s), 5],
     intro: {
@@ -121,7 +120,9 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
   },
 };
 
-export const FEATURE_ORDER: readonly FeatureId[] = ['guide', 'bots', 'upgrades', 'jobs', 'field', 'workflows', 'legacy'];
+export const FEATURE_ORDER: readonly FeatureId[] = ['guide', 'upgrades', 'bots', 'field', 'workflows', 'legacy'];
+/** Features that open on their own (with a card) rather than with the lodge. */
+export const EARNED_FEATURES: readonly FeatureId[] = ['guide', 'upgrades'];
 
 export function featureReady(s: GameState, id: FeatureId): boolean {
   const [cur, goal] = FEATURES[id].progress(s);

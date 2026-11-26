@@ -66,15 +66,14 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     birds: 150, species: 2, coins: 600, feathers: 80, opens: ['bots', 'upgrades'],
     points: [
       'The Workshop: do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins.',
-      'Upgrades: the Coffee Pot, better decoys, food plots, nest boxes and more marsh to restore.',
+      'More upgrades: the Coffee Pot and millet food plots.',
     ],
   },
   {
     level: 3, name: 'Marsh Lodge',
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
-    birds: 500, species: 4, coins: 5_000, feathers: 500, opens: ['jobs'],
+    birds: 500, species: 4, coins: 5_000, feathers: 500, opens: [],
     points: [
-      'The Job Board, to see and move your whole crew.',
       'Ledger Bot plans, so Gus gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
       'New upgrades: rice, flooded timber, wild celery, the boat house, lantern posts and more.',

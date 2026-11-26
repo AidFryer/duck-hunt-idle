@@ -4,7 +4,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';

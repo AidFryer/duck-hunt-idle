@@ -68,6 +68,12 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v8 → v9 adds the goose field; its state comes from the defaults.
   8: (s) => ({ ...s, version: 9 }),
+  // v9 → v10 retires the Job Board: every bot goes back to its own job.
+  9: (s) => {
+    const { assign: _gone, ...rest } = s;
+    void _gone;
+    return { ...rest, version: 10 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

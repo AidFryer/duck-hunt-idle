@@ -132,7 +132,7 @@ export function acrePrice(acres: number): Price {
 }
 
 export function buyAcre(state: GameState, events?: EventSink): boolean {
-  if (state.lodge < 2) return false;
+  if (state.unlocks.upgrades === undefined && state.lodge < 2) return false;
   const price = acrePrice(state.acres);
   if (!canAfford(state, price)) return false;
   pay(state, price);

@@ -113,12 +113,6 @@ export const GOALS: readonly GoalDef[] = [
     done: (s) => s.bots.ledger.owned > 0,
   },
   {
-    id: 'board',
-    title: 'Move a bot on the Job Board',
-    gus: 'Open the Job Board. If one job is backing up, move a bot over to help. They work slower off their own job, but it keeps things moving.',
-    done: (s) => s.stats.botMoves > 0,
-  },
-  {
     id: 'rung',
     title: 'Climb a rung on the automation ladder',
     gus: 'Own ten of a kind and their ladder opens up in the Workshop: spinning-wing decoys, duet callers, a steady blind. Each rung is a big step.',

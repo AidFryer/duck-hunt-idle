@@ -169,6 +169,8 @@ export interface HudSnapshot {
   };
   bots: Record<BotId, BotSnapshot>;
   jobs: Record<JobId, JobSnapshot>;
+  /** The job most in need of help, as a plain sentence (null when the crew keeps up). */
+  crewNote: string | null;
   problems: ProblemRow[];
   openProblems: number;
   needsYou: number;
@@ -323,6 +325,23 @@ function drawLabel(d: Draw): string {
   return FLYWAYS[d.flyway].name;
 }
 
+const HELPER: Partial<Record<JobId, BotId>> = {
+  log: 'ledger', retrieve: 'retriever', shoot: 'blind', call: 'caller', decoys: 'setter',
+  fRetrieve: 'fieldDog', fShoot: 'layout', flag: 'flagger', fDecoys: 'staker',
+};
+
+/** Which job is backing up, and which bot would help. */
+function crewNote(state: GameState): string | null {
+  for (const [job, bot] of Object.entries(HELPER) as [JobId, BotId][]) {
+    if ((job.startsWith('f') || job === 'flag') && !fieldOpen(state)) continue;
+    const q = queueFor(state, job);
+    if (!q.backedUp) continue;
+    const who = state.plans[bot] ? `More ${BOTS[bot].name}s would help.` : `Earn the ${BOTS[bot].name} plans to get help.`;
+    return `${JOBS[job].name} is backing up (${q.text}). ${who}`;
+  }
+  return null;
+}
+
 export function snapshot(state: GameState): HudSnapshot {
   const c = clockAt(state.clock.dayTime);
   const bots = {} as Record<BotId, BotSnapshot>;
@@ -441,6 +460,7 @@ export function snapshot(state: GameState): HudSnapshot {
     },
     bots,
     jobs,
+    crewNote: crewNote(state),
     problems: rows,
     openProblems: state.problems.open.length,
     needsYou,

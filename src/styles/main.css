@@ -3651,3 +3651,48 @@ select {
   font-size: 15px;
   color: var(--c-wood);
 }
+
+/* ============================================================ phone polish */
+
+/* Safari's floating toolbar covers the bottom of the page: leave room so
+   everything in the panel can be scrolled into view above it. */
+.ios-browser .panel__content {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 84px);
+}
+
+/* A compact lodge card that reads at a glance. */
+.lodge-panel {
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.lodge-panel__head .lodge-art {
+  width: 72px;
+  height: auto;
+}
+
+.lodge-panel__head h3 {
+  font-size: 18px;
+}
+
+.hunt-status__how {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ui-textSoft);
+}
+
+.crew-note {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ui-textSoft);
+}
+
+.crew-note.is-busy {
+  color: var(--c-wood);
+  background: var(--c-cream);
+}

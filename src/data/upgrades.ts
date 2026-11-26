@@ -48,7 +48,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   decoyQuality: {
     id: 'decoyQuality', name: 'Decoy Quality', blurb: 'Hand-painted decoys with real feather detail.',
     effect: '+2 decoys in the spread, flocks wait longer', maxLevel: 3,
-    costCoins: 1050, costFeathers: 150, costGrowth: 3, revealAtCoins: 120, lodge: 2,
+    costCoins: 450, costFeathers: 40, costGrowth: 3, revealAtCoins: 120, lodge: 1,
   },
   lodgeRooms: {
     id: 'lodgeRooms', name: 'Lodge Rooms', blurb: 'Fix up the guest rooms upstairs.',
@@ -68,12 +68,12 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   nestBoxes: {
     id: 'nestBoxes', name: 'Nest Boxes', blurb: 'Cedar boxes on posts along the bank, each with a little round door.',
     effect: '+5% flocks, brings wood ducks', maxLevel: 3,
-    costCoins: 600, costFeathers: 60, costGrowth: 2.5, revealAtCoins: 0, lodge: 2,
+    costCoins: 300, costFeathers: 25, costGrowth: 2.5, revealAtCoins: 0, lodge: 1,
   },
   weathervane: {
     id: 'weathervane', name: 'Weathervane', blurb: 'A copper mallard on the roof. Now you know which way to set the spread.',
     effect: 'Decoys drift loose 15% slower', maxLevel: 3,
-    costCoins: 450, costFeathers: 45, costGrowth: 2.6, revealAtCoins: 0, lodge: 2,
+    costCoins: 150, costFeathers: 15, costGrowth: 2.6, revealAtCoins: 0, lodge: 1,
   },
   celeryBeds: {
     id: 'celeryBeds', name: 'Wild Celery Beds', blurb: 'Plant wild celery in the quiet water. Divers and wigeon go wild for it.',
@@ -128,7 +128,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
 };
 
 export const UPGRADE_ORDER: readonly UpgradeId[] = [
-  'coffee', 'weathervane', 'decoyQuality', 'nestBoxes', 'millet',
+  'weathervane', 'nestBoxes', 'decoyQuality', 'coffee', 'millet',
   'rice', 'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
   'deepPool', 'guestDock', 'smokehouse', 'cot',
   'carvingShed', 'cornStubble', 'winterWheat', 'roostPond',

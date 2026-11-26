@@ -8,7 +8,7 @@ import { Cost } from './Cost';
 import { Icon } from './Icon';
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const acresRevealed = hud.acres > ACRES.start || hud.lodge.level >= 2;
+  const acresRevealed = hud.acres > ACRES.start || hud.unlocks.upgrades;
   return (
     <div class="tab-body">
       <div class="tab-head">

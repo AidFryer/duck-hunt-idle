@@ -114,7 +114,7 @@ function options(s: GameState): Option[] {
     opts.push({ price: botPrice(id, s.bots[id].owned, 1, botPriceMult(s, id)), buy: () => buyBot(s, id, 1) > 0 });
   }
   if (s.unlocks.upgrades === undefined) return opts;
-  if (s.lodge >= 2) opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
+  opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
   for (const u of UPGRADE_ORDER) {
     const lvl = s.upgrades[u] ?? 0;
     if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;

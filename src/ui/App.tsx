@@ -10,7 +10,6 @@ import { LockedTab } from './components/LockedTab';
 import { TabHelp } from './components/TabHelp';
 import { BotsTab } from './components/BotsTab';
 import { Icon } from './components/Icon';
-import { JobBoard } from './components/JobBoard';
 import { MarshTab } from './components/MarshTab';
 import { ProblemLog } from './components/ProblemLog';
 import { Settings } from './components/Settings';
@@ -83,9 +82,8 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       <aside class="panel">
         <nav class="tabs" role="tablist" aria-label="Lodge sections">
           {TABS.map((t) => {
-            const jobsAlert = Object.values(hud.jobs).some((j) => j.backedUp && j.tokens.length > 0);
             const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
-            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'jobs' && jobsAlert) || (t.id === 'legacy' && legacyAlert);
+            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'legacy' && legacyAlert);
             return (
               <button
                 role="tab"
@@ -122,7 +120,6 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           )}
           {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
-          {activeOpen && tab === 'jobs' && <JobBoard hud={hud} controls={controls} />}
           {activeOpen && tab === 'guide' && <FieldGuide hud={hud} notation={n} />}
           {activeOpen && tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
           {activeOpen && tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
