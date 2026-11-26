@@ -74,7 +74,7 @@ describe('problems & foremen', () => {
     expect(ev.map((e) => e.type)).toEqual(['problem', 'problemFixed']);
   });
 
-  it('bots hit problems over time at roughly 1 − reliability', () => {
+  it('bots hit problems over time rarely (well under 1 − reliability)', () => {
     const s = rich(9);
     jumpToPhase(s, 'sunrise');
     s.hunt.decoys = HUNT.baseSpreadSize;
@@ -82,11 +82,11 @@ describe('problems & foremen', () => {
     buyBot(s, 'blind', 10);
     buyBot(s, 'retriever', 10);
     const ev: SimEvent[] = [];
-    advance(s, 300, TICK_SECONDS, ev);
+    advance(s, 900, TICK_SECONDS, ev);
     const actions = ev.filter((e) => e.type === 'flockCalled' || e.type === 'shot' || e.type === 'retrieved').length;
     const problems = ev.filter((e) => e.type === 'problem').length;
     expect(problems).toBeGreaterThan(0);
-    expect(problems / (actions + problems)).toBeLessThan(0.15);
+    expect(problems / (actions + problems)).toBeLessThan(0.06);
   });
 
   it('retry delay doubles each attempt and backoff improves the odds', () => {

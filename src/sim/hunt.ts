@@ -1,4 +1,4 @@
-import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -382,7 +382,7 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
 /** Problem chance is softened by Tinker Bots on duty. */
 function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[number], job?: JobId): number {
   const base = (1 - botReliability(bot, state.bots[bot].level)) * WEATHER[state.environment.weather].problems * (job ? workflowEval(state).problemMult[job] ?? 1 : 1);
-  return base / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0));
+  return (base * PROBLEM_RATE) / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0));
 }
 
 function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: EventSink): void {

@@ -368,6 +368,9 @@ export const JOB_PROBLEMS: Record<JobId, readonly ProblemKind[]> = {
   tinker: [],
 };
 
+/** Scales every bot's chance of getting stuck, so problems stay an occasional chore. */
+export const PROBLEM_RATE = 0.35;
+
 export const FOREMAN = {
   /** Player-tunable retry settings and their ranges. */
   retriesDefault: 3,
