@@ -19,7 +19,7 @@ const TEXT: Record<TutorialStep, string> = {
   call: "Now we wait for a flock to circle. When one's up there, tap it to call it down to the spread. The ring around it is how long they'll wait.",
   shoot: "They've cupped their wings over the decoys. Tap them to shoot. One soft pop is all it takes.",
   retrieve: `Birds on the water. Tap one and ${LAB_NAME} will swim out for it.`,
-  done: "That's the whole hunt. I log every bird at the lodge myself, and guests pay coins for 'em. Tap quick, one after another, and you'll find your rhythm: extra coins. Spend coins in the Bots tab and the crew will hunt for you.",
+  done: "That's the whole hunt. I log every bird at the lodge myself, and guests pay coins for 'em. Tap quick, one after another, and you'll find your rhythm: extra coins. Save up to build a proper cabin, and we'll start carving bots that learn from you.",
 };
 
 /** A short, skippable first-run walkthrough voiced by Gus. */

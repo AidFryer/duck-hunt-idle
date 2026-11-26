@@ -5,12 +5,14 @@ import { FEATURE_ORDER, featureReady } from '../data/features';
 
 /** Open any feature stages the player has reached (in order, one at a time). */
 export function checkUnlocks(state: GameState, events?: EventSink): void {
+  // The Field Guide opens with the first bird and gets its own card.
+  if (state.unlocks.guide === undefined && featureReady(state, 'guide')) {
+    state.unlocks.guide = state.elapsed;
+    events?.push({ type: 'featureUnlocked', feature: 'guide' });
+  }
+  // Everything else opens with the lodge (its level-up card explains it).
   for (const id of FEATURE_ORDER) {
-    if (state.unlocks[id] !== undefined) continue;
-    if (!featureReady(state, id) && state.stats.seasonsClosed === 0) return;
-    state.unlocks[id] = state.elapsed;
-    events?.push({ type: 'featureUnlocked', feature: id });
-    return; // one stage per check, so each gets its moment
+    if (id !== 'guide' && state.unlocks[id] === undefined && featureReady(state, id)) state.unlocks[id] = state.elapsed;
   }
 }
 

@@ -17,9 +17,10 @@ import { speciesWeights } from '../src/sim/species';
 import { createInitialState, type GameState } from '../src/sim/state';
 import { advance } from '../src/sim/tick';
 import { buyUpgrade, offlineCapSeconds, upgradePrice } from '../src/sim/upgrades';
+import { opened } from './helpers';
 
 function rich(seed = 3): GameState {
-  const s = createInitialState(seed);
+  const s = opened(createInitialState(seed));
   s.currencies.coins = new Decimal(1e12);
   s.currencies.feathers = new Decimal(1e12);
   return s;
@@ -29,6 +30,8 @@ describe('species & field guide', () => {
   it('a mixed bag of species arrives over a long day', () => {
     const s = rich(7);
     s.hunt.decoys = HUNT.baseSpreadSize;
+    s.upgrades.millet = 1;
+    s.upgrades.nestBoxes = 1;
     const ev: SimEvent[] = [];
     advance(s, 1800, 0.5, ev);
     const species = new Set(ev.filter((e) => e.type === 'flockArrived').map((e) => (e as { species: string }).species));
@@ -38,6 +41,8 @@ describe('species & field guide', () => {
 
   it('timber makes wood ducks more likely; cold fronts favour rare birds', () => {
     const s = rich();
+    s.upgrades.nestBoxes = 1;
+    s.rungs.floatingRig = true;
     const before = speciesWeights(s, 12).woodDuck;
     s.upgrades.timber = 3;
     expect(speciesWeights(s, 12).woodDuck).toBeGreaterThan(before * 2);
@@ -47,7 +52,7 @@ describe('species & field guide', () => {
   });
 
   it('first harvest of a species adds a Field Guide entry', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.hunt.downed = ['woodDuck', 'woodDuck'];
     const ev: SimEvent[] = [];
     doAction(s, 'retrieve', 'manual', ev);
@@ -63,7 +68,7 @@ describe('species & field guide', () => {
 
 describe('weather', () => {
   it('changes in spells and announces it', () => {
-    const s = createInitialState(4);
+    const s = opened(createInitialState(4));
     const ev: SimEvent[] = [];
     advance(s, WEATHER_SPELL.max * 4, 0.5, ev);
     const changes = ev.filter((e) => e.type === 'weatherChanged');
@@ -72,7 +77,7 @@ describe('weather', () => {
   });
 
   it('fog brings more flocks than clear skies', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.hunt.decoys = 6;
     s.environment.weather = 'clear';
     const clear = flockDraw(s);
@@ -103,7 +108,7 @@ describe('upgrades', () => {
 
 describe('achievements', () => {
   it('unlock once, with an event', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.stats.lifetimeBirds = 1;
     const ev: SimEvent[] = [];
     expect(checkAchievements(s, ev)).toBeGreaterThanOrEqual(1);
@@ -130,14 +135,14 @@ describe('offline progress', () => {
   });
 
   it('caps time away', () => {
-    const s = createInitialState(2);
+    const s = opened(createInitialState(2));
     const r = runOfflineSync(s, 100 * 3600);
     expect(r.capped).toBe(true);
     expect(r.simulated).toBe(OFFLINE.baseHours * 3600);
   });
 
   it('yields progress in chunks', () => {
-    const s = createInitialState(2);
+    const s = opened(createInitialState(2));
     const it = runOffline(s, 3000, 1000);
     const progress: number[] = [];
     let r = it.next();
@@ -162,5 +167,21 @@ describe('v3 → v4 migration', () => {
     const s = fromPlain({ version: 3, environment: { seed: 1, weather: 'clear', wind: 0.3 } });
     advance(s, 30, TICK_SECONDS);
     expect(s.elapsed).toBeCloseTo(30);
+  });
+});
+
+describe('species need the marsh to be ready', () => {
+  it('rarer birds never visit until their upgrade or rung is built', () => {
+    const s = opened(createInitialState(2));
+    const w = speciesWeights(s, 7);
+    expect(w.mallard).toBeGreaterThan(0);
+    expect(w.teal).toBeGreaterThan(0);
+    for (const id of ['woodDuck', 'pintail', 'canvasback', 'kingEider', 'harlequin', 'scaup'] as const) expect(w[id]).toBe(0);
+    s.upgrades.nestBoxes = 1;
+    expect(speciesWeights(s, 7).woodDuck).toBeGreaterThan(0);
+    s.upgrades.deepPool = 1;
+    expect(speciesWeights(s, 7).canvasback).toBe(0); // also needs wild celery
+    s.upgrades.celeryBeds = 1;
+    expect(speciesWeights(s, 7).canvasback).toBeGreaterThan(0);
   });
 });

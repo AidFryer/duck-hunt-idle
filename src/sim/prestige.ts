@@ -71,6 +71,7 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
   state.metrics = { sec: Math.floor(state.elapsed), jobs: createJobMetrics() };
   state.acres = fresh.acres;
   state.upgrades = Object.fromEntries(UPGRADE_ORDER.map((u) => [u, 0])) as Record<UpgradeId, number>;
+  state.rungs = {};
   state.returning = [];
   state.clock = { dayTime: fresh.clock.dayTime, day: 1 };
 

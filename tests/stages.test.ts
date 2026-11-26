@@ -1,62 +1,123 @@
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
 import { FEATURE_ORDER } from '../src/data/features';
+import { LODGE_LEVELS, PLANS } from '../src/data/progression';
 import { checkUnlocks } from '../src/sim/achievements';
+import { buyBot } from '../src/sim/economy';
 import type { SimEvent } from '../src/sim/events';
 import { closeSeason } from '../src/sim/prestige';
+import { buildLodge, buyRung, canBuildLodge, checkPlans, rungReady } from '../src/sim/progression';
 import { fromPlain } from '../src/sim/save';
-import { createInitialState } from '../src/sim/state';
+import { createInitialState, type GameState } from '../src/sim/state';
 
-describe('feature stages', () => {
-  it('a new marsh starts with only the Marsh tab', () => {
+function readyFor(s: GameState, level: number): void {
+  const l = LODGE_LEVELS[level - 1]!;
+  s.stats.lifetimeBirds = Math.max(s.stats.lifetimeBirds, l.birds);
+  const ids = ['mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck', 'redhead'] as const;
+  for (const id of ids.slice(0, l.species)) s.guide[id] = { count: 1, firstAt: 0 };
+  s.currencies.coins = s.currencies.coins.add(l.coins);
+  s.currencies.feathers = s.currencies.feathers.add(l.feathers);
+}
+
+describe('the lodge', () => {
+  it('a new marsh starts as a Duck Shack with only the Marsh tab', () => {
     const s = createInitialState(1);
     checkUnlocks(s);
+    expect(s.lodge).toBe(1);
     expect(Object.keys(s.unlocks)).toHaveLength(0);
   });
 
-  it('stages open in order, one per check, with an event each', () => {
+  it('the Field Guide opens with the first bird, with its own card', () => {
     const s = createInitialState(1);
-    s.stats.lifetimeCoins = new Decimal(1e9);
-    s.season.coins = new Decimal(1e9);
-    s.stats.lifetimeBirds = 10_000;
-    s.bots.caller.owned = 50;
+    s.stats.lifetimeBirds = 1;
     const ev: SimEvent[] = [];
-    for (let i = 0; i < FEATURE_ORDER.length; i++) checkUnlocks(s, ev);
-    expect(ev.map((e) => (e as { feature: string }).feature)).toEqual([...FEATURE_ORDER]);
+    checkUnlocks(s, ev);
+    expect(s.unlocks.guide).toBeDefined();
+    expect(ev.map((e) => e.type)).toEqual(['featureUnlocked']);
   });
 
-  it('waits for an earlier stage even if a later one is ready', () => {
+  it('needs birds, species and coins to build each level, and opens tabs', () => {
     const s = createInitialState(1);
-    s.stats.lifetimeBirds = 3; // Field Guide ready
-    s.stats.lifetimeCoins = new Decimal(30); // Bots ready, Upgrades not
-    s.bots.caller.owned = 50; // Job Board condition met, but it comes later
+    expect(canBuildLodge(s)).toBe(false);
+    readyFor(s, 2);
+    s.guide = { mallard: { count: 1, firstAt: 0 } }; // one species short
+    expect(canBuildLodge(s)).toBe(false);
+    readyFor(s, 2);
     const ev: SimEvent[] = [];
-    for (let i = 0; i < 5; i++) checkUnlocks(s, ev);
-    expect(Object.keys(s.unlocks)).toEqual(['guide', 'bots']);
+    expect(buildLodge(s, ev)).toBe(true);
+    expect(s.lodge).toBe(2);
+    expect(s.unlocks.bots).toBeDefined();
+    expect(s.unlocks.upgrades).toBeDefined();
+    expect(ev.some((e) => e.type === 'lodgeBuilt')).toBe(true);
+    for (let lv = 3; lv <= 5; lv++) {
+      readyFor(s, lv);
+      expect(buildLodge(s)).toBe(true);
+    }
+    expect(Object.keys(s.unlocks).sort()).toEqual(FEATURE_ORDER.filter((f) => f !== 'guide').sort());
+    expect(buildLodge(s)).toBe(false); // top level
   });
 
-  it('unlocks survive closing a season', () => {
+  it('the lodge, plans and tabs survive closing a season; rungs do not', () => {
     const s = createInitialState(1);
-    s.stats.lifetimeCoins = new Decimal(1e9);
+    for (let lv = 2; lv <= 5; lv++) {
+      readyFor(s, lv);
+      buildLodge(s);
+    }
+    s.plans.caller = true;
+    s.rungs.duetCallers = true;
     s.season.coins = new Decimal(4e6);
-    s.stats.lifetimeBirds = 10_000;
-    s.bots.caller.owned = 50;
-    for (let i = 0; i < 10; i++) checkUnlocks(s);
     closeSeason(s, 'central');
-    expect(Object.keys(s.unlocks)).toHaveLength(FEATURE_ORDER.length);
+    expect(s.lodge).toBe(5);
+    expect(s.plans.caller).toBe(true);
+    expect(s.rungs.duetCallers).toBeUndefined();
+    expect(s.unlocks.legacy).toBeDefined();
   });
 
-  it('older saves get the stages they already earned, quietly', () => {
+  it('older saves keep what they had opened', () => {
     const s = fromPlain({
-      version: 5,
-      stats: { lifetimeCoins: '50000', lifetimeBirds: 900 },
-      bots: { caller: { owned: 20, level: 1 } },
-      season: { number: 1, coins: '50000' },
+      version: 7,
+      unlocks: { bots: 10, upgrades: 20, guide: 30, jobs: 40 },
+      bots: { caller: { owned: 20, level: 1 }, blind: { owned: 0, level: 1 } },
       environment: { seed: 1, weather: 'clear', wind: 0.3 },
     });
-    expect(s.unlocks.bots).toBeDefined();
-    expect(s.unlocks.jobs).toBeDefined();
-    expect(s.unlocks.workflows).toBeDefined();
-    expect(s.unlocks.legacy).toBeUndefined();
+    expect(s.lodge).toBe(3);
+    expect(s.plans.caller).toBe(true);
+    expect(s.plans.blind).toBeUndefined();
+  });
+});
+
+describe('bot plans and the ladder', () => {
+  it('a bot can only be carved once its plans are earned by hand', () => {
+    const s = createInitialState(1);
+    s.currencies.coins = new Decimal(1e6);
+    s.currencies.feathers = new Decimal(1e6);
+    expect(buyBot(s, 'caller', 1)).toBe(0);
+    s.lodge = 2;
+    s.stats.manualByJob.call = PLANS.caller.count - 1;
+    checkPlans(s);
+    expect(s.plans.caller).toBeUndefined();
+    s.stats.manualByJob.call = PLANS.caller.count;
+    const ev: SimEvent[] = [];
+    checkPlans(s, ev);
+    expect(ev).toEqual([{ type: 'planEarned', bot: 'caller' }]);
+    expect(buyBot(s, 'caller', 1)).toBe(1);
+  });
+
+  it('rungs need the lodge, a crew, experience and coins, in order', () => {
+    const s = createInitialState(1);
+    s.currencies.coins = new Decimal(1e9);
+    s.currencies.feathers = new Decimal(1e9);
+    s.plans.caller = true;
+    s.lodge = 3;
+    expect(rungReady(s, 'duetCallers')).toBe(false);
+    s.bots.caller.owned = 10;
+    s.stats.flocksCalled = 800;
+    expect(rungReady(s, 'duetCallers')).toBe(true);
+    expect(rungReady(s, 'longCall')).toBe(false); // the rung below comes first
+    expect(buyRung(s, 'duetCallers')).toBe(true);
+    s.lodge = 4;
+    s.bots.caller.owned = 25;
+    s.stats.flocksCalled = 4_000;
+    expect(buyRung(s, 'longCall')).toBe(true);
   });
 });

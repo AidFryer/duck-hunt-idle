@@ -5,7 +5,7 @@
  * closes the season when it's worth a star. Pure: drives the sim directly.
  */
 import Decimal from 'break_infinity.js';
-import { ACRES, BOT_ORDER, BOTS, HUNT, type BotId, type HuntStage } from '../data/economy';
+import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
 import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, canAfford, levelPrice, levelUpBot, spreadSize, type Price } from './economy';
 import type { SimEvent } from './events';
@@ -16,6 +16,10 @@ import type { GameState } from './state';
 import { step } from './tick';
 import { buyUpgrade, upgradePrice } from './upgrades';
 import { addNode, connect, workflowEval, workflowUnlocked } from './workflow';
+import { buildLodge, buyRung, canBuildLodge, lodgeReady, nextLodge, rungPrice, rungReady } from './progression';
+import { RUNG_ORDER, SPECIES_DRAW } from '../data/progression';
+import type { UpgradeId } from '../data/upgrades';
+import type { SpeciesId } from '../data/species';
 
 export interface PaceReport {
   /** Sim seconds when each milestone was first reached (null = not reached). */
@@ -24,6 +28,10 @@ export interface PaceReport {
   coins10k: number | null;
   coins100k: number | null;
   firstStar: number | null;
+  /** When each lodge level was built (index = level). */
+  lodge: (number | null)[];
+  /** When each bot's plans were earned. */
+  plans: Partial<Record<BotId, number>>;
   /** Totals at the end. */
   seasonCoins: Decimal;
   lifetimeCoins: Decimal;
@@ -67,26 +75,43 @@ function wanted(s: GameState): BotId[] {
   if (own('scout') < Math.ceil(own('caller') / 2)) out.push('scout');
   if (s.problems.total > 3 && own('foreman') < Math.ceil(totalBots(s) / 40)) out.push('foreman');
   if (own('tinker') < Math.floor(totalBots(s) / 60)) out.push('tinker');
-  return out.filter((id) => s.bots[id].owned > 0 || s.stats.lifetimeCoins.gte(BOTS[id].revealAtCoins));
+  return out.filter((id) => !!s.plans[id]);
 }
 
 interface Option {
   price: Price;
   buy: () => boolean;
+  /** Goes before cheaper things (new birds, the lodge). */
+  first?: boolean;
+}
+
+/** Upgrades that would bring a kind of duck we haven't seen. */
+function bringsNewBirds(s: GameState, u: UpgradeId): boolean {
+  if ((s.upgrades[u] ?? 0) > 0) return false;
+  return Object.entries(SPECIES_DRAW).some(([sp, need]) => !s.guide[sp as SpeciesId] && need!.some((d) => 'upgrade' in d && d.upgrade === u));
 }
 
 function options(s: GameState): Option[] {
   const opts: Option[] = [];
+  // The lodge comes first whenever it's ready: it's the big goal.
+  const next = nextLodge(s);
+  let cap: number | null = null;
+  if (next && lodgeReady(s)) {
+    if (canBuildLodge(s)) opts.push({ price: { coins: new Decimal(0), feathers: new Decimal(0) }, buy: () => buildLodge(s) });
+    else cap = next.coins * 0.05; // save up: only small buys meanwhile
+  }
+  saveCap = cap;
+  for (const id of RUNG_ORDER) if (rungReady(s, id)) opts.push({ price: rungPrice(id), buy: () => buyRung(s, id) });
   if (s.unlocks.bots === undefined) return opts;
   for (const id of new Set(wanted(s))) {
     opts.push({ price: botPrice(id, s.bots[id].owned, 1, botPriceMult(s, id)), buy: () => buyBot(s, id, 1) > 0 });
   }
   if (s.unlocks.upgrades === undefined) return opts;
-  if (s.stats.lifetimeCoins.gte(ACRES.revealAtCoins)) opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
+  if (s.lodge >= 2) opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
   for (const u of UPGRADE_ORDER) {
     const lvl = s.upgrades[u] ?? 0;
-    if (lvl >= UPGRADES[u].maxLevel || s.stats.lifetimeCoins.lt(UPGRADES[u].revealAtCoins)) continue;
-    opts.push({ price: upgradePrice(u, lvl), buy: () => buyUpgrade(s, u) });
+    if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;
+    opts.push({ price: upgradePrice(u, lvl), buy: () => buyUpgrade(s, u), first: bringsNewBirds(s, u) });
   }
   // Tune-ups for the most-owned types, when they are cheap relative to the crew.
   for (const id of BOT_ORDER) {
@@ -97,11 +122,16 @@ function options(s: GameState): Option[] {
 }
 
 /** Buy the cheapest affordable useful thing, repeatedly. */
+let saveCap: number | null = null;
+
 function shop(s: GameState): void {
   for (let guard = 0; guard < 50; guard++) {
-    const affordable = options(s).filter((o) => canAfford(s, o.price));
+    const all = options(s);
+    // Save up for a priority buy that isn't affordable yet.
+    for (const o of all) if (o.first && !canAfford(s, o.price)) saveCap = Math.min(saveCap ?? Infinity, o.price.coins.toNumber() * 0.05);
+    const affordable = all.filter((o) => canAfford(s, o.price) && (o.first || saveCap === null || o.price.coins.lte(saveCap)));
     if (affordable.length === 0) return;
-    affordable.sort((a, b) => a.price.coins.cmp(b.price.coins));
+    affordable.sort((a, b) => Number(!!b.first) - Number(!!a.first) || a.price.coins.cmp(b.price.coins));
     if (!affordable[0]!.buy()) return;
   }
 }
@@ -117,14 +147,14 @@ function buildChain(s: GameState): void {
   for (let i = 0; i + 1 < ids.length; i++) connect(s, ids[i]!, ids[i + 1]!);
 }
 
-const TAP_ORDER: HuntStage[] = ['retrieve', 'shoot', 'call', 'decoys', 'log'];
+const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve', 'decoys'];
 
 export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
   const dt = opts.dt ?? 0.5;
   const taps = opts.tapsPerSecond ?? 1.5;
   const steps = Math.floor(opts.seconds / dt);
   const r: PaceReport = {
-    firstBot: null, coins1k: null, coins10k: null, coins100k: null, firstStar: null,
+    firstBot: null, coins1k: null, coins10k: null, coins100k: null, firstStar: null, lodge: [null, 0, null, null, null, null], plans: {},
     seasonCoins: new Decimal(0), lifetimeCoins: new Decimal(0), birds: 0, bots: 0, species: 0,
     incomeAtEnd: 0, timeline: [],
   };
@@ -159,6 +189,8 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
 
     const sc = s.season.coins;
     if (r.firstBot === null && totalBots(s) > 0) r.firstBot = t;
+    if (r.lodge[s.lodge] === null) r.lodge[s.lodge] = t;
+    for (const id of BOT_ORDER) if (s.plans[id] && r.plans[id] === undefined) r.plans[id] = t;
     if (r.coins1k === null && sc.gte(1e3)) r.coins1k = t;
     if (r.coins10k === null && sc.gte(1e4)) r.coins10k = t;
     if (r.coins100k === null && sc.gte(1e5)) r.coins100k = t;
@@ -182,6 +214,8 @@ export function formatPace(r: PaceReport): string {
   const m = (t: number | null) => (t === null ? 'not reached' : `${(t / 60).toFixed(1)} min`);
   const lines = [
     `First bot:            ${m(r.firstBot)}`,
+    ...r.lodge.slice(2).map((t, i) => `Lodge level ${i + 2}:        ${m(t)}`),
+    `Plans: ${BOT_ORDER.map((id) => `${id} ${m(r.plans[id] ?? null)}`).join(', ')}`,
     `1K season coins:      ${m(r.coins1k)}`,
     `10K season coins:     ${m(r.coins10k)}`,
     `100K season coins:    ${m(r.coins100k)}`,

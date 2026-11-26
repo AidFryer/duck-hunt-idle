@@ -103,6 +103,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               hud={hud}
               controls={controls}
               devTools={prefs.devTools}
+              notation={n}
               tutorial={tutorialOn ? (
                 <Tutorial
                   step={tStep}

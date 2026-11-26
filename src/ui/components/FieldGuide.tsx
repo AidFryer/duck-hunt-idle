@@ -50,7 +50,12 @@ export function FieldGuide({ hud, notation }: { hud: HudSnapshot; notation: Nota
                       </dl>
                     </>
                   ) : (
-                    <p class="guide-card__hint">{d.hint}</p>
+                    <>
+                      <p class="guide-card__hint">{d.hint}</p>
+                      <p class={`guide-card__draw ${g.available ? 'is-open' : ''}`}>
+                        {g.available ? 'Visiting the marsh now. Keep hunting!' : `Needs: ${g.draws}`}
+                      </p>
+                    </>
                   )}
                 </div>
               </article>

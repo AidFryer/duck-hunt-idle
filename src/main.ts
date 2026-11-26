@@ -19,6 +19,7 @@ import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
 import { canDo, doAction } from './sim/hunt';
+import { buildLodge, buyRung } from './sim/progression';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
@@ -153,6 +154,9 @@ const EVENT_SOUND: Partial<Record<SimEvent['type'], Sfx>> = {
   achievement: 'chime',
   perkBought: 'levelUp',
   seasonClosed: 'season',
+  lodgeBuilt: 'season',
+  planEarned: 'chime',
+  rungBuilt: 'levelUp',
 };
 
 function shake(strength: number): void {
@@ -186,6 +190,17 @@ function onEvent(e: SimEvent, at: Point | null): void {
       break;
     case 'featureUnlocked':
       pushMoment({ kind: 'feature', id: e.feature });
+      break;
+    case 'lodgeBuilt':
+      pushMoment({ kind: 'lodge', level: e.level });
+      shake(0.5);
+      break;
+    case 'planEarned':
+      pushMoment({ kind: 'plan', bot: e.bot });
+      break;
+    case 'rungBuilt':
+      pushMoment({ kind: 'rung', id: e.rung });
+      shake(0.35);
       break;
     case 'seasonClosed':
       seasonView.set({ season: e.season, stars: e.stars, flyway: e.flyway });
@@ -350,6 +365,17 @@ const controls: GameControls = {
   },
   buyUpgrade(id) {
     const ok = buyUpgrade(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  buildLodge() {
+    const ok = buildLodge(state, runner.sink);
+    hud.set(snapshot(state));
+    if (ok) save();
+    return ok;
+  },
+  buyRung(id) {
+    const ok = buyRung(state, id, runner.sink);
     hud.set(snapshot(state));
     return ok;
   },

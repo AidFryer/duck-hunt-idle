@@ -3,7 +3,9 @@ import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
 import { clockAt } from './clock';
-import { birdValue, botReliability, extraFlockSize, flockDraw, incomingPatience, maxIncoming, shotFraction, spreadSize } from './economy';
+import { birdValue, botReliability, committedPatience, extraFlockSize, flockDraw, incomingPatience, maxCommitted, maxIncoming, shotFraction, spreadSize } from './economy';
+import { checkPlans } from './progression';
+import { UPGRADE_EFFECTS } from '../data/upgrades';
 import { FLYWAYS } from '../data/flyways';
 import { workflowEval } from './workflow';
 import { pickSpecies } from './species';
@@ -28,7 +30,7 @@ export function canDo(state: GameState, job: ActionJob): boolean {
     case 'decoys':
       return h.decoys < spreadSize(state);
     case 'call':
-      return h.incoming.length > 0 && h.committed.length < HUNT.maxCommitted;
+      return h.incoming.length > 0 && h.committed.length < maxCommitted(state);
     case 'shoot':
       return h.committed.length > 0;
     case 'retrieve':
@@ -209,7 +211,8 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   // Decoys slowly drift loose, faster in wind.
   if (h.decoys > 0) {
     const drift = WEATHER[state.environment.weather].decoyDrift;
-    h.decoyDrift += (dt * drift * (1 + state.environment.wind * HUNT.decoyDriftWind)) / HUNT.decoyDriftSeconds;
+    const vane = 1 + UPGRADE_EFFECTS.weathervaneDrift * (state.upgrades.weathervane ?? 0);
+    h.decoyDrift += (dt * drift * (1 + state.environment.wind * HUNT.decoyDriftWind)) / (HUNT.decoyDriftSeconds * vane);
     if (h.decoyDrift >= 1) {
       h.decoyDrift -= 1;
       h.decoys -= 1;
@@ -220,7 +223,9 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   }
 
   // Flock arrivals: an exponential countdown scaled by draw × activity.
-  h.flockCountdown -= dt * flockDraw(state) * activity;
+  // Lantern posts keep a few flocks coming after dark.
+  const lit = Math.max(activity, UPGRADE_EFFECTS.lanternsNight * (state.upgrades.lanterns ?? 0));
+  h.flockCountdown -= dt * flockDraw(state) * lit;
   // Never let a big batch of scouting queue up more arrivals than can matter.
   if (h.flockCountdown < -maxIncoming(state)) h.flockCountdown = -maxIncoming(state);
   let arrivals = 0;
@@ -259,7 +264,8 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
     events.push({ type: 'flockArrived', flockId: back.id, size: back.size, species: back.species });
     events.push({ type: 'flockReturned', flockId: back.id });
   }
-  while (h.committed.length > 0 && h.committed[0]!.age > HUNT.committedPatience) {
+  const hold = committedPatience(state);
+  while (h.committed.length > 0 && h.committed[0]!.age > hold) {
     state.stats.flocksFlared += 1;
     state.stats.lostToday += 1;
     events.push({ type: 'flockFlared', flockId: h.committed.shift()!.id });
@@ -280,6 +286,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   if (Math.floor(state.elapsed) !== Math.floor(state.elapsed - dt)) {
     checkAchievements(state, events);
     checkUnlocks(state, events);
+    checkPlans(state, events);
   }
 }
 

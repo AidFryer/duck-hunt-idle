@@ -10,6 +10,8 @@ export interface FeatureDef {
   id: FeatureId;
   /** Stage number shown to the player (Marsh is stage 1). */
   stage: number;
+  /** Lodge level that opens it (the Field Guide opens with your first bird instead). */
+  lodge: number;
   name: string;
   /** What the player needs to do, for the locked tab. */
   requirement: string;
@@ -20,18 +22,18 @@ export interface FeatureDef {
   };
 }
 
-const totalBots = (s: GameState) => Object.values(s.bots).reduce((a, b) => a + b.owned, 0);
-const coins = (s: GameState) => s.stats.lifetimeCoins.toNumber();
+const lodge = (s: GameState) => s.lodge;
 
 export const FEATURES: Record<FeatureId, FeatureDef> = {
   bots: {
-    id: 'bots', stage: 3, name: 'Bots',
-    requirement: 'Earn 20 coins from logged birds.',
-    progress: (s) => [coins(s), 20],
+    id: 'bots', stage: 3, lodge: 2, name: 'Workshop',
+    requirement: "Build the Trapper's Cabin (lodge level 2) on the Marsh tab.",
+    progress: (s) => [lodge(s), 2],
     intro: {
-      gus: "You've earned enough to start whittling. This is the carving bench.",
+      gus: "Four walls and a workbench. This is where we carve help.",
       points: [
-        'Carve decoy-bots with coins and feathers. Each kind does one job of the hunt for you.',
+        'Do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins and feathers.',
+        'Each kind of bot does one job of the hunt for you.',
         'Every bot you carve costs a bit more than the last.',
         'Own 10, 25, 50 of a kind and they work together: their speed doubles.',
         'Tune-ups make every bot of a kind faster.',
@@ -39,23 +41,23 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   upgrades: {
-    id: 'upgrades', stage: 4, name: 'Upgrades',
-    requirement: 'Earn 750 coins in total.',
-    progress: (s) => [coins(s), 750],
+    id: 'upgrades', stage: 3, lodge: 2, name: 'Upgrades',
+    requirement: "Build the Trapper's Cabin (lodge level 2) on the Marsh tab.",
+    progress: (s) => [lodge(s), 2],
     intro: {
       gus: 'The marsh itself can be improved. More water, more food, more ducks.',
       points: [
         'Wetland Acres bring more flocks, and bigger ones.',
-        'Food plots and flooded timber draw in particular species.',
+        'Food plots, nest boxes and flooded timber bring new kinds of duck. Rarer birds only come once the marsh is ready for them.',
         'The Coffee Pot speeds up every bot. Lodge Rooms raise what guests pay.',
         'Upgrades have a few levels each and stay until you close the season.',
       ],
     },
   },
   jobs: {
-    id: 'jobs', stage: 5, name: 'Job Board',
-    requirement: 'Own 15 bots.',
-    progress: (s) => [totalBots(s), 15],
+    id: 'jobs', stage: 4, lodge: 3, name: 'Job Board',
+    requirement: 'Build the Marsh Lodge (lodge level 3) on the Marsh tab.',
+    progress: (s) => [lodge(s), 3],
     intro: {
       gus: "With a real crew, you need a board to keep track of who's doing what.",
       points: [
@@ -67,7 +69,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   guide: {
-    id: 'guide', stage: 2, name: 'Field Guide',
+    id: 'guide', stage: 2, lodge: 1, name: 'Field Guide',
     requirement: 'Bring in your first bird.',
     progress: (s) => [s.stats.lifetimeBirds, 1],
     intro: {
@@ -81,9 +83,9 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   workflows: {
-    id: 'workflows', stage: 6, name: 'Workflows',
-    requirement: 'Earn 25,000 coins in total.',
-    progress: (s) => [coins(s), 25_000],
+    id: 'workflows', stage: 5, lodge: 4, name: 'Workflows',
+    requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
+    progress: (s) => [lodge(s), 4],
     intro: {
       gus: 'A crew that knows the order of the hunt works faster. Here is some rope.',
       points: [
@@ -95,9 +97,9 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   legacy: {
-    id: 'legacy', stage: 7, name: 'Legacy',
-    requirement: 'Earn 250,000 coins in one season.',
-    progress: (s) => [s.season.coins.toNumber(), 250_000],
+    id: 'legacy', stage: 6, lodge: 5, name: 'Legacy',
+    requirement: 'Build the Grand Lodge (lodge level 5) on the Marsh tab.',
+    progress: (s) => [lodge(s), 5],
     intro: {
       gus: "The season won't last forever. When it's time, we close it out and start fresh, a little wiser.",
       points: [

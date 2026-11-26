@@ -2,12 +2,17 @@ import type { SpeciesId } from '../data/species';
 import type { FlywayId } from '../data/flyways';
 import type { OfflineSummary } from '../sim/offline';
 import { Store } from './store';
+import type { BotId } from '../data/economy';
+import type { RungId } from '../data/progression';
 
 /** Big celebratory cards: a new Field Guide entry or a patch sewn on. */
 import type { FeatureId } from '../data/features';
 
 export type Moment = { kind: 'species'; id: SpeciesId; coins: number; feathers: number } | { kind: 'patch'; id: string } | { kind: 'feature'; id: FeatureId }
-  | { kind: 'daily'; coins: number; feathers: number };
+  | { kind: 'daily'; coins: number; feathers: number }
+  | { kind: 'lodge'; level: number }
+  | { kind: 'plan'; bot: BotId }
+  | { kind: 'rung'; id: RungId };
 
 export const moments = new Store<Moment[]>([]);
 

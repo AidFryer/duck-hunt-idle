@@ -8,7 +8,7 @@ import { Cost } from './Cost';
 import { Icon } from './Icon';
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const acresRevealed = hud.acres > ACRES.start || hud.lifetimeCoins.gte(ACRES.revealAtCoins);
+  const acresRevealed = hud.acres > ACRES.start || hud.lodge.level >= 2;
   return (
     <div class="tab-body">
       <div class="tab-head">
@@ -36,11 +36,15 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
           </div>
         </div>
       ) : (
-        <Locked name="Wetland Acres" text={`Earn ${ACRES.revealAtCoins} coins to start restoring the marsh.`} />
+        <Locked name="Wetland Acres" text="Opens with the Trapper's Cabin." />
       )}
       {hud.upgrades.map((u) => {
         const d = UPGRADES[u.id];
-        if (!u.revealed) return <Locked name="???" text={`Earn ${formatNumber(d.revealAtCoins, notation)} coins to see this plan.`} />;
+        if (!u.revealed) {
+          // Only tease what the next lodge level brings, not the whole list.
+          if (d.lodge > hud.lodge.level + 1) return null;
+          return <Locked name={d.name} text={`${d.effect}. Opens with the ${u.lodgeName}.`} />;
+        }
         const maxed = u.level >= u.max;
         return (
           <div class="bot-card">

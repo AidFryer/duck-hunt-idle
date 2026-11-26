@@ -27,6 +27,50 @@ import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
 import { successRate, throughput } from '../sim/metrics';
 import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
 import type { GameState, Problem } from '../sim/state';
+import { COUNTER_LABEL, PLANS, RUNGS, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
+import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesNeeds } from '../sim/progression';
+
+export interface Req {
+  label: string;
+  cur: number;
+  goal: number;
+}
+
+export interface RungSnapshot {
+  id: RungId;
+  name: string;
+  blurb: string;
+  effect: string;
+  tier: number;
+  built: boolean;
+  /** Every requirement met (price aside). */
+  ready: boolean;
+  affordable: boolean;
+  price: Price;
+  reqs: Req[];
+}
+
+export interface PlanSnapshot {
+  earned: boolean;
+  /** Lodge level reached, so the plans can be earned. */
+  open: boolean;
+  lodgeName: string;
+  req: Req;
+}
+
+export interface LodgeSnapshot {
+  level: number;
+  name: string;
+  next: null | {
+    level: number;
+    name: string;
+    reqs: Req[];
+    price: Price;
+    ready: boolean;
+    affordable: boolean;
+    points: readonly string[];
+  };
+}
 
 export interface BotSnapshot {
   id: BotId;
@@ -120,11 +164,14 @@ export interface HudSnapshot {
   problemStats: { total: number; byYou: number; byForeman: number; escalated: number };
   foreman: { retries: number; backoff: number; chance: number; delays: number[]; capacity: number; hired: boolean };
   weather: { id: WeatherId; name: string; blurb: string; next: WeatherId; nextName: string; changeAt: string };
-  guide: { id: SpeciesId; count: number; found: boolean }[];
+  guide: { id: SpeciesId; count: number; found: boolean; available: boolean; draws: string }[];
   speciesFound: number;
   achievements: { id: string; unlocked: boolean }[];
   patches: number;
-  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean }[];
+  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string }[];
+  lodge: LodgeSnapshot;
+  plans: Record<BotId, PlanSnapshot>;
+  ladder: Record<BotId, RungSnapshot[]>;
   offlineHours: number;
   unlocks: Record<FeatureId, boolean>;
   featureProgress: Record<FeatureId, [number, number]>;
@@ -204,6 +251,57 @@ function statusText(state: GameState, p: Problem): string {
     case 'fixed':
       return p.fixedBy === 'foreman' ? (p.attempts > 1 ? `Fixed by the foreman on try ${p.attempts}` : 'Fixed by the foreman') : 'Fixed by you';
   }
+}
+
+function req(state: GameState, counterId: CounterId, goal: number): Req {
+  return { label: COUNTER_LABEL[counterId](goal.toLocaleString('en-US')), cur: Math.min(counter(state, counterId), goal), goal };
+}
+
+function lodgeSnap(state: GameState): LodgeSnapshot {
+  const n = nextLodge(state);
+  const cur = lodgeDef(state.lodge);
+  if (!n) return { level: state.lodge, name: cur.name, next: null };
+  const price = { coins: new Decimal(n.coins), feathers: new Decimal(n.feathers) };
+  return {
+    level: state.lodge,
+    name: cur.name,
+    next: {
+      level: n.level,
+      name: n.name,
+      reqs: [req(state, 'birds', n.birds), req(state, 'species', n.species)],
+      price,
+      ready: lodgeReady(state),
+      affordable: canBuildLodge(state),
+      points: n.points,
+    },
+  };
+}
+
+function planSnap(state: GameState, id: BotId): PlanSnapshot {
+  const p = PLANS[id];
+  return { earned: !!state.plans[id], open: state.lodge >= p.lodge, lodgeName: lodgeDef(p.lodge).name, req: req(state, p.counter, p.count) };
+}
+
+function rungSnap(state: GameState, id: RungId): RungSnapshot {
+  const r = RUNGS[id];
+  const price = rungPrice(id);
+  const reqs: Req[] = [
+    { label: `Build the ${lodgeDef(r.lodge).name}`, cur: Math.min(state.lodge, r.lodge), goal: r.lodge },
+    { label: `Own ${r.owned} ${BOTS[r.bot].name}s`, cur: Math.min(state.bots[r.bot].owned, r.owned), goal: r.owned },
+    req(state, r.counter, r.count),
+  ];
+  const built = !!state.rungs[id];
+  const ready = rungReady(state, id);
+  return {
+    id, name: r.name, blurb: r.blurb, effect: r.effect, tier: r.tier, built, ready, price,
+    affordable: ready && canAfford(state, price), reqs,
+  };
+}
+
+function drawLabel(d: Draw): string {
+  if ('upgrade' in d) return UPGRADES[d.upgrade].name;
+  if ('rung' in d) return RUNGS[d.rung].name;
+  return FLYWAYS[d.flyway].name;
 }
 
 export function snapshot(state: GameState): HudSnapshot {
@@ -339,7 +437,13 @@ export function snapshot(state: GameState): HudSnapshot {
       nextName: WEATHER[env.nextWeather].name,
       changeAt: formatClock(changeClock.hour),
     },
-    guide: SPECIES_ORDER.map((id) => ({ id, count: state.guide[id]?.count ?? 0, found: (state.guide[id]?.count ?? 0) > 0 })),
+    guide: SPECIES_ORDER.map((id) => ({
+      id,
+      count: state.guide[id]?.count ?? 0,
+      found: (state.guide[id]?.count ?? 0) > 0,
+      available: speciesAvailable(state, id),
+      draws: speciesNeeds(id).map(drawLabel).join(' + '),
+    })),
     speciesFound: SPECIES_ORDER.filter((id) => (state.guide[id]?.count ?? 0) > 0).length,
     achievements: ACHIEVEMENTS.map((a) => ({ id: a.id, unlocked: state.achievements[a.id] !== undefined })),
     patches: Object.keys(state.achievements).length,
@@ -349,10 +453,14 @@ export function snapshot(state: GameState): HudSnapshot {
       const max = UPGRADES[id].maxLevel;
       return {
         id, level, max, price,
-        affordable: level < max && canAfford(state, price),
-        revealed: level > 0 || state.stats.lifetimeCoins.gte(UPGRADES[id].revealAtCoins),
+        affordable: level < max && state.lodge >= UPGRADES[id].lodge && canAfford(state, price),
+        revealed: level > 0 || state.lodge >= UPGRADES[id].lodge,
+        lodgeName: lodgeDef(UPGRADES[id].lodge).name,
       };
     }),
+    lodge: lodgeSnap(state),
+    plans: Object.fromEntries(BOT_ORDER.map((id) => [id, planSnap(state, id)])) as Record<BotId, PlanSnapshot>,
+    ladder: Object.fromEntries(BOT_ORDER.map((id) => [id, ladderFor(id).map((r) => rungSnap(state, r.id))])) as Record<BotId, RungSnapshot[]>,
     offlineHours: offlineCapSeconds(state) / 3600,
     unlocks: Object.fromEntries(FEATURE_ORDER.map((f) => [f, state.unlocks[f] !== undefined])) as Record<FeatureId, boolean>,
     featureProgress: Object.fromEntries(FEATURE_ORDER.map((f) => [f, FEATURES[f].progress(state)])) as Record<FeatureId, [number, number]>,

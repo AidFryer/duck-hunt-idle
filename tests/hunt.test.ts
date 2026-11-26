@@ -9,9 +9,10 @@ import { canDo, doAction } from '../src/sim/hunt';
 import { createInitialState, type GameState } from '../src/sim/state';
 import { advance, step } from '../src/sim/tick';
 import { jumpToPhase } from '../src/sim/actions';
+import { opened } from './helpers';
 
 function rich(): GameState {
-  const s = createInitialState(7);
+  const s = opened(createInitialState(7));
   s.currencies.coins = new Decimal(1e9);
   s.currencies.feathers = new Decimal(1e9);
   return s;
@@ -19,7 +20,7 @@ function rich(): GameState {
 
 describe('manual hunt pipeline', () => {
   it('runs Set Decoys → Call → Shoot → Retrieve and pays out', () => {
-    const s = createInitialState(3);
+    const s = opened(createInitialState(3));
     const ev: SimEvent[] = [];
     expect(canDo(s, 'call')).toBe(false);
     for (let i = 0; i < HUNT.baseSpreadSize; i++) expect(doAction(s, 'decoys', 'manual', ev)).toBe(true);
@@ -48,7 +49,7 @@ describe('manual hunt pipeline', () => {
   });
 
   it('flocks arrive at sunrise once decoys are out', () => {
-    const s = createInitialState(11);
+    const s = opened(createInitialState(11));
     jumpToPhase(s, 'sunrise');
     s.hunt.decoys = HUNT.baseSpreadSize;
     const ev: SimEvent[] = [];
@@ -57,7 +58,7 @@ describe('manual hunt pipeline', () => {
   });
 
   it('circling flocks move on if nobody calls them', () => {
-    const s = createInitialState(11);
+    const s = opened(createInitialState(11));
     s.hunt.incoming.push({ id: 1, species: 'mallard', size: 4, age: 0 });
     const ev: SimEvent[] = [];
     advance(s, HUNT.incomingPatience + 1, TICK_SECONDS, ev);
@@ -65,7 +66,7 @@ describe('manual hunt pipeline', () => {
   });
 
   it('called flocks flare off if nobody shoots', () => {
-    const s = createInitialState(11);
+    const s = opened(createInitialState(11));
     s.hunt.committed.push({ id: 5, species: 'mallard', size: 4, age: 0 });
     const ev: SimEvent[] = [];
     advance(s, HUNT.committedPatience + 1, TICK_SECONDS, ev);
@@ -74,14 +75,14 @@ describe('manual hunt pipeline', () => {
   });
 
   it('decoys drift loose over time', () => {
-    const s = createInitialState(2);
+    const s = opened(createInitialState(2));
     s.hunt.decoys = 3;
     advance(s, HUNT.decoyDriftSeconds * 1.2, TICK_SECONDS);
     expect(s.hunt.decoys).toBeLessThan(3);
   });
 
   it('bag resets at the start of each day and records the best', () => {
-    const s = createInitialState(2);
+    const s = opened(createInitialState(2));
     s.hunt.bag = 12;
     s.clock.dayTime = 599.95;
     const ev: SimEvent[] = [];
@@ -102,7 +103,7 @@ describe('bots', () => {
   });
 
   it('buying spends both currencies and fails when broke', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     expect(buyBot(s, 'caller', 1)).toBe(0);
     s.currencies.coins = new Decimal(BOTS.caller.costCoins);
     s.currencies.feathers = new Decimal(BOTS.caller.costFeathers);
@@ -112,7 +113,7 @@ describe('bots', () => {
   });
 
   it('max affordable respects the scarcer currency', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.currencies.coins = new Decimal(1e9);
     s.currencies.feathers = new Decimal(BOTS.blind.costFeathers * 2.2);
     expect(maxAffordableBots(s, 'blind')).toBe(2);

@@ -12,9 +12,10 @@ import { fixBot, foremanCapacity, raiseProblem, retryChance, retryDelay, setFore
 import { fromPlain } from '../src/sim/save';
 import { createInitialState, SAVE_VERSION, type GameState } from '../src/sim/state';
 import { advance } from '../src/sim/tick';
+import { opened } from './helpers';
 
 function rich(seed = 3): GameState {
-  const s = createInitialState(seed);
+  const s = opened(createInitialState(seed));
   s.currencies.coins = new Decimal(1e12);
   s.currencies.feathers = new Decimal(1e12);
   return s;
@@ -119,7 +120,7 @@ describe('problems & foremen', () => {
 
 describe('ledger, scouts and tinkers', () => {
   it('Gus logs the bag on his own; coins arrive with logging', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.hunt.ledger = ['mallard', 'mallard', 'mallard'];
     advance(s, 3 / LEDGER.keeperRate + 0.5, TICK_SECONDS);
     expect(s.hunt.ledger).toHaveLength(0);
@@ -154,7 +155,7 @@ describe('ledger, scouts and tinkers', () => {
   });
 
   it('manual logging works', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     s.hunt.ledger = ['mallard'];
     expect(doAction(s, 'log', 'manual', [])).toBe(true);
     expect(doAction(s, 'log', 'manual', [])).toBe(false);

@@ -625,11 +625,110 @@ export const LODGE_ANCHORS = {
   ],
 } as const;
 
-export function paintLodge(): Canvas {
+/** Per-level chimney top and lit windows (the shack is smaller). */
+export function lodgeAnchors(level: number): { chimneyTop: { x: number; y: number }; windows: { x: number; y: number; w: number; h: number }[] } {
+  if (level <= 1) return { chimneyTop: { x: 121, y: 68 }, windows: [{ x: 66, y: 112, w: 14, h: 12 }] };
+  const windows: { x: number; y: number; w: number; h: number }[] = [...LODGE_ANCHORS.windows];
+  if (level >= 5) windows.push({ x: 12, y: 50, w: 10, h: 11 });
+  return { chimneyTop: LODGE_ANCHORS.chimneyTop, windows };
+}
+
+const LODGE_SIGN = ['', 'CABIN', 'CABIN', 'LODGE', 'CLUB', 'GRAND LODGE'];
+
+/** A leaky trapper's shack: tin roof, stovepipe, one window. */
+function paintShack(): Canvas {
+  const { w, h, ground } = LODGE_SIZE;
+  const t = createPaintTarget(w, h);
+  const { ctx } = t;
+  const rnd = seededRandom(77);
+  // Short dock
+  ctx.fillStyle = css(palette.woodDark);
+  for (const x of [176, 198]) ctx.fillRect(x, ground - 6, 3.5, h - ground + 6);
+  ctx.fillStyle = css(palette.woodLight);
+  ctx.fillRect(166, ground - 8, 40, 5);
+  // Block footings
+  ctx.fillStyle = css(0x6f6a62);
+  for (const x of [54, 96, 134]) ctx.fillRect(x, ground - 6, 8, 6);
+  // Weathered board walls
+  for (let x = 52; x < 142; x += 6) {
+    ctx.fillStyle = css(rnd() > 0.5 ? 0x8a7660 : 0x7a6652);
+    ctx.fillRect(x, 100, 5.4, ground - 106);
+  }
+  ctx.fillStyle = css(0x5e4c3c, 0.5);
+  ctx.fillRect(52, 100, 90, 3);
+  // Stovepipe
+  ctx.fillStyle = css(0x4f4a44);
+  ctx.fillRect(117, 70, 7, 22);
+  ctx.fillRect(115, 68, 11, 3);
+  // Tin roof with ridges and a rust patch
+  ctx.fillStyle = css(0x9a9a96);
+  ctx.beginPath();
+  ctx.moveTo(42, 106);
+  ctx.lineTo(146, 86);
+  ctx.lineTo(150, 94);
+  ctx.lineTo(44, 113);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = css(0x6a6a66, 0.8);
+  ctx.lineWidth = 0.8;
+  for (let x = 48; x < 148; x += 6) {
+    ctx.beginPath();
+    ctx.moveTo(x, 106 - (x - 42) * 0.19);
+    ctx.lineTo(x + 1.5, 113 - (x - 42) * 0.19);
+    ctx.stroke();
+  }
+  ctx.fillStyle = css(palette.rust, 0.55);
+  ellipse(ctx, 92, 99, 9, 3);
+  ctx.fill();
+  // Window and door
+  windowFrame(ctx, { x: 66, y: 112, w: 14, h: 12 });
+  ctx.fillStyle = css(palette.woodDark);
+  ctx.fillRect(104, 116, 15, ground - 122);
+  ctx.fillStyle = css(palette.brass);
+  ctx.beginPath();
+  ctx.arc(116, 132, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+  // Hitching post with a lantern
+  ctx.fillStyle = css(palette.woodDark);
+  ctx.fillRect(LODGE_ANCHORS.lantern.x - 1.5, LODGE_ANCHORS.lantern.y, 3, ground - LODGE_ANCHORS.lantern.y);
+  ctx.fillStyle = css(palette.ink);
+  ctx.fillRect(LODGE_ANCHORS.lantern.x - 2.5, LODGE_ANCHORS.lantern.y - 4, 5, 8);
+  ctx.fillStyle = css(0xf2d08a);
+  ctx.fillRect(LODGE_ANCHORS.lantern.x - 1.6, LODGE_ANCHORS.lantern.y - 2.6, 3.2, 5);
+  // A few split logs
+  for (let c = 0; c < 3; c++) {
+    ctx.fillStyle = css(0xb88758);
+    ellipse(ctx, 150 + c * 6, ground - 4, 3, 2.8);
+    ctx.fill();
+  }
+  return t.canvas;
+}
+
+export function paintLodge(level = 3): Canvas {
+  if (level <= 1) return paintShack();
   const { w, h, ground } = LODGE_SIZE;
   const t = createPaintTarget(w, h);
   const { ctx } = t;
   const rnd = seededRandom(555);
+
+  // Grand Lodge: a stone tower wing peeks out behind on the left.
+  if (level >= 5) {
+    ctx.fillStyle = css(0x7a736a);
+    ctx.fillRect(2, 44, 34, ground - 58);
+    for (let i = 0; i < 18; i++) {
+      ctx.fillStyle = css(i % 2 ? 0x8d877c : 0x655f57);
+      ellipse(ctx, 6 + (i % 4) * 8, 50 + Math.floor(i / 4) * 10, 3.4, 2.6);
+      ctx.fill();
+    }
+    ctx.fillStyle = css(0x7c3f24);
+    ctx.beginPath();
+    ctx.moveTo(-2, 46);
+    ctx.lineTo(19, 22);
+    ctx.lineTo(40, 46);
+    ctx.closePath();
+    ctx.fill();
+    windowFrame(ctx, { x: 12, y: 50, w: 10, h: 11 });
+  }
 
   // Dock posts reaching into the water (drawn first, behind).
   ctx.fillStyle = css(palette.woodDark);
@@ -754,7 +853,54 @@ export function paintLodge(): Canvas {
   ctx.font = 'bold 6.5px Georgia, serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('LODGE', 101, 85);
+  const sign = LODGE_SIGN[Math.min(level, 5)]!;
+  ctx.font = `bold ${sign.length > 6 ? 5 : 6.5}px Georgia, serif`;
+  ctx.fillText(sign, 101, 85);
+
+  // Marsh Lodge and up: porch railing and flower boxes.
+  if (level >= 3) {
+    ctx.fillStyle = css(palette.woodDark);
+    ctx.fillRect(6, 118, 38, 2.5);
+    for (let x = 10; x < 44; x += 6) ctx.fillRect(x, 118, 1.6, wallBottom - 118);
+    for (const r of [LODGE_ANCHORS.windows[0], LODGE_ANCHORS.windows[1]]) {
+      ctx.fillStyle = css(0x8a4a2c);
+      ctx.fillRect(r.x - 2, r.y + r.h + 2, r.w + 4, 4);
+      for (let i = 0; i < 5; i++) {
+        ctx.fillStyle = css(i % 2 ? 0xf2c46d : 0xd2693a);
+        ctx.beginPath();
+        ctx.arc(r.x + 1 + i * (r.w / 4), r.y + r.h + 1.5, 1.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  // Sporting Club and up: a flag on the ridge and string lights on the porch.
+  if (level >= 4) {
+    ctx.strokeStyle = css(palette.woodDark);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(96, 18);
+    ctx.lineTo(96, 2);
+    ctx.stroke();
+    ctx.fillStyle = css(palette.rust);
+    ctx.beginPath();
+    ctx.moveTo(96, 2);
+    ctx.lineTo(108, 5);
+    ctx.lineTo(96, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = css(0x3e281a, 0.7);
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(6, 85);
+    ctx.quadraticCurveTo(24, 92, 42, 80);
+    ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = css(0xffd98a);
+      ctx.beginPath();
+      ctx.arc(9 + i * 6, 86 + Math.sin(i / 1.6) * 2.5, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
   // Windows
   windowFrame(ctx, LODGE_ANCHORS.windows[0]);
@@ -797,11 +943,12 @@ function windowFrame(ctx: CanvasRenderingContext2D, r: { x: number; y: number; w
 }
 
 /** Warm window light, drawn additively over the lodge at dusk and night. */
-export function paintLodgeGlow(): Canvas {
+export function paintLodgeGlow(level = 3): Canvas {
   const { w, h } = LODGE_SIZE;
   const t = createPaintTarget(w, h);
   const { ctx } = t;
-  for (const r of LODGE_ANCHORS.windows) {
+  if (level >= 4) for (let i = 0; i < 6; i++) softBlob(ctx, 9 + i * 6, 86 + Math.sin(i / 1.6) * 2.5, 5, palette.lampGlow, 0.5, 0.1);
+  for (const r of lodgeAnchors(level).windows) {
     softBlob(ctx, r.x + r.w / 2, r.y + r.h / 2, r.w * 1.6, palette.lampGlow, 0.35, 0.1);
     ctx.fillStyle = css(0xffd98a);
     ctx.fillRect(r.x, r.y, r.w, r.h);

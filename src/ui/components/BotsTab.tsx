@@ -1,11 +1,11 @@
 import { useState } from 'preact/hooks';
 import { BOT_ORDER, BOTS, type BotId } from '../../data/economy';
 import { botPrice } from '../../sim/economy';
-import { formatNumber, formatRate, type Notation } from '../../util/format';
+import { formatRate, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
-import type { HudSnapshot } from '../hudState';
+import type { HudSnapshot, RungSnapshot } from '../hudState';
+import { ReqBar } from './Lodge';
 import { Cost } from './Cost';
-import { Icon } from './Icon';
 import { portrait } from '../portraits';
 import { feedback } from '../feedback';
 import { audio } from '../../audio/AudioEngine';
@@ -17,7 +17,7 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
   return (
     <div class="tab-body">
       <div class="tab-head">
-        <h3>Carving bench</h3>
+        <h3>The Workshop</h3>
         <div class="seg" role="group" aria-label="How many to buy">
           {([1, 10, 'max'] as BuyMode[]).map((m) => (
             <button class={`seg__btn ${mode === m ? 'is-on' : ''}`} onClick={() => setMode(m)}>
@@ -36,13 +36,24 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
 function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSnapshot; controls: GameControls; notation: Notation; mode: BuyMode }) {
   const def = BOTS[id];
   const b = hud.bots[id];
-  if (!b.revealed) {
+  const plan = hud.plans[id];
+  if (!plan.earned) {
     return (
       <div class="bot-card is-locked">
-        <div class="bot-card__portrait"><Icon name="bot" size={26} /></div>
+        <div class="bot-card__portrait" aria-hidden="true">
+          <img class={`bot-portrait bot-portrait--${id} is-sketch`} src={portrait(id)} alt="" />
+        </div>
         <div class="bot-card__info">
-          <h4>???</h4>
-          <p>Earn {formatNumber(def.revealAtCoins, notation)} coins to see this plan.</p>
+          <h4>{def.name} <span class="bot-card__lvl">Plans</span></h4>
+          <p>{def.blurb}</p>
+          {plan.open ? (
+            <>
+              <p class="plan-note">Earn the plans by doing the work yourself:</p>
+              <ReqBar r={plan.req} notation={notation} />
+            </>
+          ) : (
+            <p class="plan-note">The plans open with the {plan.lodgeName}.</p>
+          )}
         </div>
       </div>
     );
@@ -104,7 +115,47 @@ function BotCard({ id, hud, controls, notation, mode }: { id: BotId; hud: HudSna
             </button>
           )}
         </div>
+        {hud.ladder[id].length > 0 && <Ladder rungs={hud.ladder[id]} owned={b.owned} controls={controls} notation={notation} />}
       </div>
+    </div>
+  );
+}
+
+/** The automation ladder for one kind of bot: built rungs, the next one, and what's above. */
+function Ladder({ rungs, owned, controls, notation }: { rungs: RungSnapshot[]; owned: number; controls: GameControls; notation: Notation }) {
+  const next = rungs.find((r) => !r.built);
+  return (
+    <div class="ladder" aria-label="Automation ladder">
+      <span class="ladder__title">Automation ladder</span>
+      <ol class="ladder__rungs">
+        <li class={`rung ${owned > 0 ? 'is-built' : ''}`}>
+          <span class="rung__tick" aria-hidden="true">{owned > 0 ? '✓' : '1'}</span>
+          <span class="rung__name">The first bot</span>
+        </li>
+        {rungs.map((r) => (
+          <li class={`rung ${r.built ? 'is-built' : r === next ? 'is-next' : 'is-later'}`}>
+            <span class="rung__tick" aria-hidden="true">{r.built ? '✓' : r.tier}</span>
+            <span class="rung__name">{r.name}</span>
+            <span class="rung__effect">{r.effect}</span>
+            {r === next && (
+              <div class="rung__next">
+                <p>{r.blurb}</p>
+                <div class="reqs">
+                  {r.reqs.map((q) => <ReqBar r={q} notation={notation} />)}
+                </div>
+                <button
+                  class="btn btn--primary btn--buy"
+                  aria-disabled={!r.affordable}
+                  onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyRung(r.id))}
+                >
+                  <span>{r.ready ? 'Build it' : 'Not ready yet'}</span>
+                  <Cost price={r.price} notation={notation} />
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

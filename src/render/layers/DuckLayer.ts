@@ -1,6 +1,5 @@
 import { Container, Graphics, Sprite } from 'pixi.js';
-import { HUNT } from '../../data/economy';
-import { incomingPatience } from '../../sim/economy';
+import { committedPatience, incomingPatience } from '../../sim/economy';
 import { SPECIES, type SpeciesId } from '../../data/species';
 import type { GameState } from '../../sim/state';
 import { lerpColor, shadeColor } from '../../util/color';
@@ -249,7 +248,8 @@ export class DuckLayer implements Layer {
     this.patience.clear();
     const wait = incomingPatience(state);
     for (const fl of h.incoming) this.patience.set(fl.id, clamp(1 - fl.age / wait, 0, 1));
-    for (const fl of h.committed) this.patience.set(fl.id, clamp(1 - fl.age / HUNT.committedPatience, 0, 1));
+    const hold = committedPatience(state);
+    for (const fl of h.committed) this.patience.set(fl.id, clamp(1 - fl.age / hold, 0, 1));
     const live = new Set<number>();
     for (const fl of h.incoming) {
       live.add(fl.id);

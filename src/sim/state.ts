@@ -1,9 +1,10 @@
+import type { RungId } from '../data/progression';
 import Decimal from 'break_infinity.js';
 import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -153,6 +154,12 @@ export interface GameState {
   acres: number;
   /** Marsh & lodge upgrade levels. */
   upgrades: Record<UpgradeId, number>;
+  /** Lodge level (1 Duck Shack … 5 Grand Lodge). Permanent across seasons. */
+  lodge: number;
+  /** Bot plans earned by hand. Permanent. */
+  plans: Partial<Record<BotId, true>>;
+  /** Automation ladder rungs built this season. */
+  rungs: Partial<Record<RungId, true>>;
   /** Field Guide: birds brought in per species. */
   guide: Partial<Record<SpeciesId, { count: number; firstAt: number }>>;
   /** Unlocked achievement ids → sim time unlocked. */
@@ -272,6 +279,9 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     metrics: { sec: 0, jobs: createJobMetrics() },
     acres: ACRES.start,
     upgrades: Object.fromEntries(UPGRADE_ORDER.map((u) => [u, 0])) as Record<UpgradeId, number>,
+    lodge: 1,
+    plans: {},
+    rungs: {},
     guide: {},
     achievements: {},
     flyway: 'mississippi',

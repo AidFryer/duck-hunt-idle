@@ -5,6 +5,7 @@ import type { UpgradeId } from '../data/upgrades';
 import type { NodeKind } from '../data/workflows';
 import type { PerkId } from '../data/legacy';
 import type { FlywayId } from '../data/flyways';
+import type { RungId } from '../data/progression';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
@@ -13,6 +14,8 @@ export interface GameControls {
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;
   buyUpgrade(id: UpgradeId): boolean;
+  buildLodge(): boolean;
+  buyRung(id: RungId): boolean;
   addCard(kind: NodeKind): boolean;
   removeCard(id: number): boolean;
   connectCards(from: number, to: number): boolean;

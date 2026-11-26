@@ -6,8 +6,8 @@ import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
 import { HintLayer, type HintTarget } from './layers/HintLayer';
 import type { Floater } from './layers/DuckLayer';
-import { HUNT, type HuntStage } from '../data/economy';
-import { incomingPatience, spreadSize } from '../sim/economy';
+import type { HuntStage } from '../data/economy';
+import { incomingPatience, maxCommitted, spreadSize } from '../sim/economy';
 import { LAB_NAME } from '../data/goals';
 import { EffectsLayer } from './layers/EffectsLayer';
 import { FogLayer } from './layers/FogLayer';
@@ -15,6 +15,7 @@ import { LandLayer } from './layers/LandLayer';
 import { OverlayLayer } from './layers/OverlayLayer';
 import { ReedLayer, type ReedClump } from './layers/ReedLayer';
 import { ShoreLayer } from './layers/ShoreLayer';
+import { PropsLayer } from './layers/PropsLayer';
 import { SkyLayer } from './layers/SkyLayer';
 import { WaterLayer } from './layers/WaterLayer';
 import { WeatherLayer } from './layers/WeatherLayer';
@@ -52,6 +53,8 @@ export class MarshScene {
   readonly crew: CrewLayer;
   readonly weather: WeatherLayer;
   readonly hint: HintLayer;
+  private readonly shore: ShoreLayer;
+  private readonly props: PropsLayer;
   /** Show words next to the hint ring (new players). */
   hintLabels = true;
   private readonly clouds: CloudLayer;
@@ -80,7 +83,8 @@ export class MarshScene {
     const land = (this.land = new LandLayer());
     this.water = new WaterLayer(tex);
     this.fx = new EffectsLayer(tex);
-    const shore = new ShoreLayer(tex);
+    const shore = (this.shore = new ShoreLayer(tex));
+    this.props = new PropsLayer(tex);
     const blind = (this.blind = new BlindLayer(tex, this.fx));
     const midReeds = new ReedLayer(tex, 21, midReedClumps, 0.9);
     this.ducks = new DuckLayer(tex, this.fx);
@@ -97,19 +101,19 @@ export class MarshScene {
     const overlay = new OverlayLayer(tex);
 
     // Reflections live inside the water, under shimmer and ripples.
-    this.water.reflections.addChild(land.reflection, this.timber.reflection, shore.reflection, blind.reflection, this.crew.reflection);
+    this.water.reflections.addChild(land.reflection, this.timber.reflection, shore.reflection, this.props.reflection, blind.reflection, this.crew.reflection);
     this.water.surface.addChild(this.fx.rippleView);
 
     // Back-to-front draw order.
     this.hint = new HintLayer(this.ducks);
     this.layers = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, midReeds, blind,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, this.props, midReeds, blind,
       this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, midReeds,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, this.props, midReeds,
       this.ducks, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
   }
@@ -149,7 +153,7 @@ export class MarshScene {
   private pickHint(state: GameState, words: boolean): HintTarget | null {
     const h = state.hunt;
     if (h.committed.length > 0) return { kind: 'flock', id: h.committed[0]!.id, label: words ? 'Tap to shoot!' : '' };
-    const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < HUNT.maxCommitted;
+    const canCall = h.incoming.length > 0 && h.decoys > 0 && h.committed.length < maxCommitted(state);
     const callFlock = { kind: 'flock', id: h.incoming[0]?.id ?? -1, label: words ? 'Tap the flock to call it in' : '' } as const;
     // A flock about to give up beats a bird that can wait on the water.
     if (canCall && h.incoming[0]!.age > incomingPatience(state) * 0.5) return callFlock;
@@ -240,7 +244,18 @@ export class MarshScene {
       case 'flockReturned':
       case 'streak':
       case 'dailyBonus':
+      case 'planEarned':
         return null;
+      case 'lodgeBuilt': {
+        const a = this.layout.anchors.lodge;
+        this.fx.confetti(a.x, a.y - 30 * this.layout.scale, this.layout.scale * 1.3, 60);
+        return { x: a.x, y: a.y - 40 * this.layout.scale };
+      }
+      case 'rungBuilt': {
+        const a = this.layout.anchors.blind;
+        this.fx.confetti(a.x, a.y - 20 * this.layout.scale, this.layout.scale);
+        return a;
+      }
       case 'seasonClosed':
         this.fx.confetti(this.layout.w / 2, this.layout.h * 0.4, this.layout.scale * 1.3, 60);
         return { x: this.layout.w / 2, y: this.layout.h * 0.4 };
@@ -266,6 +281,8 @@ export class MarshScene {
       this.resize(this.layout.w, this.layout.h);
     }
     this.crew.sync(state);
+    this.shore.setLevel(state.lodge);
+    this.props.sync(state);
     this.hint.target = this.chooseHint(state);
     const w = state.environment.weather;
     this.weather.weather = w;

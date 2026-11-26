@@ -38,7 +38,7 @@ export const FLYWAYS: Record<FlywayId, FlywayDef> = {
     twist: 'The home marsh. Wood ducks love the timber.',
     available: true, land: 'bayou', horizon: 0.52,
     farLandTint: 0x000000, nearLandTint: 0x000000, tintAmount: 0,
-    species: { woodDuck: 1.3 }, weather: {},
+    species: { woodDuck: 1.3, cinnamonTeal: 0 }, weather: {},
     scoutPower: 1, returnChance: 0,
   },
   central: {
@@ -47,7 +47,7 @@ export const FLYWAYS: Record<FlywayId, FlywayDef> = {
     twist: 'Big sky: scouts spot flocks twice as well, and flocks that leave often circle back.',
     available: true, land: 'prairie', horizon: 0.58,
     farLandTint: 0xc0a070, nearLandTint: 0x6a6440, tintAmount: 0.35,
-    species: { woodDuck: 0.3, teal: 1.4, pintail: 1.6, gadwall: 1.4, wigeon: 1.3, canvasback: 1.8 },
+    species: { woodDuck: 0.3, teal: 1.4, pintail: 1.6, gadwall: 1.4, wigeon: 1.3, canvasback: 1.8, shoveler: 1.4, redhead: 1.5, cinnamonTeal: 1 },
     weather: { wind: 2, clear: 1.2, fog: 0.6 },
     scoutPower: 2, returnChance: 0.5,
   },

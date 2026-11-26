@@ -1,3 +1,4 @@
+import type { RungId } from '../data/progression';
 import type { BotId, JobId, ProblemKind, Slot, SpeciesId } from '../data/economy';
 import type { UpgradeId } from '../data/upgrades';
 import type { WeatherId } from '../data/weather';
@@ -39,6 +40,9 @@ export type SimEvent =
   | { type: 'workflowChanged' }
   | { type: 'featureUnlocked'; feature: FeatureId }
   | { type: 'streak'; level: number; bonus: number }
+  | { type: 'lodgeBuilt'; level: number }
+  | { type: 'planEarned'; bot: BotId }
+  | { type: 'rungBuilt'; rung: RungId }
   | { type: 'dailyBonus'; coins: number; feathers: number }
   | { type: 'perkBought'; perk: PerkId }
   | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }

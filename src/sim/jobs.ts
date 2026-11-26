@@ -5,6 +5,8 @@ import type { GameState } from './state';
 import { botSpeedMultiplier } from './upgrades';
 import { workflowEval } from './workflow';
 import { clockAt } from './clock';
+import { rungFx } from './progression';
+import { UPGRADE_EFFECTS } from '../data/upgrades';
 
 /** Bots of a type currently placed in a slot (job or bench). */
 export function assigned(state: GameState, bot: BotId, slot: Slot): number {
@@ -39,7 +41,14 @@ export function contribution(state: GameState, bot: BotId, job: JobId): number {
   const w = working(state, bot, job);
   if (w === 0) return 0;
   const b = state.bots[bot];
-  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job) * botSpeedMultiplier(state) * pipelineBoost(state, job);
+  return w * botUnitSpeed(bot, b.level) * milestoneMultiplier(b.owned) * efficiency(bot, job) * botSpeedMultiplier(state) * pipelineBoost(state, job) * jobGear(state, job);
+}
+
+/** Ladder rungs and job-specific upgrades (e.g. the boat house) for a job. */
+export function jobGear(state: GameState, job: JobId): number {
+  const rung = rungFx(state).jobMult[job] ?? 1;
+  const boat = job === 'retrieve' ? 1 + UPGRADE_EFFECTS.boatHouseRetrieve * (state.upgrades.boatHouse ?? 0) : 1;
+  return rung * boat;
 }
 
 /** Workflow chain bonus (and Dawn Rush) for hunt jobs. */
@@ -143,7 +152,7 @@ export function rateTable(state: GameState): RateTable {
       const w = n - (stuckBy.get(`${bot}|${job}`) ?? 0);
       if (w <= 0) continue;
       const pipeline = job !== 'foreman' && job !== 'tinker';
-      const c = w * unit * efficiency(bot, job) * (pipeline ? wf.speed * dawn : 1);
+      const c = w * unit * efficiency(bot, job) * (pipeline ? wf.speed * dawn : 1) * jobGear(state, job);
       if (c <= 0) continue;
       (parts[job] ??= []).push([bot, c]);
       total[job] = (total[job] ?? 0) + c;

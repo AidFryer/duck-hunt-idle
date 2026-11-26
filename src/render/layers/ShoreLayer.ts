@@ -2,7 +2,7 @@ import { Container, Graphics, Sprite } from 'pixi.js';
 import { palette } from '../../data/palette';
 import { lerpColor, shadeColor } from '../../util/color';
 import { clamp, seededRandom } from '../../util/math';
-import { LODGE_ANCHORS, LODGE_SIZE } from '../assets/painters';
+import { LODGE_SIZE, lodgeAnchors } from '../assets/painters';
 import type { TextureLibrary } from '../assets/TextureLibrary';
 import type { FrameContext, Layer, SceneLayout } from '../types';
 
@@ -21,8 +21,11 @@ export class ShoreLayer implements Layer {
   private readonly glowRefl: Sprite;
   private readonly bankRefl: Graphics;
   private lodgeScale = 1;
+  private level = 3;
+  private lodgeX = 0;
+  private ground = 0;
 
-  constructor(tex: TextureLibrary) {
+  constructor(private readonly tex: TextureLibrary) {
     this.lodge = new Sprite(tex.get('lodge'));
     this.lodge.anchor.set(0, LODGE_SIZE.ground / LODGE_SIZE.h);
     this.glow = new Sprite(tex.get('lodgeGlow'));
@@ -79,6 +82,8 @@ export class ShoreLayer implements Layer {
         .stroke({ width: 1 * s, color: rnd() > 0.5 ? palette.reedDry : palette.moss });
     }
 
+    this.lodgeX = lodgeX;
+    this.ground = ground;
     this.lodge.position.set(lodgeX, ground);
     this.lodge.scale.set(this.lodgeScale);
     this.glow.position.copyFrom(this.lodge.position);
@@ -92,14 +97,32 @@ export class ShoreLayer implements Layer {
     this.bankRefl.scale.y = -0.6;
     this.bankRefl.y = (ground + 14 * s) * 1.6;
 
-    l.anchors.chimney = {
-      x: lodgeX + LODGE_ANCHORS.chimneyTop.x * this.lodgeScale,
-      y: ground + (LODGE_ANCHORS.chimneyTop.y - LODGE_SIZE.ground) * this.lodgeScale,
-    };
+    this.anchors = l.anchors;
+    this.placeChimney();
     l.anchors.lodge = { x: lodgeX + lodgeW / 2, y: ground };
     l.anchors.porch = { x: lodgeX + 30 * this.lodgeScale, y: ground + 3 * this.lodgeScale };
     l.anchors.woodpile = { x: lodgeX + 196 * this.lodgeScale, y: ground - 8 * this.lodgeScale };
     l.anchors.lodgeScale = this.lodgeScale;
+  }
+
+  private anchors: SceneLayout['anchors'] | null = null;
+
+  private placeChimney(): void {
+    if (!this.anchors) return;
+    const top = lodgeAnchors(this.level).chimneyTop;
+    this.anchors.chimney = {
+      x: this.lodgeX + top.x * this.lodgeScale,
+      y: this.ground + (top.y - LODGE_SIZE.ground) * this.lodgeScale,
+    };
+  }
+
+  /** Swap the lodge art when it's rebuilt. */
+  setLevel(level: number): void {
+    if (level === this.level) return;
+    this.level = level;
+    this.lodge.texture = this.lodgeRefl.texture = this.tex.get(`lodge.${level}`);
+    this.glow.texture = this.glowRefl.texture = this.tex.get(`lodgeGlow.${level}`);
+    this.placeChimney();
   }
 
   update(f: FrameContext): void {

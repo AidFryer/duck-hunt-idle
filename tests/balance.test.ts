@@ -3,40 +3,40 @@ import { autoplay, formatPace } from '../src/sim/autoplay';
 import { createInitialState } from '../src/sim/state';
 
 /**
- * Plays two hours with a scripted attentive player and checks the pace:
- * fast and rewarding early, stages opening steadily, first prestige in
- * roughly 2–2.5 hours of attentive play.
+ * Plays hours with a scripted attentive player and checks the pace:
+ * the Cabin and first bot after a few minutes of hand hunting, each lodge
+ * level a real goal, and the first season closing after an evening or two.
  * Run `npm run balance` to see the full report.
  */
 describe('balance: hours of play', () => {
   it('hits the pacing targets', () => {
     const s = createInitialState(1, 0);
-    const r = autoplay(s, { seconds: 3 * 3600 });
+    const r = autoplay(s, { seconds: 4.5 * 3600 });
     console.log(`\n=== Pace report ===\n${formatPace(r)}\n`);
-    expect(r.firstBot).not.toBeNull();
-    expect(r.firstBot!).toBeLessThan(2 * 60); // a bot within the first couple of minutes
-    expect(r.coins1k!).toBeLessThan(12 * 60); // early progress still feels rewarding
-    // Stages open one after another, not all at once.
-    const u = s.unlocks;
-    expect(u.upgrades! - u.bots!).toBeGreaterThan(60);
-    expect(u.jobs! - u.guide!).toBeGreaterThan(60);
-    expect(u.workflows!).toBeGreaterThan(30 * 60);
-    expect(u.legacy!).toBeGreaterThan(70 * 60);
-    expect(r.firstStar).not.toBeNull();
-    expect(r.firstStar!).toBeGreaterThan(90 * 60); // takes a while…
-    expect(r.firstStar!).toBeLessThan(170 * 60); // …but well within an evening
-    expect(r.species).toBeGreaterThanOrEqual(5);
-  }, 60_000);
+    const min = (t: number | null | undefined) => (t ?? Infinity) / 60;
+    expect(min(r.firstBot)).toBeGreaterThan(5); // earned by hand first…
+    expect(min(r.firstBot)).toBeLessThan(15); // …but not a slog
+    expect(min(r.lodge[2])).toBeLessThan(12);
+    expect(min(r.lodge[3])).toBeGreaterThan(30);
+    expect(min(r.lodge[3])).toBeLessThan(70);
+    expect(min(r.lodge[4])).toBeGreaterThan(90);
+    expect(min(r.lodge[4])).toBeLessThan(180);
+    expect(min(r.lodge[5])).toBeGreaterThan(150);
+    expect(min(r.lodge[5])).toBeLessThan(260);
+    expect(min(r.firstStar)).toBeGreaterThan(150);
+    expect(min(r.firstStar)).toBeLessThan(260);
+    expect(r.species).toBeGreaterThanOrEqual(9);
+  }, 120_000);
 
   it('a relaxed player still gets there', () => {
-    const r = autoplay(createInitialState(3, 0), { seconds: 4 * 3600, tapsPerSecond: 0.5 });
+    const r = autoplay(createInitialState(3, 0), { seconds: 5 * 3600, tapsPerSecond: 0.5 });
     expect(r.firstStar).not.toBeNull();
-    expect(r.firstStar!).toBeLessThan(200 * 60);
-  }, 60_000);
+    expect(r.firstStar! / 60).toBeLessThan(300);
+  }, 120_000);
 
   it('later seasons are faster than the first', () => {
     const s = createInitialState(4, 0);
-    autoplay(s, { seconds: 4 * 3600, prestige: true });
-    expect(s.stats.seasonsClosed).toBeGreaterThanOrEqual(3);
-  }, 60_000);
+    autoplay(s, { seconds: 6 * 3600, prestige: true });
+    expect(s.stats.seasonsClosed).toBeGreaterThanOrEqual(2);
+  }, 120_000);
 });

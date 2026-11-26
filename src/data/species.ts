@@ -13,7 +13,15 @@ export type SpeciesId =
   | 'pintail'
   | 'canvasback'
   | 'blackDuck'
-  | 'kingEider';
+  | 'kingEider'
+  | 'shoveler'
+  | 'ringNeck'
+  | 'redhead'
+  | 'scaup'
+  | 'bufflehead'
+  | 'hoodedMerganser'
+  | 'cinnamonTeal'
+  | 'harlequin';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
@@ -197,10 +205,115 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     },
     hen: henBase(0x8a5a3a, 0x9a6a42, 0x5a5a4a, 0x6a5a4a),
   },
+  shoveler: {
+    id: 'shoveler', name: 'Northern Shoveler', rarity: 'common',
+    coins: 7, feathers: 1, weight: 42,
+    hours: [[7, 14]], weather: ['clear', 'drizzle'],
+    size: 0.95, flockSize: 1,
+    guide: 'That spoon of a bill sieves the shallows for seeds and tiny critters. Green head, white chest, chestnut sides.',
+    hint: 'Sifts the shallow mudflats where millet grows.',
+    drake: {
+      head: 0x24604a, headSheen: 0x3f8a64, breast: 0xf2eee4, flank: 0xa8532e, back: 0x5a5048,
+      tail: 0x2a2622, bill: 0x2a2622, speculum: 0x2f7a5a,
+    },
+    hen: henBase(0x9a7a58, 0xa48462, 0xc98a3c, 0x2f7a5a),
+  },
+  ringNeck: {
+    id: 'ringNeck', name: 'Ring-necked Duck', rarity: 'uncommon',
+    coins: 9, feathers: 2, weight: 32,
+    hours: [[6, 10], [15, 18]], weather: ['clear', 'fog'],
+    size: 0.9, flockSize: 1,
+    guide: 'Named for a chestnut collar you can almost never see. Look for the white-ringed bill and a peaked purple-black head.',
+    hint: 'Dives for wild celery in quiet water.',
+    drake: {
+      head: 0x2a2234, headSheen: 0x5a3f7a, breast: 0x1e1a18, flank: 0xb8b4ac, back: 0x24201c,
+      tail: 0x1e1a18, bill: 0x6a7a8a, speculum: 0x7a7a7a,
+    },
+    hen: henBase(0x7a6a5a, 0x8a7460, 0x6a7a8a, 0x7a7a7a),
+  },
+  redhead: {
+    id: 'redhead', name: 'Redhead', rarity: 'uncommon',
+    coins: 11, feathers: 2, weight: 26,
+    hours: [[6, 11]], weather: ['wind', 'coldFront'],
+    size: 1.02, flockSize: 1.2,
+    guide: 'A round copper head, black chest and soft grey back. Rafts up by the hundreds on deep open water.',
+    hint: 'A diver. Needs a deep pool to raft on.',
+    drake: {
+      head: 0xb8461e, breast: 0x1e1a18, flank: 0xa8a8a8, back: 0x8a8a8a, tail: 0x2a2622,
+      bill: 0x8aa0b8, speculum: 0x9a9a9a,
+    },
+    hen: henBase(0x9a7a56, 0xa88a68, 0x6a7a8a, 0x9a9a9a),
+  },
+  scaup: {
+    id: 'scaup', name: 'Lesser Scaup', rarity: 'uncommon',
+    coins: 10, feathers: 2, weight: 24,
+    hours: [[7, 13]], weather: ['wind', 'coldFront'],
+    size: 0.92, flockSize: 1.5,
+    guide: 'The "bluebill." Dark at both ends and light in the middle, with a faint purple gloss. Comes to big spreads on open water.',
+    hint: 'Bluebills want a big diver spread out on the open water.',
+    drake: {
+      head: 0x2a2432, headSheen: 0x4a3a6a, breast: 0x1e1a18, flank: 0xe4e0d8, back: 0xb0aca4,
+      tail: 0x1e1a18, bill: 0x8aa0c0, speculum: 0xe4e0d8,
+    },
+    hen: { ...henBase(0x6a5440, 0x7a6450, 0x6a7a8a, 0xe4e0d8), eyePatch: 0xf0ece4 },
+  },
+  bufflehead: {
+    id: 'bufflehead', name: 'Bufflehead', rarity: 'uncommon',
+    coins: 10, feathers: 2, weight: 20,
+    hours: [[7, 15]], weather: ['coldFront', 'clear'],
+    size: 0.72, flockSize: 0.8,
+    guide: 'A tiny diver with a big white bonnet on a glossy head. Pops under and bobs up somewhere else entirely.',
+    hint: 'Little divers follow the cold and like a spread out on open water.',
+    drake: {
+      head: 0x2a3a3a, headSheen: 0x5a3a7a, eyePatch: 0xf4f2ec, breast: 0xf4f2ec, flank: 0xf4f2ec,
+      back: 0x1e1a18, tail: 0x3a3632, bill: 0x6a7080, speculum: 0xf4f2ec, crest: true,
+    },
+    hen: { ...henBase(0x4a4238, 0x7a7068, 0x4a4640, 0xf4f2ec), eyePatch: 0xf0ece4 },
+  },
+  hoodedMerganser: {
+    id: 'hoodedMerganser', name: 'Hooded Merganser', rarity: 'rare',
+    coins: 18, feathers: 3, weight: 10,
+    hours: [[6, 9], [16, 18.5]], weather: ['fog', 'clear'],
+    size: 0.85, flockSize: 0.6,
+    guide: 'Fans a white-and-black hood like a sail. Thin toothed bill for catching minnows in the timber.',
+    hint: 'Shy timber birds. Only a long, patient call coaxes them in.',
+    drake: {
+      head: 0x1e1a18, eyePatch: 0xf4f2ec, breast: 0xf0ece4, flank: 0xb0622e, back: 0x1e1a18,
+      tail: 0x2a2622, bill: 0x1e1a18, speculum: 0xf0ece4, crest: true,
+    },
+    hen: { ...henBase(0x9a6a3e, 0x8a7a6a, 0x6a5a3a, 0xf0ece4), crest: true },
+  },
+  cinnamonTeal: {
+    id: 'cinnamonTeal', name: 'Cinnamon Teal', rarity: 'rare',
+    coins: 15, feathers: 3, weight: 12,
+    hours: [[7, 11], [15, 18]], weather: ['clear'],
+    size: 0.8, flockSize: 0.8,
+    guide: 'A western teal glowing the color of a cinnamon stick, with a bright red eye. A real treat to see on the prairie.',
+    hint: 'A western bird. Rice on the Central flyway might bring one.',
+    drake: {
+      head: 0xa8461e, breast: 0xa8461e, flank: 0x9a3e1a, back: 0x5a3e2a, tail: 0x3a2e24,
+      bill: 0x2a2622, speculum: 0x2f8a5a,
+    },
+    hen: henBase(0x9a7a5a, 0xa48262, 0x4a4640, 0x2f8a5a),
+  },
+  harlequin: {
+    id: 'harlequin', name: 'Harlequin Duck', rarity: 'rare',
+    coins: 24, feathers: 4, weight: 6,
+    hours: [[6, 10]], weather: ['coldFront', 'wind'],
+    size: 0.86, flockSize: 0.5,
+    guide: 'Slate blue with bold white marks and rusty sides, like a painted toy. A mountain-stream bird; seeing one inland is a story to tell.',
+    hint: 'Only a master caller\'s lure brings one this far from the rapids.',
+    drake: {
+      head: 0x3a4a62, eyePatch: 0xf4f2ec, breast: 0x3a4a62, flank: 0xa8522e, back: 0x34425a,
+      tail: 0x1e1a18, bill: 0x4a4a4a, speculum: 0x3a4a8a, faceLines: true, sidePatch: 0x3a4a62,
+    },
+    hen: { ...henBase(0x5a4a40, 0x6a5a4e, 0x4a4a4a, 0x5a4a40), eyePatch: 0xf0ece4 },
+  },
 };
 
 export const SPECIES_ORDER: readonly SpeciesId[] = [
-  'mallard', 'woodDuck', 'teal', 'gadwall', 'wigeon', 'pintail', 'canvasback', 'blackDuck', 'kingEider',
+  'mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck',
+  'redhead', 'scaup', 'bufflehead', 'canvasback', 'hoodedMerganser', 'cinnamonTeal', 'harlequin', 'kingEider',
 ];
 
 export const RARITY_STARS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 };

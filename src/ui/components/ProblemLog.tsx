@@ -58,7 +58,7 @@ export function ProblemLog({ hud, controls, onClose }: { hud: HudSnapshot; contr
               <p class="card__hint">So far the foreman has handled {autoPct}% of fixes.</p>
             </>
           ) : (
-            <p class="card__hint">Hire a Foreman Bot (Bots tab) and it will retry stuck bots for you, with the retry count and wait you choose here.</p>
+            <p class="card__hint">Hire a Foreman Bot (Workshop) and it will retry stuck bots for you, with the retry count and wait you choose here.</p>
           )}
         </section>
 

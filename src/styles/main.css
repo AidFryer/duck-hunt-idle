@@ -136,7 +136,7 @@ button {
     linear-gradient(var(--ui-plankLight), var(--ui-plank));
   border-radius: 6px;
   box-shadow:
-    0 2px 0 var(--c-woodDark),
+    0 1px 3px rgba(40, 26, 14, 0.16),
     0 6px 14px var(--ui-shadow);
   color: var(--c-cream);
   font-family: var(--ui-fontHeading);
@@ -468,7 +468,7 @@ button {
   padding: 10px 14px;
   border-radius: 14px;
   background: var(--c-cream);
-  box-shadow: 0 2px 0 var(--ui-panelShade), 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16), 0 4px 12px rgba(0, 0, 0, 0.08);
   line-height: 1.45;
   font-size: 14.5px;
 }
@@ -530,7 +530,7 @@ button {
   padding: 14px;
   border-radius: 12px;
   background: var(--c-cream);
-  box-shadow: 0 2px 0 var(--ui-panelShade);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .card h3,
@@ -560,7 +560,7 @@ button {
   border: 0;
   border-radius: 10px;
   background: var(--ui-panelShade);
-  box-shadow: 0 3px 0 var(--ui-panelEdge);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   font-weight: 800;
   cursor: pointer;
   transition:
@@ -575,7 +575,7 @@ button {
 
 .btn:active {
   transform: translateY(2px) scale(0.96, 0.94);
-  box-shadow: 0 1px 0 var(--ui-panelEdge);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .btn:focus-visible,
@@ -593,7 +593,7 @@ button {
 .btn--primary {
   background: var(--ui-accent);
   color: var(--c-cream);
-  box-shadow: 0 3px 0 #7a3a1c;
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .btn--primary:hover {
@@ -604,7 +604,7 @@ button {
 .btn.is-current {
   background: var(--c-sageDark);
   color: var(--c-cream);
-  box-shadow: 0 3px 0 #3c4a34;
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .coming-soon {
@@ -633,7 +633,7 @@ button {
   border-radius: 50%;
   background: var(--c-cream);
   color: var(--c-wood);
-  box-shadow: 0 3px 0 var(--ui-panelShade);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   animation: bob 5s ease-in-out infinite;
 }
 
@@ -766,7 +766,7 @@ button {
   border: 0;
   border-radius: 14px;
   background: var(--ui-panelShade);
-  box-shadow: 0 4px 0 var(--ui-panelEdge);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   text-align: left;
   cursor: pointer;
   opacity: 0.72;
@@ -782,19 +782,19 @@ button {
 }
 
 .hunt-btn--decoys.is-ready {
-  box-shadow: 0 4px 0 var(--c-wood);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-btn--call.is-ready {
-  box-shadow: 0 4px 0 var(--c-sageDark);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-btn--shoot.is-ready {
-  box-shadow: 0 4px 0 var(--c-rust);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-btn--retrieve.is-ready {
-  box-shadow: 0 4px 0 var(--c-amber);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-btn.is-hint.is-ready::after {
@@ -988,7 +988,7 @@ button {
 
 .seg__btn.is-on {
   background: var(--c-cream);
-  box-shadow: 0 2px 0 var(--ui-panelEdge);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .bot-card {
@@ -997,7 +997,7 @@ button {
   padding: 12px;
   border-radius: 14px;
   background: var(--c-cream);
-  box-shadow: 0 2px 0 var(--ui-panelShade);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .bot-card.is-locked {
@@ -1270,7 +1270,7 @@ button {
 
 .btn--danger {
   background: #e9c7b4;
-  box-shadow: 0 3px 0 #b5562b;
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   color: #6a2a10;
 }
 
@@ -1851,18 +1851,18 @@ button {
   background:
     linear-gradient(90deg, rgba(107, 74, 47, 0.18), transparent 10px),
     linear-gradient(#fbf6ea, #f3e7cc);
-  box-shadow: 0 2px 0 var(--ui-panelShade), inset 3px 0 0 var(--c-wood);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16), inset 3px 0 0 var(--c-wood);
 }
 
 .guide-card--rare {
-  box-shadow: 0 2px 0 var(--ui-panelShade), inset 3px 0 0 var(--c-rust);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16), inset 3px 0 0 var(--c-rust);
 }
 
 .guide-card--legendary {
   background:
     linear-gradient(90deg, rgba(201, 160, 78, 0.35), transparent 14px),
     linear-gradient(#fff8e4, #f2e2b8);
-  box-shadow: 0 2px 0 var(--ui-panelShade), inset 3px 0 0 var(--c-brass), 0 0 0 2px rgba(201, 160, 78, 0.5);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16), inset 3px 0 0 var(--c-brass), 0 0 0 2px rgba(201, 160, 78, 0.5);
 }
 
 .guide-card__art {
@@ -2400,7 +2400,7 @@ button {
   background:
     radial-gradient(120% 120% at 100% 0%, rgba(242, 196, 109, 0.35), transparent 60%),
     var(--c-cream);
-  box-shadow: 0 2px 0 var(--ui-panelShade);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .season-card__head {
@@ -2430,7 +2430,7 @@ button {
   height: 58px;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, #fff3c4, var(--c-amber));
-  box-shadow: 0 3px 0 #a8722a;
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   line-height: 1;
 }
 
@@ -2841,7 +2841,7 @@ select {
 .hunt-btn--call.is-ready,
 .hunt-btn--shoot.is-ready,
 .hunt-btn--retrieve.is-ready {
-  box-shadow: 0 4px 0 var(--c-wood);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-btn.is-hint.is-ready::after {
@@ -2890,7 +2890,7 @@ select {
 .btn--toggle.is-on,
 .btn.is-current {
   background: var(--c-wood);
-  box-shadow: 0 3px 0 var(--c-woodDark);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 /* ------------------------------------------------------------ stages */
@@ -2948,11 +2948,11 @@ select {
 .chip,
 .clock,
 .icon-btn {
-  box-shadow: 0 2px 0 rgba(30, 20, 12, 0.35);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .title-sign {
-  box-shadow: 0 2px 0 var(--c-woodDark), 0 3px 4px rgba(30, 20, 12, 0.3);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16), 0 3px 4px rgba(30, 20, 12, 0.3);
 }
 
 /* ============================================================ tap the marsh */
@@ -3010,7 +3010,7 @@ select {
   padding: 0 4px;
   border-radius: 999px;
   background: rgba(244, 233, 212, 0.96);
-  box-shadow: 0 2px 0 rgba(30, 20, 12, 0.35);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -3108,7 +3108,7 @@ select {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.25s ease;
-  box-shadow: 0 2px 0 rgba(30, 20, 12, 0.35);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .scene-hint.is-on {
@@ -3235,7 +3235,7 @@ select {
 
 .hunt-step.is-ready {
   background: var(--c-cream);
-  box-shadow: 0 2px 0 var(--c-wood);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
 }
 
 .hunt-status__lodge {
@@ -3374,4 +3374,253 @@ select {
   .clock__weather-name {
     display: none;
   }
+}
+
+/* ============================================================ lodge & workshop */
+
+.lodge-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--c-cream);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.16);
+}
+
+.lodge-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lodge-panel__head h3 {
+  margin: 2px 0 0;
+  font-family: var(--ui-fontHeading);
+  font-size: 19px;
+}
+
+.lodge-panel__next {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ui-textSoft);
+}
+
+.lodge-art {
+  flex: none;
+  border-radius: 10px;
+  background: linear-gradient(#f3dcb4, #e9c79a);
+}
+
+.lodge-panel__what summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--c-wood);
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.lodge-panel__what ul,
+.lodge-card .stage-card__points {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ui-textSoft);
+}
+
+.lodge-card .lodge-art {
+  width: 100%;
+  height: auto;
+  max-width: 260px;
+  margin: 8px auto 0;
+  display: block;
+}
+
+.reqs {
+  display: grid;
+  gap: 6px;
+}
+
+.req {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ui-textSoft);
+}
+
+.req__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.req__tick {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ui-panelEdge);
+  font-size: 10px;
+  color: var(--c-cream);
+}
+
+.req.is-done .req__tick {
+  background: var(--c-sageDark);
+  border-color: var(--c-sageDark);
+}
+
+.req.is-done {
+  color: var(--ui-text);
+}
+
+.req__count {
+  font-variant-numeric: tabular-nums;
+}
+
+.req__bar {
+  grid-column: 1 / -1;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--ui-panelShade);
+  overflow: hidden;
+}
+
+.req__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c-wood);
+  transition: width 0.3s ease;
+}
+
+.req.is-done .req__bar span {
+  background: var(--c-sageDark);
+}
+
+.plan-note {
+  margin: 6px 0 4px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--c-wood);
+}
+
+.bot-portrait.is-sketch {
+  filter: grayscale(1) sepia(0.5) opacity(0.55);
+}
+
+.ladder {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ui-panelEdge);
+}
+
+.ladder__title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-textSoft);
+}
+
+.ladder__rungs {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.rung {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0 8px;
+  font-size: 13px;
+}
+
+.rung__tick {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ui-panelEdge);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ui-textSoft);
+  align-self: center;
+}
+
+.rung.is-built .rung__tick {
+  background: var(--c-sageDark);
+  border-color: var(--c-sageDark);
+  color: var(--c-cream);
+}
+
+.rung__name {
+  font-weight: 800;
+}
+
+.rung__effect {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--ui-textSoft);
+}
+
+.rung.is-later {
+  opacity: 0.55;
+}
+
+.rung.is-later .rung__effect {
+  display: none;
+}
+
+.rung.is-next .rung__tick {
+  border-color: var(--c-wood);
+  color: var(--c-wood);
+}
+
+.rung__next {
+  grid-column: 2;
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 4px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.rung__next p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ui-textSoft);
+}
+
+.rung__next .btn {
+  justify-self: start;
+}
+
+.guide-card__draw {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--c-wood);
+}
+
+.guide-card__draw.is-open {
+  color: var(--c-sageDark);
+}
+
+.moment--plan img {
+  width: 64px;
+  height: 64px;
 }

@@ -48,6 +48,24 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     const meta = (s.meta ?? {}) as Json;
     return { ...s, meta: { ...meta, lastDailyBonus: 'before-v7' }, version: 7 };
   },
+  // v7 → v8 adds the lodge, bot plans and the automation ladder. Players keep
+  // what they'd opened: the lodge level matches their open tabs, and any bot
+  // kind they already own comes with its plans.
+  7: (s) => {
+    const unlocks = (s.unlocks ?? {}) as Record<string, unknown>;
+    const bots = (s.bots ?? {}) as Record<string, { owned?: number }>;
+    let lodge = unlocks.legacy !== undefined ? 5 : unlocks.workflows !== undefined ? 4 : unlocks.jobs !== undefined ? 3 : unlocks.bots !== undefined ? 2 : 1;
+    if (s.silentUnlocks) {
+      // Very old saves never had stages: judge by what they'd earned.
+      const coins = Number((s.stats as Json | undefined)?.lifetimeCoins ?? 0);
+      const crew = Object.values(bots).reduce((a, b) => a + (b?.owned ?? 0), 0);
+      lodge = coins >= 25_000 ? 4 : crew >= 15 ? 3 : coins >= 20 ? 2 : 1;
+    }
+    const plans: Record<string, true> = {};
+    for (const [id, b] of Object.entries(bots)) if ((b?.owned ?? 0) > 0) plans[id] = true;
+    if (lodge >= 2) unlocks.upgrades ??= unlocks.bots;
+    return { ...s, unlocks, lodge, plans, rungs: {}, version: 8 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

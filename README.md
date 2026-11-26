@@ -14,6 +14,8 @@ computers, installs to your home screen, and plays offline.
 ## Features
 
 - **The hunt:** tap the marsh itself: the water to set decoys, a circling flock to call it, ducks over the decoys to shoot, a floating bird to send the dog (keys D / C / S / R on a keyboard). Gus logs every bird at the lodge. Quick taps build a Hunter's Rhythm bonus, and a First Light gift waits each new day.
+- **The lodge grows:** Duck Shack → Trapper's Cabin → Marsh Lodge → Sporting Club → Grand Lodge. Each level is built with birds, species found and coins, and opens new parts of the game.
+- **Earn your crew:** do a job by hand enough times to earn its bot's plans, then carve bots with coins. Each job climbs an **automation ladder** (e.g. Decoy Setter → Spinning-wing Decoys → Decoy Skiff → Floating Rig) you can see on the marsh.
 - **Eight decoy-bots** (Scout, Decoy Setter, Caller, Blind, Robo-Retriever,
   Ledger, Foreman, Tinker), each with its own post and animations.
 - **Job Board:** move bots between jobs, watch throughput, queues and a 60s
@@ -21,7 +23,7 @@ computers, installs to your home screen, and plays offline.
 - **Problems & foremen:** stuck bots, tap-to-fix, and foremen that retry
   with a retry count and backoff you choose; a Problem Log.
 - **Workflows:** tie job cards together with rope for chain bonuses.
-- **Nine species** with a Field Guide, **weather** with a forecast, marsh
+- **Seventeen species** (rarer ducks only visit once you build what draws them) with a Field Guide, **weather** with a forecast, marsh
   upgrades, **20 achievement patches**, and offline progress with a
   "While you were away…" summary.
 - **Prestige:** Close the Season for Flyway Stars, spend them in the Lodge

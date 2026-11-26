@@ -11,9 +11,10 @@ import { advance } from '../src/sim/tick';
 import { addNode, connect, cut, evaluateWorkflow, removeNode, workflowEval } from '../src/sim/workflow';
 import { jobRate } from '../src/sim/jobs';
 import { offlineCapSeconds } from '../src/sim/upgrades';
+import { opened } from './helpers';
 
 function rich(seed = 3): GameState {
-  const s = createInitialState(seed);
+  const s = opened(createInitialState(seed));
   s.currencies.coins = new Decimal(1e12);
   s.currencies.feathers = new Decimal(1e12);
   s.stats.lifetimeCoins = new Decimal(1e9);
@@ -27,7 +28,7 @@ function chain(s: GameState, kinds: Parameters<typeof addNode>[1][]): number[] {
 }
 
 describe('workflows', () => {
-  it('locked until enough coins', () => {
+  it('locked until the Sporting Club is built', () => {
     const s = createInitialState(1);
     expect(addNode(s, 'scout')).toBeNull();
   });
@@ -124,7 +125,7 @@ describe('prestige', () => {
   });
 
   it('stars boost coins and feathers', () => {
-    const s = createInitialState(1);
+    const s = opened(createInitialState(1));
     const base = birdValue(s, 'mallard').coins;
     s.legacy.earned = 4;
     expect(birdValue(s, 'mallard').coins).toBeCloseTo(base * 1.2, 1);

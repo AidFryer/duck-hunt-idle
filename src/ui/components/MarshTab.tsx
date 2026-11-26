@@ -5,6 +5,8 @@ import { KEEPER_NAME } from '../../data/goals';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { HuntPanel } from './HuntPanel';
+import { LodgePanel } from './Lodge';
+import type { Notation } from '../../util/format';
 
 const JUMPS: { id: DayPhaseId; label: string }[] = [
   { id: 'predawn', label: 'Pre-dawn' },
@@ -16,12 +18,13 @@ const JUMPS: { id: DayPhaseId; label: string }[] = [
 
 const SPEEDS = [1, 10, 60];
 
-export function MarshTab({ hud, controls, devTools, tutorial }: { hud: HudSnapshot; controls: GameControls; devTools: boolean; tutorial: ComponentChildren }) {
+export function MarshTab({ hud, controls, devTools, tutorial, notation }: { hud: HudSnapshot; controls: GameControls; devTools: boolean; tutorial: ComponentChildren; notation: Notation }) {
   const [speed, setSpeed] = useState(controls.getTimeScale());
   return (
     <div class="tab-body">
       {tutorial}
       <HuntPanel hud={hud} controls={controls} />
+      {!tutorial && <LodgePanel hud={hud} controls={controls} notation={notation} />}
 
       {!tutorial && <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">

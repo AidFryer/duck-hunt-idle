@@ -12,7 +12,7 @@ export function upgradePrice(id: UpgradeId, level: number): Price {
 
 export function buyUpgrade(state: GameState, id: UpgradeId, events?: EventSink): boolean {
   const lvl = state.upgrades[id] ?? 0;
-  if (lvl >= UPGRADES[id].maxLevel) return false;
+  if (lvl >= UPGRADES[id].maxLevel || state.lodge < UPGRADES[id].lodge) return false;
   const price = upgradePrice(id, lvl);
   if (!canAfford(state, price)) return false;
   state.currencies.coins = state.currencies.coins.sub(price.coins);

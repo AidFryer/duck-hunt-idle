@@ -65,6 +65,10 @@ for (const k of ['lab', 'robo'] as const) {
   recipes[`dog.${k}.tail`] = { paint: () => P.paintDogTail(k), resolution: PAINT_SCALE };
   recipes[`dog.${k}.swim`] = { paint: () => P.paintDogSwim(k), resolution: PAINT_SCALE };
 }
+for (let lv = 1; lv <= 5; lv++) {
+  recipes[`lodge.${lv}`] = { paint: () => P.paintLodge(lv), resolution: PAINT_SCALE };
+  recipes[`lodgeGlow.${lv}`] = { paint: () => P.paintLodgeGlow(lv), resolution: PAINT_SCALE };
+}
 for (let i = 0; i < 4; i++) recipes[`cloud${i}`] = { paint: () => P.paintCloud(i), resolution: PAINT_SCALE };
 for (let i = 0; i < 3; i++) recipes[`reed${i}`] = { paint: () => P.paintReedBlade(i), resolution: PAINT_SCALE };
 for (let i = 0; i < 3; i++) recipes[`leaf${i}`] = { paint: () => P.paintLeaf(i), resolution: PAINT_SCALE };
