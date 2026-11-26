@@ -1,17 +1,14 @@
 name: Deploy to GitHub Pages
 
-# Publishes the game to https://aidfryer.github.io/duck-hunt-idle/
-# GitHub Pages needs a public repository on the free plan, so the deploy
-# is skipped automatically while this repository is private.
+# Builds the game and publishes it to the gh-pages branch, which GitHub Pages
+# serves at https://aidfryer.github.io/duck-hunt-idle/
 on:
   push:
     branches: [main, claude/duck-hunt-idle-game-05ie4u]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
@@ -21,9 +18,6 @@ jobs:
   deploy:
     if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,9 +27,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - run: touch dist/.nojekyll
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          force_orphan: true
+          commit_message: Deploy ${{ github.sha }}

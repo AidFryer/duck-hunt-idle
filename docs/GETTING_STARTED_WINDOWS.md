@@ -1,9 +1,8 @@
 # Getting started on Windows (PowerShell)
 
-> **Just want to play?** You don't need any of this. The latest build is
-> published as a private claude.ai page you can open on your phone:
-> <https://claude.ai/artifact/22yXQskjPm1t3hQALT4TGe>. It's updated after
-> each phase. This guide is only for running and editing the code on a PC.
+> **Just want to play?** You don't need any of this. Open
+> <https://aidfryer.github.io/duck-hunt-idle/> on any phone or computer.
+> This guide is only for running and editing the code on a PC.
 
 This guide assumes you've never used Git before. Copy each command into
 **PowerShell** and press Enter.
@@ -72,19 +71,13 @@ npm install
 npm run dev
 ```
 
-## 5. Optional: a public web link (GitHub Pages)
+## 5. Publishing updates
 
-The repository has a workflow (`.github/workflows/pages.yml`) that publishes
-the game to `https://aidfryer.github.io/duck-hunt-idle/` on every push. On
-GitHub's free plan, Pages only works for **public** repositories, so the
-workflow skips itself while the repo is private. To turn it on (works from a
-phone browser too):
-
-1. Open <https://github.com/AidFryer/duck-hunt-idle/settings>, scroll to
-   **Danger Zone** → **Change visibility** → **Make public**.
-2. Open **Settings → Pages** and set **Source** to **GitHub Actions**.
-3. Open the **Actions** tab, pick **Deploy to GitHub Pages**, and press
-   **Run workflow**.
+The public site updates itself. Every push to the
+`claude/duck-hunt-idle-game-05ie4u` branch runs a GitHub Actions workflow that
+tests the game, builds it and publishes it to
+<https://aidfryer.github.io/duck-hunt-idle/> within a couple of minutes. You
+can watch it in the repository's **Actions** tab.
 
 ## Handy Git commands
 

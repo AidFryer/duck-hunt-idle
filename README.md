@@ -1,82 +1,110 @@
 # Duck Hunt Idle
 
 A cozy automation idle game. You inherit a run-down duck marsh and an old
-hunting lodge, then carve little wooden decoy-bots to run the place while you
-sip coffee in the blind at dawn.
+hunting lodge, hunt it by hand, then carve little wooden decoy-bots to run the
+place: job boards, workflow chains, foremen that handle problems, and a lodge
+that grows into a famous destination. The marsh runs itself while you sip
+coffee in the blind at dawn.
+
+**Play it:** <https://aidfryer.github.io/duck-hunt-idle/>. Works on phones and
+computers, installs to your home screen, and plays offline.
 
 > The game's name lives in one place: `GAME_TITLE` in `src/config.ts`.
 
-**Play the latest build:** <https://claude.ai/artifact/22yXQskjPm1t3hQALT4TGe>
-(private to the repo owner; built with `npm run build:artifact`).
+## Features
+
+- **The hunt:** Set Decoys → Call → Shoot → Retrieve → Log, by hand at first.
+- **Eight decoy-bots** (Scout, Decoy Setter, Caller, Blind, Robo-Retriever,
+  Ledger, Foreman, Tinker), each with its own post and animations.
+- **Job Board:** move bots between jobs, watch throughput, queues and a 60s
+  sparkline per job.
+- **Problems & foremen:** stuck bots, tap-to-fix, and foremen that retry
+  with a retry count and backoff you choose; a Problem Log.
+- **Workflows:** tie job cards together with rope for chain bonuses.
+- **Nine species** with a Field Guide, **weather** with a forecast, marsh
+  upgrades, **20 achievement patches**, and offline progress with a
+  "While you were away…" summary.
+- **Prestige:** Close the Season for Flyway Stars, spend them in the Lodge
+  Legacy tree, and move on to the Central Flyway.
+- All art and sound are **generated in code**. There are no image or audio files.
 
 ## Run it locally
 
-You need **Node.js 22 or newer** (the "LTS" download from nodejs.org is fine).
+You need **Node.js 22 or newer**. New to this on Windows? See
+**[docs/GETTING_STARTED_WINDOWS.md](docs/GETTING_STARTED_WINDOWS.md)**.
 
 ```powershell
-npm install      # first time only: downloads the libraries
-npm run dev      # starts the game at http://localhost:5173
+npm install      # first time only
+npm run dev      # http://localhost:5173
 ```
-
-Other commands:
 
 | Command | What it does |
 |---|---|
-| `npm test` | Runs the unit tests for the simulation |
-| `npm run typecheck` | Checks the TypeScript for mistakes |
-| `npm run build` | Makes a production build in `dist/` |
-| `npm run preview` | Serves the production build locally |
-| `npm run balance` | Plays two simulated hours with a scripted player and prints the pacing report |
-| `npm run build:artifact` | Production build plus `dist/artifact.html` for the claude.ai play page |
+| `npm run dev` | Start the game with live reload |
+| `npm test` | Run the unit tests (sim, economy, saves, balance) |
+| `npm run balance` | Play two simulated hours and print the pacing report |
+| `npm run typecheck` | Check the TypeScript |
+| `npm run build` | Production build in `dist/` (PWA included) |
+| `npm run preview` | Serve the production build locally |
+| `npm run build:artifact` | Build plus `dist/artifact.html` for the claude.ai play page |
+| `npm run cap:android` / `cap:ios` | Build and open the native app projects (see below) |
 
-New to Git on Windows? See **[docs/GETTING_STARTED_WINDOWS.md](docs/GETTING_STARTED_WINDOWS.md)**.
+## Deploying
+
+Every push to `main` or `claude/duck-hunt-idle-game-05ie4u` runs
+`.github/workflows/pages.yml`: it tests, builds and publishes `dist/` to the
+`gh-pages` branch, which GitHub Pages serves at the link above. A separate CI
+workflow type-checks, tests and builds every push.
+
+## Phone apps
+
+The game is a PWA: open the link on a phone and choose **Install app** (in
+Settings, on Android/Chrome) or **Share → Add to Home Screen** (iPhone).
+To build real Play Store / App Store apps with Capacitor, see
+**[docs/MOBILE_APPS.md](docs/MOBILE_APPS.md)**.
 
 ## How the code is organised
 
 ```
 src/
   config.ts        GAME_TITLE and global constants
-  main.ts          boots the sim, the renderer and the HUD
-  data/            ALL design/balance data: palette tokens, day cycle, (later) bots, species, costs
-  sim/             pure TypeScript game simulation — no Pixi, no DOM; fixed 10 ticks/sec; unit tested
+  main.ts          boots the sim, renderer, HUD, audio, saves and offline catch-up
+  data/            ALL design & balance data: palette, day cycle, economy, species,
+                   weather, upgrades, achievements, workflows, legacy, flyways, goals
+  sim/             pure TypeScript simulation — no Pixi, no DOM; fixed 10 ticks/sec
   render/          PixiJS marsh scene; reads sim state, never writes it
-    assets/        procedural textures behind a TextureLibrary (swap in hand-drawn art by key)
-    layers/        sky, clouds, land, water, shore, blind, reeds, ducks, fog, effects, overlay
-  ui/              Preact HUD (top bar, tabs, panels)
-  util/            math & color helpers
-tests/             Vitest specs
+    assets/        procedural textures behind a TextureLibrary (swap in real art by key)
+    layers/        sky, clouds, land, water, shore, plots, timber, blind, crew,
+                   reeds, ducks, fog, effects, weather, overlay
+  audio/           procedural Web Audio (ambience, effects, music)
+  ui/              Preact HUD: tabs, cards, drawers, tutorial, feedback
+  app/             saves, preferences, PWA install
+tests/             Vitest specs, including the two-hour balance test
 ```
 
 Rules the code follows:
 
-- The **simulation is separate from rendering**. `src/sim` can run headless
-  (tests, offline progress) and never imports Pixi or touches the DOM.
-- **No magic numbers in logic** — tunable values live in `src/data`.
-- All art is **drawn in code** (Canvas 2D / Pixi Graphics), so the game ships
-  with zero image files. Every texture is requested by key from
-  `TextureLibrary`, so real sprites can replace any of them later.
+- The **simulation is separate from rendering**. `src/sim` runs headless (tests,
+  offline progress, the balance autoplayer) and never touches Pixi or the DOM.
+- **No magic numbers in logic.** Tunable values live in `src/data`.
+- Saves are **versioned with migrations** (`src/sim/save.ts`), autosave every
+  15 seconds and when the page is hidden, and export/import as a base64 code.
+- Every texture is requested by key from `TextureLibrary`, so hand-drawn
+  sprites can replace any procedural art without touching game code.
 
 ## Balance
 
 `tests/balance.test.ts` plays two hours with a scripted attentive player
-(`src/sim/autoplay.ts`) and fails if the pace drifts. Current numbers:
-first bot within seconds, 1K coins in about 5 minutes, first Flyway Star in
-about an hour, and later seasons in about 20 minutes. `npm run balance`
-prints the full report.
-
-## Audio
-
-All sound is synthesized live with the Web Audio API (`src/audio/`): wind,
-water, crickets, rain and distant quacks; duck calls, soft pops, splashes,
-wooden clicks and chimes; and gentle generated music. It starts on the first
-tap and has separate Music / Marsh sounds / Effects sliders in Settings.
+(`src/sim/autoplay.ts`) and fails if the pace drifts: first bot within
+seconds, 1K coins in about 5 minutes, first Flyway Star in about an hour,
+later seasons in about 20 minutes.
 
 ## Build status
 
-- [x] Phase 1: scaffold, palette, animated marsh (day cycle, water, reeds, fog, flocks), responsive layout
+- [x] Phase 1: scaffold and animated marsh scene
 - [x] Phase 2: core loop (manual hunt, currencies, saves, first bots)
-- [x] Phase 3: automation (job board, flock queue, exceptions, foremen)
+- [x] Phase 3: automation (job board, flock queue, problems, foremen)
 - [x] Phase 4: species, weather, upgrades, achievements, offline progress
-- [x] Phase 5: workflows and prestige (Central Flyway)
+- [x] Phase 5: workflows, prestige and the Central Flyway
 - [x] Phase 6: polish, audio, tutorial, balancing
-- [ ] Phase 7: PWA, GitHub Pages deploy, Capacitor
+- [x] Phase 7: PWA, GitHub Pages deploy, Capacitor

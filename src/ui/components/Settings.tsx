@@ -1,6 +1,8 @@
 import { useState } from 'preact/hooks';
 import type { Prefs } from '../../app/prefs';
 import type { GameControls } from '../controls';
+import { installState, promptInstall } from '../../app/pwa';
+import { useStore } from '../store';
 
 export function Settings({ prefs, controls, onPrefs, onClose }: {
   prefs: Prefs;
@@ -11,6 +13,7 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ text: string; tone: 'good' | 'bad' } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const install = useStore(installState);
 
   const doExport = async () => {
     const c = controls.exportSave();
@@ -101,6 +104,20 @@ export function Settings({ prefs, controls, onPrefs, onClose }: {
             />
           </label>
         </section>
+
+        {!install.installed && (install.canInstall || install.ios) && (
+          <section class="drawer__section">
+            <h4>Play like an app</h4>
+            {install.canInstall ? (
+              <>
+                <p class="card__hint">Install the game to your home screen. It opens full-screen and works offline.</p>
+                <button class="btn btn--primary" onClick={() => void promptInstall()}>Install app</button>
+              </>
+            ) : (
+              <p class="card__hint">On iPhone or iPad: tap the Share button in Safari, then "Add to Home Screen". It opens full-screen and works offline.</p>
+            )}
+          </section>
+        )}
 
         <section class="drawer__section">
           <h4>Your save</h4>

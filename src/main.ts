@@ -38,6 +38,7 @@ import type { GameControls } from './ui/controls';
 import { feedback } from './ui/feedback';
 import { snapshot } from './ui/hudState';
 import { Store } from './ui/store';
+import { setupPwa } from './app/pwa';
 import { audio, type Sfx } from './audio/AudioEngine';
 import { clockAt, duckActivityAt } from './sim/clock';
 import { computeSkyState } from './render/skyState';
@@ -45,6 +46,7 @@ import { formatNumber } from './util/format';
 
 document.title = GAME_TITLE;
 applyCssTokens();
+setupPwa();
 
 // --- Preferences & save -----------------------------------------------------
 const prefs = new Store<Prefs>(loadPrefs());

@@ -11,9 +11,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:artifact": "npm run build && node scripts/build-artifact.mjs",
-    "balance": "vitest run tests/balance.test.ts"
+    "balance": "vitest run tests/balance.test.ts",
+    "cap:sync": "npm run build && npx cap sync",
+    "cap:android": "npm run cap:sync && npx cap open android",
+    "cap:ios": "npm run cap:sync && npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.3",
+    "@capacitor/core": "^8.6.3",
+    "@capacitor/ios": "^8.6.3",
     "@fontsource/nunito": "^5.3.0",
     "@fontsource/zilla-slab": "^5.3.0",
     "break_infinity.js": "^2.2.0",
@@ -22,10 +28,13 @@
     "preact": "^11.2.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.3",
     "@preact/preset-vite": "^2.10.6",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.2"
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.2",
+    "workbox-window": "^7.4.1"
   },
   "engines": {
     "node": ">=22.12.0"
