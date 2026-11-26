@@ -128,8 +128,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
 };
 
 export const UPGRADE_ORDER: readonly UpgradeId[] = [
-  'weathervane', 'nestBoxes', 'decoyQuality', 'coffee', 'millet',
-  'rice', 'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
+  'weathervane', 'nestBoxes', 'decoyQuality', 'coffee',
+  'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
   'deepPool', 'guestDock', 'smokehouse', 'cot',
   'carvingShed', 'cornStubble', 'winterWheat', 'roostPond',
 ];
@@ -163,8 +163,6 @@ export const UPGRADE_EFFECTS = {
 /** Species weight multipliers per upgrade level: weight × (1 + k × level). */
 export const UPGRADE_SPECIES: Partial<Record<UpgradeId, Partial<Record<SpeciesId, number>>>> = {
   timber: { woodDuck: 0.8, mallard: 0.15, blackDuck: 0.2 },
-  rice: { pintail: 0.6, teal: 0.5 },
-  millet: { gadwall: 0.6, shoveler: 0.6 },
   nestBoxes: { woodDuck: 0.6 },
   celeryBeds: { wigeon: 0.5, ringNeck: 0.5, canvasback: 0.4 },
   deepPool: { redhead: 0.5, canvasback: 0.4, scaup: 0.4, bufflehead: 0.3 },

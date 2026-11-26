@@ -3778,3 +3778,69 @@ select {
   font: inherit;
   color: var(--ui-text);
 }
+
+/* ============================================================ food plots */
+
+.plots {
+  display: grid;
+  gap: 10px;
+}
+
+.plot-card {
+  display: block;
+}
+
+.plot-card__info h4 {
+  margin: 0 0 4px;
+}
+
+.plot-card__info p {
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--ui-textSoft);
+}
+
+.crop-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.crop-btn {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-panelEdge);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  font: inherit;
+  text-align: left;
+  color: var(--ui-text);
+  cursor: pointer;
+}
+
+.crop-btn strong {
+  font-size: 13.5px;
+}
+
+.crop-btn span {
+  font-size: 11.5px;
+  color: var(--ui-textSoft);
+}
+
+.crop-btn.is-on {
+  border-color: var(--c-sageDark);
+  background: var(--c-cream);
+}
+
+.crop-btn[aria-disabled='true'] {
+  opacity: 0.6;
+}
+
+.plot-note {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ui-textSoft);
+}

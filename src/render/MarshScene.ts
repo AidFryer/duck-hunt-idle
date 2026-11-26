@@ -14,6 +14,7 @@ import { OverlayLayer } from './layers/OverlayLayer';
 import { ReedLayer, type ReedClump } from './layers/ReedLayer';
 import { ShoreLayer } from './layers/ShoreLayer';
 import { PropsLayer } from './layers/PropsLayer';
+import { plotCount } from '../data/crops';
 import { LodgeLifeLayer } from './layers/LodgeLifeLayer';
 import { SkyLayer } from './layers/SkyLayer';
 import { WaterLayer } from './layers/WaterLayer';
@@ -223,6 +224,11 @@ export class MarshScene {
       case 'planEarned':
       case 'goldenShot':
         return null;
+      case 'cropPlanted': {
+        const at = { x: this.layout.w * (0.3 + e.plot * 0.19), y: this.layout.horizon };
+        this.fx.confetti(at.x, at.y, this.layout.scale * 0.8, 20);
+        return at;
+      }
       case 'lodgeBuilt': {
         const a = this.layout.anchors.lodge;
         this.fx.confetti(a.x, a.y - 30 * this.layout.scale, this.layout.scale * 1.3, 60);
@@ -239,7 +245,6 @@ export class MarshScene {
       case 'upgradeBought': {
         const a = this.layout.anchors;
         const at = e.upgrade === 'timber' ? { x: a.lodge.x + 80 * this.layout.scale, y: a.decoyCenter.y - 40 * this.layout.scale }
-          : e.upgrade === 'rice' || e.upgrade === 'millet' ? { x: this.layout.w * (e.upgrade === 'rice' ? 0.75 : 0.35), y: this.layout.horizon }
           : e.upgrade === 'lodgeRooms' || e.upgrade === 'cot' ? a.lodge
           : e.upgrade === 'coffee' || e.upgrade === 'blinds' ? a.blind
           : a.decoyCenter;
@@ -265,7 +270,7 @@ export class MarshScene {
     const w = state.environment.weather;
     this.weather.weather = w;
     for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;
-    this.plots.setLevels(state.upgrades.rice ?? 0, state.upgrades.millet ?? 0);
+    this.plots.setPlots(state.plots, plotCount(state.lodge));
     this.timber.setLevel(state.upgrades.timber ?? 0);
     this.fx.steamBoost = 1 + (state.upgrades.coffee ?? 0) * 0.35;
   }

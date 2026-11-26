@@ -1,3 +1,4 @@
+import type { CropId } from '../data/crops';
 import type { RungId } from '../data/progression';
 import type { BotId, JobId, ProblemKind, Slot, SpeciesId } from '../data/economy';
 import type { UpgradeId } from '../data/upgrades';
@@ -42,6 +43,7 @@ export type SimEvent =
   | { type: 'featureUnlocked'; feature: FeatureId }
   | { type: 'streak'; level: number; bonus: number }
   | { type: 'lodgeBuilt'; level: number }
+  | { type: 'cropPlanted'; plot: number; crop: CropId }
   | { type: 'planEarned'; bot: BotId }
   | { type: 'rungBuilt'; rung: RungId }
   | { type: 'dailyBonus'; coins: number; feathers: number }

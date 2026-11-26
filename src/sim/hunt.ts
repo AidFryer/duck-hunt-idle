@@ -5,6 +5,7 @@ import { checkAchievements, checkUnlocks } from './achievements';
 import { clockAt } from './clock';
 import { birdValue, botReliability, committedPatience, extraFlockSize, flockDraw, incomingPatience, maxCommitted, maxIncoming, shotFraction, spreadSize } from './economy';
 import { checkPlans } from './progression';
+import { stepCrops } from './crops';
 import { UPGRADE_EFFECTS } from '../data/upgrades';
 import { FLYWAYS } from '../data/flyways';
 import { workflowEval } from './workflow';
@@ -274,6 +275,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   stepGround(state, 'marsh', dt, activity, events);
   if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
   stepGolden(state, dt, activity, events);
+  stepCrops(state, dt);
 
   // Gus keeps the ledger himself at a gentle pace.
   h.keeperProgress = Math.min(1, h.keeperProgress + LEDGER.keeperRate * dt);

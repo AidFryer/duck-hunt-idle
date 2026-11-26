@@ -10,6 +10,7 @@ import {
   type CounterId, type Draw, type LodgeLevel, type RungEffect, type RungId,
 } from '../data/progression';
 import type { SpeciesId } from '../data/species';
+import { cropGrown } from './crops';
 import type { EventSink } from './events';
 import type { GameState } from './state';
 
@@ -197,6 +198,7 @@ export function rungFx(s: GameState, g: GroundId = 'marsh'): Fx {
 function drawMet(s: GameState, d: Draw): boolean {
   if ('upgrade' in d) return (s.upgrades[d.upgrade] ?? 0) > 0;
   if ('rung' in d) return hasRung(s, d.rung);
+  if ('crop' in d) return cropGrown(s, d.crop);
   return d.flyway.includes(s.flyway);
 }
 

@@ -30,7 +30,7 @@ describe('species & field guide', () => {
   it('a mixed bag of species arrives over a long day', () => {
     const s = rich(7);
     s.hunt.decoys = HUNT.baseSpreadSize;
-    s.upgrades.millet = 1;
+    s.plots[0] = { crop: 'millet', growth: 1 };
     s.upgrades.nestBoxes = 1;
     const ev: SimEvent[] = [];
     advance(s, 1800, 0.5, ev);
@@ -197,5 +197,21 @@ describe('new flyways', () => {
     expect(speciesWeights(s, 10).longtail).toBe(0);
     s.flyway = 'atlantic';
     expect(speciesWeights(s, 10).longtail).toBeGreaterThan(0);
+  });
+});
+
+describe('food plots', () => {
+  it('crops depend on the flyway, grow in, and draw their birds', async () => {
+    const { plantCrop } = await import('../src/sim/crops');
+    const s = opened(createInitialState(12));
+    s.currencies.coins = new Decimal(1e6);
+    s.currencies.feathers = new Decimal(1e6);
+    expect(plantCrop(s, 0, 'corn')).toBe(false); // corn is a Central crop
+    expect(plantCrop(s, 0, 'millet')).toBe(true);
+    expect(speciesWeights(s, 10).gadwall).toBe(0); // not grown in yet
+    advance(s, 120, 0.5, []);
+    expect(speciesWeights(s, 10).gadwall).toBeGreaterThan(0);
+    s.flyway = 'central';
+    expect(plantCrop(s, 1, 'corn')).toBe(true);
   });
 });

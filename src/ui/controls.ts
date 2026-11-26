@@ -6,6 +6,7 @@ import type { NodeKind } from '../data/workflows';
 import type { PerkId } from '../data/legacy';
 import type { FlywayId } from '../data/flyways';
 import type { RungId } from '../data/progression';
+import type { CropId } from '../data/crops';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
@@ -18,6 +19,7 @@ export interface GameControls {
   buyUpgrade(id: UpgradeId): boolean;
   buildLodge(): boolean;
   setProfile(name: string, avatar: string): void;
+  plantCrop(plot: number, crop: CropId): boolean;
   buyRung(id: RungId): boolean;
   addCard(kind: NodeKind): boolean;
   removeCard(id: number): boolean;

@@ -7,6 +7,7 @@ import { rand, type GameState } from './state';
 import { FLYWAYS } from '../data/flyways';
 import { workflowEval } from './workflow';
 import { rungFx, speciesAvailable } from './progression';
+import { cropSpeciesMult } from './crops';
 
 function inHours(hour: number, windows: readonly [number, number][]): boolean {
   return windows.some(([a, b]) => hour >= a && hour < b);
@@ -33,6 +34,7 @@ export function speciesWeights(state: GameState, hour: number, g: GroundId = 'ma
     }
     if (id === 'kingEider' && state.legacy.perks.legendHunter) v *= 3;
     v *= FLYWAYS[state.flyway].species[id] ?? 1;
+    v *= cropSpeciesMult(state, id);
     for (const [u, mods] of Object.entries(UPGRADE_SPECIES)) {
       const k = mods?.[id];
       if (k) v *= 1 + k * (state.upgrades[u as UpgradeId] ?? 0);

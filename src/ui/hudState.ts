@@ -27,6 +27,8 @@ import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
 import { successRate, throughput } from '../sim/metrics';
 import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
 import type { GameState, Problem } from '../sim/state';
+import { CROPS, cropsFor, plotCount, type CropId } from '../data/crops';
+import { canPlant, cropPrice } from '../sim/crops';
 import { COUNTER_LABEL, PLANS, RUNGS, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
 import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesNeeds } from '../sim/progression';
 
@@ -184,6 +186,12 @@ export interface HudSnapshot {
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string }[];
   lodge: LodgeSnapshot;
   profile: { name: string; avatar: string };
+  plots: {
+    open: number;
+    /** Lodge that opens the next plot (null when all four are open). */
+    nextLodgeName: string | null;
+    list: { crop: CropId | null; growth: number; options: { crop: CropId; price: Price; affordable: boolean }[] }[];
+  };
   plans: Record<BotId, PlanSnapshot>;
   ladder: Record<BotId, RungSnapshot[]>;
   offlineHours: number;
@@ -323,6 +331,7 @@ function rungSnap(state: GameState, id: RungId): RungSnapshot {
 function drawLabel(d: Draw): string {
   if ('upgrade' in d) return UPGRADES[d.upgrade].name;
   if ('rung' in d) return RUNGS[d.rung].name;
+  if ('crop' in d) return `${d.crop.map((c) => CROPS[c].name).join(' or ')} (food plot)`;
   return d.flyway.map((f) => FLYWAYS[f].name).join(' or ');
 }
 
@@ -510,6 +519,15 @@ export function snapshot(state: GameState): HudSnapshot {
     }),
     lodge: lodgeSnap(state),
     profile: { ...state.profile },
+    plots: {
+      open: plotCount(state.lodge),
+      nextLodgeName: plotCount(state.lodge) < 4 ? lodgeDef(Math.max(2, state.lodge + 1)).name : null,
+      list: state.plots.slice(0, plotCount(state.lodge)).map((p, i) => ({
+        crop: p.crop,
+        growth: p.growth,
+        options: cropsFor(state.flyway).map((c) => ({ crop: c, price: cropPrice(c, i), affordable: canPlant(state, i, c) })),
+      })),
+    },
     plans: Object.fromEntries(BOT_ORDER.map((id) => [id, planSnap(state, id)])) as Record<BotId, PlanSnapshot>,
     ladder: Object.fromEntries(BOT_ORDER.map((id) => [id, ladderFor(id).map((r) => rungSnap(state, r.id))])) as Record<BotId, RungSnapshot[]>,
     offlineHours: offlineCapSeconds(state) / 3600,

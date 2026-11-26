@@ -8,6 +8,7 @@ import type { FeatureId } from './features';
 import type { FlywayId } from './flyways';
 import type { SpeciesId } from './species';
 import type { UpgradeId } from './upgrades';
+import type { CropId } from './crops';
 
 // ---------------------------------------------------------------- counters
 
@@ -66,7 +67,8 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     birds: 150, species: 2, coins: 600, feathers: 80, opens: ['bots', 'upgrades'],
     points: [
       'The Workshop: do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins.',
-      'More upgrades: the Coffee Pot and millet food plots.',
+      'Your first food plot: plant millet and more on the far bank. What grows depends on the flyway.',
+      'More upgrades, like the Coffee Pot.',
     ],
   },
   {
@@ -76,7 +78,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     points: [
       'Ledger Bot plans, so Gus gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
-      'New upgrades: rice, flooded timber, wild celery, the boat house, lantern posts and more.',
+      'A second food plot, plus flooded timber, wild celery, the boat house, lantern posts and more.',
     ],
   },
   {
@@ -329,23 +331,23 @@ export function ladderFor(bot: BotId): RungDef[] {
 
 // ---------------------------------------------------------------- species draws
 
-export type Draw = { upgrade: UpgradeId } | { rung: RungId } | { flyway: readonly FlywayId[] };
+export type Draw = { upgrade: UpgradeId } | { rung: RungId } | { flyway: readonly FlywayId[] } | { crop: readonly CropId[] };
 
 /** What a species needs before it will visit at all. Starter birds need nothing. */
 export const SPECIES_DRAW: Partial<Record<SpeciesId, readonly Draw[]>> = {
-  gadwall: [{ upgrade: 'millet' }],
-  shoveler: [{ upgrade: 'millet' }],
+  gadwall: [{ crop: ['millet'] }],
+  shoveler: [{ crop: ['millet'] }],
   woodDuck: [{ upgrade: 'nestBoxes' }],
   wigeon: [{ upgrade: 'celeryBeds' }],
   ringNeck: [{ upgrade: 'celeryBeds' }],
-  pintail: [{ upgrade: 'rice' }],
+  pintail: [{ crop: ['rice', 'milo'] }],
   blackDuck: [{ upgrade: 'timber' }],
   redhead: [{ upgrade: 'deepPool' }],
   canvasback: [{ upgrade: 'deepPool' }, { upgrade: 'celeryBeds' }],
   scaup: [{ rung: 'decoySkiff' }],
   bufflehead: [{ rung: 'decoySkiff' }],
   hoodedMerganser: [{ upgrade: 'timber' }, { rung: 'longCall' }],
-  cinnamonTeal: [{ upgrade: 'rice' }, { flyway: ['central', 'pacific'] }],
+  cinnamonTeal: [{ crop: ['rice', 'milo'] }, { flyway: ['central', 'pacific'] }],
   eurasianWigeon: [{ upgrade: 'celeryBeds' }, { flyway: ['pacific'] }],
   longtail: [{ upgrade: 'deepPool' }, { flyway: ['atlantic'] }],
   harlequin: [{ rung: 'lureMaster' }],

@@ -76,6 +76,14 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v10 → v11 adds the player profile (defaults fill it in).
   10: (s) => ({ ...s, version: 11 }),
+  // v11 → v12 turns the Rice and Millet upgrades into planted food plots.
+  11: (s) => {
+    const up = (s.upgrades ?? {}) as Record<string, number>;
+    const plots: { crop: string | null; growth: number }[] = [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 }));
+    let i = 0;
+    for (const c of ['millet', 'rice']) if ((up[c] ?? 0) > 0 && i < 4) plots[i++] = { crop: c, growth: 1 };
+    return { ...s, plots, version: 12 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

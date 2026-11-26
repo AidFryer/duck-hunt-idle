@@ -24,6 +24,7 @@ import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression
 import { buzz, setHaptics } from './app/haptics';
 import { installState } from './app/pwa';
 import { NAME_MAX } from './data/avatars';
+import { plantCrop } from './sim/crops';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
@@ -430,6 +431,11 @@ const controls: GameControls = {
     updatePrefs({ ...prefs.get(), ground: next });
     renderer?.setGround(next);
     hud.set(snapshot(state));
+  },
+  plantCrop(plot, crop) {
+    const ok = plantCrop(state, plot, crop, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
   },
   setProfile(name, avatar) {
     state.profile = { name: name.trim().slice(0, NAME_MAX), avatar };

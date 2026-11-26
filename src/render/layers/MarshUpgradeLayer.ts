@@ -1,5 +1,5 @@
 import { Container, Graphics } from 'pixi.js';
-import { palette } from '../../data/palette';
+import { CROPS, type CropId } from '../../data/crops';
 import { lerpColor, shadeColor } from '../../util/color';
 import { seededRandom } from '../../util/math';
 import type { FrameContext, Layer, SceneLayout } from '../types';
@@ -12,7 +12,8 @@ export class PlotsLayer implements Layer {
   readonly view = new Container();
   private readonly g = new Graphics();
   private l!: SceneLayout;
-  private levels = { rice: -1, millet: -1 };
+  private key = '';
+  private plots: { crop: CropId | null; growth: number }[] = [];
 
   constructor() {
     this.view.addChild(this.g);
@@ -20,34 +21,52 @@ export class PlotsLayer implements Layer {
 
   layout(l: SceneLayout): void {
     this.l = l;
-    this.levels = { rice: -1, millet: -1 };
+    this.key = '';
   }
 
-  setLevels(rice: number, millet: number): void {
-    if (this.l && (rice !== this.levels.rice || millet !== this.levels.millet)) {
-      this.levels = { rice, millet };
-      this.draw();
-    }
+  /** Food plots along the far bank; redrawn as they grow. */
+  setPlots(plots: { crop: CropId | null; growth: number }[], open: number): void {
+    const shown = plots.slice(0, open).map((p) => ({ crop: p.crop, growth: Math.round(p.growth * 10) / 10 }));
+    const key = JSON.stringify(shown);
+    if (!this.l || key === this.key) return;
+    this.key = key;
+    this.plots = shown;
+    this.draw();
   }
 
   private draw(): void {
     const { w, horizon: hz, scale: s } = this.l;
     const g = this.g.clear();
-    const rnd = seededRandom(61);
-    const plot = (x0: number, x1: number, level: number, stalk: number, head: number, droop: boolean) => {
-      const n = Math.round((x1 - x0) / (3.2 * s) * Math.min(1, level / 3));
-      for (let i = 0; i < n; i++) {
+    this.plots.forEach((p, i) => {
+      if (!p.crop) return;
+      const look = CROPS[p.crop].look;
+      const x0 = w * (0.22 + i * 0.19);
+      const x1 = x0 + w * 0.16;
+      const grow = 0.25 + p.growth * 0.75;
+      const rnd = seededRandom(61 + i);
+      const n = Math.round(((x1 - x0) / (3.2 * s)) * grow);
+      for (let k = 0; k < n; k++) {
         const x = x0 + rnd() * (x1 - x0);
-        const h = (5 + rnd() * 5) * s * (0.8 + level * 0.08);
         const base = hz + 1 * s;
         const lean = (rnd() - 0.5) * 3 * s;
-        g.moveTo(x, base).quadraticCurveTo(x + lean * 0.3, base - h * 0.6, x + lean, base - h).stroke({ width: 0.9 * s, color: stalk });
-        if (droop) g.moveTo(x + lean, base - h).quadraticCurveTo(x + lean + 2 * s, base - h - 1 * s, x + lean + 3 * s, base - h + 2.5 * s).stroke({ width: 1.4 * s, color: head });
-        else g.ellipse(x + lean, base - h, 1.1 * s, 2 * s).fill(head);
+        if (look.style === 'ribbon') {
+          // Eelgrass: ribbons lying on the water just off the bank.
+          const y = hz + (2 + rnd() * 6) * s;
+          g.moveTo(x, y).quadraticCurveTo(x + 3 * s, y - 1 * s, x + 7 * s * grow, y + 0.5 * s).stroke({ width: 1.1 * s, color: k % 2 ? look.stalk : look.head });
+          continue;
+        }
+        if (look.style === 'bush') {
+          g.ellipse(x, base - 2.5 * s * grow, 3 * s * grow, 2.2 * s * grow).fill(k % 3 ? look.stalk : look.head);
+          continue;
+        }
+        const h = (look.style === 'tall' ? 12 + rnd() * 6 : 5 + rnd() * 5) * s * grow;
+        g.moveTo(x, base).quadraticCurveTo(x + lean * 0.3, base - h * 0.6, x + lean, base - h).stroke({ width: (look.style === 'tall' ? 1.4 : 0.9) * s, color: look.stalk });
+        if (p.growth < 0.4) continue;
+        if (look.style === 'droop') g.moveTo(x + lean, base - h).quadraticCurveTo(x + lean + 2 * s, base - h - 1 * s, x + lean + 3 * s, base - h + 2.5 * s).stroke({ width: 1.4 * s, color: look.head });
+        else if (look.style === 'tall') g.ellipse(x + lean + 1 * s, base - h * 0.6, 1.2 * s, 2.6 * s).fill(look.head);
+        else g.ellipse(x + lean, base - h, 1.1 * s, 2 * s).fill(look.head);
       }
-    };
-    if (this.levels.millet > 0) plot(w * 0.22, w * 0.48, this.levels.millet, palette.moss, palette.cattail, false);
-    if (this.levels.rice > 0) plot(w * 0.55, w * 0.96, this.levels.rice, palette.reed, 0xe2c26a, true);
+    });
   }
 
   update(f: FrameContext): void {

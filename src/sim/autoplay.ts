@@ -19,6 +19,8 @@ import { addNode, connect, workflowEval, workflowUnlocked } from './workflow';
 import { buildLodge, buyRung, canBuildLodge, lodgeReady, nextLodge, rungPrice, rungReady } from './progression';
 import { RUNG_ORDER, SPECIES_DRAW } from '../data/progression';
 import type { UpgradeId } from '../data/upgrades';
+import { cropsFor, plotCount, type CropId } from '../data/crops';
+import { cropPrice, plantCrop } from './crops';
 import type { SpeciesId } from '../data/species';
 
 export interface PaceReport {
@@ -92,6 +94,11 @@ interface Option {
   first?: boolean;
 }
 
+/** Crops that would bring a kind of duck we haven't seen. */
+function cropBringsNew(s: GameState, c: CropId): boolean {
+  return Object.entries(SPECIES_DRAW).some(([sp, need]) => !s.guide[sp as SpeciesId] && need!.some((d) => 'crop' in d && d.crop.includes(c)));
+}
+
 /** Upgrades that would bring a kind of duck we haven't seen. */
 function bringsNewBirds(s: GameState, u: UpgradeId): boolean {
   if ((s.upgrades[u] ?? 0) > 0) return false;
@@ -108,6 +115,15 @@ function options(s: GameState): Option[] {
     else cap = next.coins * 0.05; // save up: only small buys meanwhile
   }
   saveCap = cap;
+  // Food plots: fill empty plots, and swap a plot to a crop that brings an unseen bird.
+  const crops = cropsFor(s.flyway);
+  for (let i = 0; i < plotCount(s.lodge); i++) {
+    const cur = s.plots[i]!.crop;
+    const curUseful = cur !== null && cropBringsNew(s, cur);
+    const fresh = crops.find((c) => c !== cur && !s.plots.some((p) => p.crop === c) && cropBringsNew(s, c));
+    const pick = curUseful ? null : fresh ?? (cur ? null : crops.find((c) => !s.plots.some((p) => p.crop === c)) ?? crops[0]!);
+    if (pick) opts.push({ price: cropPrice(pick, i), buy: () => plantCrop(s, i, pick), first: !!fresh });
+  }
   for (const id of RUNG_ORDER) if (rungReady(s, id)) opts.push({ price: rungPrice(id), buy: () => buyRung(s, id) });
   if (s.unlocks.bots === undefined) return opts;
   for (const id of new Set(wanted(s))) {

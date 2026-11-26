@@ -10,6 +10,7 @@ import { WEATHER } from '../data/weather';
 import { starMultiplier } from './prestige';
 import { workflowEval } from './workflow';
 import { rungFx } from './progression';
+import { cropFlockRate, cropFlockSize } from './crops';
 import { FLYWAYS } from '../data/flyways';
 
 export interface Price {
@@ -185,7 +186,7 @@ export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number 
   if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + WEATHER[state.environment.weather].flockSize;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
   const flyway = FLYWAYS[state.flyway].flockSizeBonus ?? 0;
-  return UPGRADE_EFFECTS.riceFlockSize * (state.upgrades.rice ?? 0) + WEATHER[state.environment.weather].flockSize + cold + flyway;
+  return cropFlockSize(state) + WEATHER[state.environment.weather].flockSize + cold + flyway;
 }
 
 /** Flocks per second right now, before the activity curve. */
@@ -201,7 +202,7 @@ export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
   const acreBonus = 1 + ACRES.flockRatePerAcre * (state.acres - ACRES.start);
   const marsh =
     (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) *
-    (1 + UPGRADE_EFFECTS.milletFlockRate * (u.millet ?? 0)) *
+    cropFlockRate(state) *
     (1 + UPGRADE_EFFECTS.nestBoxesFlockRate * (u.nestBoxes ?? 0)) *
     (1 + UPGRADE_EFFECTS.celeryFlockRate * (u.celeryBeds ?? 0)) *
     (1 + UPGRADE_EFFECTS.deepPoolFlockRate * (u.deepPool ?? 0)) *

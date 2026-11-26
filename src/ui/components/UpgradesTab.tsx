@@ -1,5 +1,6 @@
 import { ACRES } from '../../data/economy';
 import { UPGRADES } from '../../data/upgrades';
+import { CROPS } from '../../data/crops';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
@@ -38,6 +39,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
       ) : (
         <Locked name="Wetland Acres" text="Opens with the Trapper's Cabin." />
       )}
+      <FoodPlots hud={hud} controls={controls} notation={notation} />
       {hud.upgrades.map((u) => {
         const d = UPGRADES[u.id];
         const head = u.id === 'cornStubble' && d.lodge <= hud.lodge.level + 1 ? <h4 class="group-head">Goose field</h4> : null;
@@ -90,5 +92,54 @@ function Locked({ name, text }: { name: string; text: string }) {
         <p>{text}</p>
       </div>
     </div>
+  );
+}
+
+/** Food plots: pick a crop for each plot; what grows depends on the flyway. */
+function FoodPlots({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
+  const p = hud.plots;
+  if (p.open === 0) {
+    return <Locked name="Food plots" text={`Plant crops on the far bank to bring new ducks. Your first plot opens with the ${p.nextLodgeName ?? "Trapper's Cabin"}.`} />;
+  }
+  return (
+    <section class="plots" aria-label="Food plots">
+      <h4 class="group-head">Food plots</h4>
+      {p.list.map((plot, i) => (
+        <div class="bot-card plot-card">
+          <div class="plot-card__info">
+            <h4>
+              Plot {i + 1}: {plot.crop ? CROPS[plot.crop].name : 'empty'}
+            </h4>
+            {plot.crop ? (
+              <>
+                <p>{CROPS[plot.crop].effect}</p>
+                <div class="req">
+                  <span class="req__label">{plot.growth >= 1 ? 'Fully grown' : 'Growing'}</span>
+                  <span class="req__count">{Math.round(plot.growth * 100)}%</span>
+                  <span class="req__bar"><span style={{ width: `${Math.round(plot.growth * 100)}%` }} /></span>
+                </div>
+              </>
+            ) : (
+              <p>Pick a crop. It grows in over a few minutes.</p>
+            )}
+            <div class="crop-row">
+              {plot.options.map((o) => (
+                <button
+                  class={`crop-btn ${plot.crop === o.crop ? 'is-on' : ''}`}
+                  aria-disabled={!o.affordable}
+                  title={CROPS[o.crop].effect}
+                  onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.plantCrop(i, o.crop))}
+                >
+                  <strong>{CROPS[o.crop].name}</strong>
+                  <span>{CROPS[o.crop].effect}</span>
+                  {plot.crop !== o.crop && <Cost price={o.price} notation={notation} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+      {p.nextLodgeName && <p class="plot-note">Another plot opens with the {p.nextLodgeName}.</p>}
+    </section>
   );
 }

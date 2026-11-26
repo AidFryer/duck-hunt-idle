@@ -79,7 +79,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'species3',
     title: 'Find a third kind of duck',
-    gus: "Mallards and teal are just the start. Nest boxes and millet bring new birds. The Field Guide says what each one needs.",
+    gus: "Mallards and teal are just the start. Nest boxes and food plots bring new birds. The Field Guide says what each one needs.",
     done: (s) => speciesCount(s) >= 3,
   },
   {
