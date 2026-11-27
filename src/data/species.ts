@@ -32,7 +32,28 @@ export type SpeciesId =
   | 'sandhillCrane'
   | 'emperorGoose'
   | 'eurasianWigeon'
-  | 'longtail';
+  | 'longtail'
+  | 'blueWingedTeal'
+  | 'americanCoot'
+  | 'mottledDuck'
+  | 'ruddyDuck'
+  | 'goldeneye'
+  | 'commonMerganser'
+  | 'greaterScaup'
+  | 'blackBelliedWhistler'
+  | 'fulvousWhistler'
+  | 'redBreastedMerganser'
+  | 'barrowsGoldeneye'
+  | 'surfScoter'
+  | 'whiteWingedScoter'
+  | 'blackScoter'
+  | 'commonEider'
+  | 'tuftedDuck'
+  | 'spectacledEider'
+  | 'stellersEider'
+  | 'tundraSwan'
+  | 'barnacleGoose'
+  | 'pinkFootedGoose';
 
 export type Rarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
@@ -502,13 +523,307 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     },
     hen: { ...henBase(0x8a7a6a, 0xd8ccb8, 0x4a4a4a, 0x5a4a3a), longTail: true },
   },
+  blueWingedTeal: {
+    id: 'blueWingedTeal', name: 'Blue-winged Teal', rarity: 'common',
+    coins: 6, feathers: 1, weight: 35,
+    hours: [[6, 9.5], [16, 19]], weather: ['clear'],
+    size: 0.8, flockSize: 0.9,
+    guide: 'The first duck south every fall, buzzing low in tight little bunches. Drakes wear a white crescent in front of the eye.',
+    hint: 'An early-season bird. Watch for them in Opening Week.',
+    drake: {
+      head: 0x4a5a7a, eyePatch: 0xf4f2ec, breast: 0xb89a7a, flank: 0xa88a6a, back: 0x5a4a3a,
+      tail: 0x2a2622, bill: 0x2a2622, speculum: 0x2f8a5a, streaky: true,
+    },
+    hen: henBase(0x8a7258, 0x9a8062, 0x3a3632, 0x2f8a5a),
+  },
+  americanCoot: {
+    id: 'americanCoot', name: 'American Coot', rarity: 'common',
+    coins: 3, feathers: 1, weight: 25,
+    hours: [[7, 17]], weather: ['clear', 'drizzle', 'fog'],
+    size: 0.85, flockSize: 0.8,
+    guide: 'The "mud hen": slate gray with a chalk-white bill, bobbing its head as it paddles. Not a duck at all, but it shares every marsh.',
+    hint: 'Always around. Just keep hunting.',
+    drake: {
+      head: 0x1e1a18, breast: 0x3a3a40, flank: 0x45454c, back: 0x3a3a40, tail: 0x2a2a2e,
+      bill: 0xf4f2ec, speculum: 0x3a3a40, billShield: true,
+    },
+    hen: {
+      head: 0x1e1a18, breast: 0x3a3a40, flank: 0x45454c, back: 0x3a3a40, tail: 0x2a2a2e,
+      bill: 0xf4f2ec, speculum: 0x3a3a40, billShield: true,
+    },
+  },
+  mottledDuck: {
+    id: 'mottledDuck', name: 'Mottled Duck', rarity: 'uncommon',
+    coins: 10, feathers: 2, weight: 16,
+    hours: [[5.8, 9], [17, 19.5]], weather: ['drizzle', 'fog'],
+    size: 1, flockSize: 0.6,
+    guide: 'A Gulf Coast cousin of the mallard that never migrates. Warm brown all over with a clean buff face and a yellow bill.',
+    hint: 'A southern bird of the Mississippi and Central flyways.',
+    drake: {
+      head: 0x8a7458, breast: 0x7a5e44, flank: 0x6e543c, back: 0x5a4430, tail: 0x3a2e24,
+      bill: 0xd8b84a, speculum: 0x3a7a8a, streaky: true,
+    },
+    hen: henBase(0x8a7458, 0x7a6048, 0xb8963a, 0x3a7a8a),
+  },
+  ruddyDuck: {
+    id: 'ruddyDuck', name: 'Ruddy Duck', rarity: 'uncommon',
+    coins: 9, feathers: 2, weight: 18,
+    hours: [[7, 12], [14, 17]], weather: ['clear', 'wind'],
+    size: 0.72, flockSize: 0.9,
+    guide: 'A tubby little diver with a stiff tail cocked up like a wren. In spring the drake\'s bill turns sky blue.',
+    hint: 'Needs open water to dive. A deep pool might bring them.',
+    drake: {
+      head: 0x1e1a18, eyePatch: 0xf4f2ec, breast: 0xa0441e, flank: 0xa0441e, back: 0x8a3a1a,
+      tail: 0x2a2622, bill: 0x5a9ad0, speculum: 0x8a3a1a,
+    },
+    hen: { ...henBase(0x6a5a4a, 0x8a7a68, 0x3a3a3a, 0x6a5a4a), eyePatch: 0xd8ccb8 },
+  },
+  goldeneye: {
+    id: 'goldeneye', name: 'Common Goldeneye', rarity: 'uncommon',
+    coins: 11, feathers: 2, weight: 16,
+    hours: [[6, 10], [15, 17]], weather: ['coldFront', 'wind'],
+    size: 0.95, flockSize: 0.8,
+    guide: 'Called "whistlers" for the ringing sound of their wings. A bright yellow eye and a round white spot by the bill.',
+    hint: 'A cold-water diver. Get decoys out on open water.',
+    drake: {
+      head: 0x1e3a2e, headSheen: 0x2f6b4a, eyePatch: 0xf4f2ec, breast: 0xf4f2ec, flank: 0xf0ece4,
+      back: 0x1e1a18, tail: 0x2a2622, bill: 0x1e1a18, speculum: 0xf4f2ec,
+    },
+    hen: henBase(0x6a4a2e, 0x9a9a9a, 0x3a3a3a, 0xf0ece4),
+  },
+  commonMerganser: {
+    id: 'commonMerganser', name: 'Common Merganser', rarity: 'uncommon',
+    coins: 10, feathers: 2, weight: 14,
+    hours: [[7, 11], [14, 17]], weather: ['coldFront', 'clear'],
+    size: 1.15, flockSize: 0.7,
+    guide: 'A long, low "sawbill" with a thin red bill for catching fish. The drake is crisp white with a dark green head.',
+    hint: 'Fish eaters. Deep water brings them.',
+    drake: {
+      head: 0x1e3a2e, headSheen: 0x2f6b4a, breast: 0xf4efe4, flank: 0xf0ece4, back: 0x1e1a18,
+      tail: 0x6a6a6a, bill: 0xc0402a, speculum: 0xf0ece4,
+    },
+    hen: { ...henBase(0x9a4a22, 0xa8a8a8, 0xc0402a, 0xf0ece4), crest: true },
+  },
+  greaterScaup: {
+    id: 'greaterScaup', name: 'Greater Scaup', rarity: 'uncommon',
+    coins: 12, feathers: 2, weight: 14,
+    hours: [[6, 10], [14, 17]], weather: ['wind', 'coldFront'],
+    size: 1, flockSize: 1.4,
+    guide: 'The big-water bluebill, with a rounder green-glossed head than its lesser cousin. Rafts up by the thousand on the coasts.',
+    hint: 'A coastal diver of the Atlantic and Pacific.',
+    drake: {
+      head: 0x1e2a24, headSheen: 0x2f5a44, breast: 0x1e1a18, flank: 0xe8e4dc, back: 0xa8aaa8,
+      tail: 0x1e1a18, bill: 0x7a9ac0, speculum: 0xf0ece4,
+    },
+    hen: { ...henBase(0x5a4232, 0x7a6450, 0x6a7a8a, 0xf0ece4), eyePatch: 0xf0ece4 },
+  },
+  blackBelliedWhistler: {
+    id: 'blackBelliedWhistler', name: 'Black-bellied Whistling-Duck', rarity: 'uncommon',
+    coins: 12, feathers: 2, weight: 12,
+    hours: [[6, 9], [17.5, 20]], weather: ['clear', 'drizzle'],
+    size: 1, flockSize: 1.2,
+    guide: 'Long pink legs, a coral-red bill and a black belly. Flocks whistle to each other all night long over the rice.',
+    hint: 'A southern bird that loves rice and milo.',
+    drake: {
+      head: 0x9a8a7a, eyePatch: 0xe8e4dc, breast: 0x9a5a3a, flank: 0x1e1a18, back: 0x8a5a3a,
+      tail: 0x1e1a18, bill: 0xe0503a, speculum: 0xf4f2ec,
+    },
+    hen: {
+      head: 0x9a8a7a, eyePatch: 0xe8e4dc, breast: 0x9a5a3a, flank: 0x1e1a18, back: 0x8a5a3a,
+      tail: 0x1e1a18, bill: 0xe0503a, speculum: 0xf4f2ec,
+    },
+  },
+  fulvousWhistler: {
+    id: 'fulvousWhistler', name: 'Fulvous Whistling-Duck', rarity: 'rare',
+    coins: 16, feathers: 3, weight: 7,
+    hours: [[6, 9], [17.5, 20]], weather: ['clear'],
+    size: 0.95, flockSize: 1,
+    guide: 'A warm tawny duck with cream stripes down its sides. A rice-field wanderer that turns up where you least expect it.',
+    hint: 'Only rice will tempt one.',
+    drake: {
+      head: 0xb07a4a, breast: 0xc08850, flank: 0xb07a48, back: 0x5a3a24, tail: 0x2a2622,
+      bill: 0x3a3a40, speculum: 0x5a3a24, sidePatch: 0xf0e4d0,
+    },
+    hen: {
+      head: 0xb07a4a, breast: 0xc08850, flank: 0xb07a48, back: 0x5a3a24, tail: 0x2a2622,
+      bill: 0x3a3a40, speculum: 0x5a3a24, sidePatch: 0xf0e4d0,
+    },
+  },
+  redBreastedMerganser: {
+    id: 'redBreastedMerganser', name: 'Red-breasted Merganser', rarity: 'rare',
+    coins: 15, feathers: 3, weight: 8,
+    hours: [[7, 11], [14, 16.5]], weather: ['wind', 'coldFront'],
+    size: 1, flockSize: 0.8,
+    guide: 'A shaggy-crested sawbill of salt bays, with a white collar and a speckled rusty chest. One of the fastest ducks in the air.',
+    hint: 'Salt water birds of the Atlantic coast.',
+    drake: {
+      head: 0x1e3a2e, headSheen: 0x2f6b4a, crest: true, neckMark: 'ring', breast: 0x9a6a44, flank: 0x8a8a8a,
+      back: 0x1e1a18, tail: 0x5a5a5a, bill: 0xc0402a, speculum: 0xf0ece4,
+    },
+    hen: { ...henBase(0x9a5a32, 0x9a9a9a, 0xc0402a, 0xf0ece4), crest: true },
+  },
+  barrowsGoldeneye: {
+    id: 'barrowsGoldeneye', name: "Barrow's Goldeneye", rarity: 'rare',
+    coins: 18, feathers: 3, weight: 6,
+    hours: [[6, 10]], weather: ['coldFront'],
+    size: 0.95, flockSize: 0.6,
+    guide: 'A mountain goldeneye with a purple-glossed head and a white crescent by the bill. Winters on rocky Pacific shores.',
+    hint: 'A Pacific diver. Open water and the right flyway.',
+    drake: {
+      head: 0x2a2048, headSheen: 0x4a3a7a, eyePatch: 0xf4f2ec, breast: 0xf4f2ec, flank: 0xf0ece4,
+      back: 0x1e1a18, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0xf4f2ec, sidePatch: 0x1e1a18,
+    },
+    hen: henBase(0x5a3a22, 0x9a9a9a, 0xd8a83a, 0xf0ece4),
+  },
+  surfScoter: {
+    id: 'surfScoter', name: 'Surf Scoter', rarity: 'rare',
+    coins: 17, feathers: 3, weight: 7,
+    hours: [[6, 11]], weather: ['wind', 'coldFront'],
+    size: 1.05, flockSize: 1.1,
+    guide: 'The "skunk-head coot": jet black with white patches on the head and a big painted bill of orange, white and black.',
+    hint: 'A sea duck of both coasts. Deep water helps.',
+    drake: {
+      head: 0x1e1a18, eyePatch: 0xf4f2ec, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18,
+      tail: 0x1e1a18, bill: 0xe8702a, speculum: 0x1e1a18, billShield: true,
+    },
+    hen: henBase(0x4a3e34, 0x4e4238, 0x3a3a3a, 0x4a3e34),
+  },
+  whiteWingedScoter: {
+    id: 'whiteWingedScoter', name: 'White-winged Scoter', rarity: 'rare',
+    coins: 18, feathers: 3, weight: 6,
+    hours: [[6, 11]], weather: ['wind', 'coldFront'],
+    size: 1.2, flockSize: 1,
+    guide: 'The biggest scoter, all black but for a white wing patch that flashes in flight and a tiny white comma by the eye.',
+    hint: 'Big water on the coasts.',
+    drake: {
+      head: 0x1e1a18, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18, tail: 0x1e1a18,
+      bill: 0xe8803a, speculum: 0xf4f2ec, billShield: true,
+    },
+    hen: henBase(0x4a3e34, 0x4e4238, 0x3a3a3a, 0xf4f2ec),
+  },
+  blackScoter: {
+    id: 'blackScoter', name: 'Black Scoter', rarity: 'rare',
+    coins: 17, feathers: 3, weight: 6,
+    hours: [[6, 11]], weather: ['coldFront', 'fog'],
+    size: 1, flockSize: 1.1,
+    guide: 'Black from bill to tail except for a big butter-yellow knob on the bill. Whistles a mournful note over the swells.',
+    hint: 'An Atlantic sea duck.',
+    drake: {
+      head: 0x1e1a18, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18, tail: 0x1e1a18,
+      bill: 0xf2c43a, speculum: 0x1e1a18, billShield: true,
+    },
+    hen: { ...henBase(0x3a322c, 0x5a4e44, 0x3a3a3a, 0x3a322c), eyePatch: 0xb8aea0 },
+  },
+  commonEider: {
+    id: 'commonEider', name: 'Common Eider', rarity: 'rare',
+    coins: 30, feathers: 6, weight: 4,
+    hours: [[6, 11]], weather: ['coldFront', 'wind'],
+    size: 1.3, flockSize: 1,
+    guide: 'The big sea duck of eiderdown fame. Drakes are white above and black below, with a soft green wash on the back of the head.',
+    hint: 'Out on the Atlantic, and only for a fine rig.',
+    drake: {
+      head: 0xf4f2ec, crown: 0x1e1a18, breast: 0xf0e4d4, flank: 0x1e1a18, back: 0xf4f2ec,
+      tail: 0x1e1a18, bill: 0x9aa070, speculum: 0x1e1a18, sidePatch: 0xf4f2ec,
+    },
+    hen: henBase(0x8a5e3a, 0x8a5e3a, 0x6a6a5a, 0x5a3a24),
+  },
+  tuftedDuck: {
+    id: 'tuftedDuck', name: 'Tufted Duck', rarity: 'legendary',
+    coins: 90, feathers: 18, weight: 0.8,
+    hours: [[6, 10], [15, 17]], weather: ['wind', 'fog'],
+    size: 0.95, flockSize: 0.4,
+    guide: 'An Old World diver that wanders over now and then, tagging along with scaup. Look for the floppy tuft on the back of the head.',
+    hint: 'A stray from across the ocean. Coastal flyways only.',
+    drake: {
+      head: 0x1e1a2a, headSheen: 0x3a2a5a, crest: true, breast: 0x1e1a18, flank: 0xf4f2ec,
+      back: 0x1e1a18, tail: 0x1e1a18, bill: 0x7a8aa0, speculum: 0xf0ece4,
+    },
+    hen: { ...henBase(0x4a3a2e, 0x6a5a4a, 0x6a7a8a, 0xf0ece4), crest: true },
+  },
+  spectacledEider: {
+    id: 'spectacledEider', name: 'Spectacled Eider', rarity: 'legendary',
+    coins: 140, feathers: 30, weight: 0.4,
+    hours: [[6, 10]], weather: ['coldFront'],
+    size: 1.2, flockSize: 0.4,
+    guide: 'A ghost of the Bering Sea: pale green head and great white "goggles" around the eyes. Few hunters ever see one.',
+    hint: 'Far out on the Pacific, for the finest rig on the water.',
+    drake: {
+      head: 0xc8d8a0, eyePatch: 0xf4f2ec, breast: 0x2a2a2a, flank: 0x2a2a2a, back: 0xf4f2ec,
+      tail: 0x1e1a18, bill: 0xe8803a, speculum: 0x1e1a18,
+    },
+    hen: { ...henBase(0x8a6a48, 0x8a6a48, 0x6a6a5a, 0x5a3a24), eyePatch: 0xc8b8a0 },
+  },
+  stellersEider: {
+    id: 'stellersEider', name: "Steller's Eider", rarity: 'legendary',
+    coins: 130, feathers: 28, weight: 0.4,
+    hours: [[6, 10]], weather: ['coldFront', 'wind'],
+    size: 0.95, flockSize: 0.5,
+    guide: 'The smallest eider: a white head with a tiny green tuft, a black collar and a warm butterscotch chest.',
+    hint: 'A Pacific rarity. Only the floating rig draws one.',
+    drake: {
+      head: 0xf4f2ec, crown: 0x8aa87a, neckMark: 'ring', breast: 0xc8904a, flank: 0xd8a060, back: 0x1e1a18,
+      tail: 0x1e1a18, bill: 0x6a7a8a, speculum: 0x3a4a8a,
+    },
+    hen: henBase(0x6a4a32, 0x6a4a32, 0x6a7a8a, 0x3a4a8a),
+  },
+  tundraSwan: {
+    id: 'tundraSwan', name: 'Tundra Swan', rarity: 'rare', ground: 'field',
+    coins: 60, feathers: 10, weight: 4,
+    hours: [[8, 11], [14, 16.5]], weather: ['coldFront', 'clear'],
+    size: 2.1, flockSize: 0.5,
+    guide: 'Huge, pure white and wonderfully loud, calling "woo-woo" like a far-off crowd. A small yellow spot sits by the black bill.',
+    hint: 'Swans rest on a field pond with green wheat nearby.',
+    drake: {
+      form: 'goose', head: 0xf8f6f0, neck: 0xf8f6f0, breast: 0xf8f6f0, flank: 0xf4f2ec, back: 0xeeeae2,
+      tail: 0xeeeae2, bill: 0x1e1a18, speculum: 0xf4f2ec,
+    },
+    hen: {
+      form: 'goose', head: 0xf8f6f0, neck: 0xf8f6f0, breast: 0xf8f6f0, flank: 0xf4f2ec, back: 0xeeeae2,
+      tail: 0xeeeae2, bill: 0x1e1a18, speculum: 0xf4f2ec,
+    },
+  },
+  barnacleGoose: {
+    id: 'barnacleGoose', name: 'Barnacle Goose', rarity: 'legendary', ground: 'field',
+    coins: 200, feathers: 36, weight: 0.5,
+    hours: [[8, 11], [14, 16]], weather: ['wind', 'coldFront'],
+    size: 1.25, flockSize: 0.4,
+    guide: 'A crisp little goose with a white face, black neck and silver-barred back. A stray from Greenland that sometimes joins the honkers.',
+    hint: 'An Atlantic stray. Only the best goose chorus calls one down.',
+    drake: {
+      form: 'goose', head: 0xf4f2ec, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0x1e1a18, flank: 0xb8bcc0,
+      back: 0x7a7e84, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x7a7e84,
+    },
+    hen: {
+      form: 'goose', head: 0xf4f2ec, neck: 0x1e1a18, cheek: 0xf4f2ec, breast: 0x1e1a18, flank: 0xb8bcc0,
+      back: 0x7a7e84, tail: 0x1e1a18, bill: 0x1e1a18, speculum: 0x7a7e84,
+    },
+  },
+  pinkFootedGoose: {
+    id: 'pinkFootedGoose', name: 'Pink-footed Goose', rarity: 'legendary', ground: 'field',
+    coins: 190, feathers: 34, weight: 0.5,
+    hours: [[8, 11], [14, 16]], weather: ['coldFront', 'fog'],
+    size: 1.35, flockSize: 0.5,
+    guide: 'A soft gray goose with a dark brown head and bright pink feet and bill band. Wanders over from Iceland with the snow geese.',
+    hint: 'An Atlantic stray that loves green wheat.',
+    drake: {
+      form: 'goose', head: 0x5a4a3a, neck: 0x5a4a3a, breast: 0xb8aa98, flank: 0x9a8e80, back: 0x8a8a8a,
+      tail: 0x6a6a6a, bill: 0xe89aa0, speculum: 0x8a8a8a,
+    },
+    hen: {
+      form: 'goose', head: 0x5a4a3a, neck: 0x5a4a3a, breast: 0xb8aa98, flank: 0x9a8e80, back: 0x8a8a8a,
+      tail: 0x6a6a6a, bill: 0xe89aa0, speculum: 0x8a8a8a,
+    },
+  },
 };
 
 export const SPECIES_ORDER: readonly SpeciesId[] = [
-  'mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck',
-  'redhead', 'scaup', 'bufflehead', 'canvasback', 'hoodedMerganser', 'cinnamonTeal', 'harlequin', 'kingEider',
-  'eurasianWigeon', 'longtail',
-  'canadaGoose', 'cacklingGoose', 'snowGoose', 'rossGoose', 'blueGoose', 'whiteFront', 'brant', 'sandhillCrane', 'emperorGoose',
+  'mallard', 'teal', 'blueWingedTeal', 'americanCoot', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail',
+  'mottledDuck', 'blackDuck', 'redhead', 'scaup', 'ruddyDuck', 'bufflehead', 'goldeneye', 'commonMerganser', 'greaterScaup',
+  'blackBelliedWhistler', 'canvasback', 'hoodedMerganser', 'cinnamonTeal', 'fulvousWhistler', 'redBreastedMerganser',
+  'barrowsGoldeneye', 'surfScoter', 'whiteWingedScoter', 'blackScoter', 'harlequin', 'commonEider', 'eurasianWigeon', 'longtail',
+  'kingEider', 'tuftedDuck', 'spectacledEider', 'stellersEider',
+  'canadaGoose', 'cacklingGoose', 'snowGoose', 'rossGoose', 'blueGoose', 'whiteFront', 'brant', 'tundraSwan', 'sandhillCrane',
+  'emperorGoose', 'barnacleGoose', 'pinkFootedGoose',
 ];
 
 /** Species hunted at a ground. */

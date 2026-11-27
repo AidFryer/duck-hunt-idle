@@ -255,8 +255,11 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   const smoke = 1 + UPGRADE_EFFECTS.smokehouseFeathers * (state.upgrades.smokehouse ?? 0);
   const carv = carvingFx(state);
   const extra = carv.coins * stageFor(state.clock.day).coins * patchMultiplier(state);
+  // Coin boosts (reputation, rooms, ladder, patches…) lift feathers too, by
+  // their square root, so feathers keep pace with coins as the lodge grows.
+  const coinBoost = reputationMultiplier(state) * rooms * rungFx(state).coins * extra;
   return {
-    coins: Math.round(s.coins * reputationMultiplier(state) * rooms * stars * rungFx(state).coins * extra * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * 100) / 100,
+    coins: Math.round(s.coins * coinBoost * stars * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * 100) / 100,
   };
 }
