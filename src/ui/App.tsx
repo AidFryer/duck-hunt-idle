@@ -73,7 +73,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       <section class={`scene ${hud.volley.unlocked ? "has-volley" : ""}`} aria-label="The marsh">
         <div class="scene-host" ref={sceneRef} />
         <div class="floaters" ref={floatRef} aria-hidden="true" />
-        <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
+        <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
         <Moments greetName={hud.profile.name} onOpen={(f) => (f === 'guide' ? setGuide(true) : setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId))} />
         <RhythmMeter hud={hud} />
@@ -88,6 +88,17 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             <button class="rail-btn" onClick={() => setTrophies(true)} aria-label={`Trophy Wall: ${hud.patches} patches`} title="Trophy Wall">
               <Icon name="trophy" size={20} />
               <span class="bump" key={`t${hud.patches}`}>{hud.patches}</span>
+            </button>
+          )}
+          {hud.problemStats.total > 0 && (
+            <button
+              class={`rail-btn rail-btn--problems ${hud.needsYou ? 'is-alert' : ''}`}
+              onClick={() => setProblems(true)}
+              aria-label={`Problem Log: ${hud.openProblems} open`}
+              title="Problem Log"
+            >
+              <span class="rail-btn__mark" aria-hidden="true">!</span>
+              <span>{hud.openProblems}</span>
             </button>
           )}
           {hud.lodge.level >= 2 && (

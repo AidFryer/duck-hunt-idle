@@ -4434,3 +4434,66 @@ select {
 .reduce-motion .ws-list > li, .reduce-motion .up-list > li, .reduce-motion .carving-grid > li,
 .reduce-motion .patch-grid > div, .reduce-motion .guide-grid > button,
 .reduce-motion .bump, .reduce-motion .ws-row__buy, .reduce-motion .carving .btn { animation: none !important; }
+
+/* ------------------------------------------------------------ steady top bar
+   Every slot has a fixed width, so the bar never shifts as numbers grow or
+   change quickly. Room for values up to "8.88Qa". */
+.counter--steady[data-bump='1'] { animation: flash 0.45s ease-out; }
+@keyframes flash { 30% { color: var(--c-rust); } }
+.topbar { font-variant-numeric: tabular-nums; }
+.purse__value,
+.chip--birds .chip__value {
+  display: inline-block;
+  min-width: 3.45em;
+  white-space: nowrap;
+}
+.clock__text strong { display: inline-block; min-width: 4.2em; white-space: nowrap; }
+.clock__ampm { font-size: 0.72em; font-weight: 800; opacity: 0.85; }
+.counter--steady { transform: none !important; }
+
+/* Phones: one fixed row (purse · birds · clock · profile), nothing comes or goes. */
+@media (max-width: 560px) {
+  .topbar {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto auto;
+    gap: 4px;
+  }
+  .topbar__right { display: contents; }
+  .clock { grid-column: 4; }
+  .avatar-btn { grid-column: 5; }
+  .clock__weather, .clock > .icon { display: none !important; }
+  .purse__item { padding: 0 5px; gap: 3px; }
+  .chip--birds { padding: 2px 7px 2px 6px; }
+  .clock { padding: 4px 8px; }
+}
+@media (max-width: 380px) {
+  .purse, .chip--birds, .clock__text strong { font-size: 13.5px; }
+  .purse__value, .chip--birds .chip__value { min-width: 3.3em; }
+}
+
+/* Problem Log lives with the other side buttons. */
+.rail-btn--problems .rail-btn__mark { font-family: var(--ui-fontHeading); font-size: 19px; line-height: 1; }
+.rail-btn--problems.is-alert { background: rgba(181, 86, 43, 0.92); animation: wobble 1.2s ease-in-out infinite; }
+.reduce-motion .rail-btn--problems.is-alert { animation: none; }
+/* The weather label keeps one width whatever the weather. */
+@media (min-width: 561px) {
+  .clock__weather-name { display: inline-block; min-width: 5.6em; }
+  .clock__text > span { display: inline-block; min-width: 8.5em; white-space: nowrap; }
+}
+
+/* Phones: slim side buttons (icon and number side by side) so four fit above the tally. */
+@media (max-width: 560px) {
+  .side-rail { gap: 6px; }
+  .rail-btn {
+    grid-auto-flow: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    height: 34px;
+    padding: 0 9px 0 7px;
+    font-size: 12px;
+  }
+  .rail-btn .icon { width: 16px; height: 16px; }
+  .rail-btn--problems .rail-btn__mark { font-size: 16px; }
+  .stage-card { left: 0; top: calc(100% + 6px); }
+}

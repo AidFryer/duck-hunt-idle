@@ -6,7 +6,8 @@ import { formatNumber, type Notation } from '../../util/format';
  * A number that counts up smoothly toward its target and gives a little
  * bump when it increases. Very large values just snap (no visible tween).
  */
-export function Counter({ value, notation }: { value: Decimal | number; notation: Notation }) {
+/** `steady`: no size bounce (for the top bar, which must never shift). */
+export function Counter({ value, notation, steady = false }: { value: Decimal | number; notation: Notation; steady?: boolean }) {
   const target = value instanceof Decimal ? value : new Decimal(value);
   const [shown, setShown] = useState(target);
   const [bump, setBump] = useState(0);
@@ -41,7 +42,7 @@ export function Counter({ value, notation }: { value: Decimal | number; notation
   }, [target.toString()]);
 
   return (
-    <span class="counter" key={bump} data-bump={bump > 0 ? '1' : '0'}>
+    <span class={`counter ${steady ? 'counter--steady' : ''}`} key={bump} data-bump={bump > 0 ? '1' : '0'}>
       {formatNumber(shown, notation)}
     </span>
   );
