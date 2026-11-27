@@ -1,5 +1,7 @@
 import type { GameState } from '../sim/state';
 import { workflowEval } from '../sim/workflow';
+import { starsFor } from '../sim/prestige';
+import { PRESTIGE } from './legacy';
 
 const completeChain = (s: GameState) => workflowEval(s).complete;
 
@@ -14,6 +16,8 @@ export interface GoalDef {
   /** What Ray says while this goal is active. */
   gus: string;
   done: (s: GameState) => boolean;
+  /** How far along it is (0–1), for the progress bar on the goal strip. */
+  progress?: (s: GameState) => number;
   /** Only shown after the first season is closed. */
   later?: boolean;
 }
@@ -77,6 +81,7 @@ export const GOALS: readonly GoalDef[] = [
     title: 'Find a third kind of duck',
     gus: "Mallards and teal are just the start. Nest boxes and food plots bring new birds. The Field Guide says what each one needs.",
     done: (s) => speciesCount(s) >= 3,
+    progress: (s) => speciesCount(s) / 3,
   },
   {
     id: 'spread',
@@ -119,11 +124,12 @@ export const GOALS: readonly GoalDef[] = [
     title: 'Find 9 kinds of duck',
     gus: 'Rice brings pintail, flooded timber brings black ducks, wild celery brings wigeon. Fill those Field Guide pages.',
     done: (s) => speciesCount(s) >= 9,
+    progress: (s) => speciesCount(s) / 9,
   },
   {
     id: 'club',
     title: 'Build the Sporting Club',
-    gus: 'A trophy room, members, the works. Build the Sporting Club and the whole crew can be tied together with rope.',
+    gus: 'A trophy room, members, the works. Build the Sporting Club and the Goose Field opens up.',
     done: (s) => s.lodge >= 4,
   },
   {
@@ -141,7 +147,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'grand',
     title: 'Build the Grand Lodge',
-    gus: "Stone chimney, three wings, a flag on the roof. Fourteen kinds of birds in the book and we can build her.",
+    gus: "Stone chimney, three wings, a flag on the roof. Twenty kinds of birds in the book and we can build her.",
     done: (s) => s.lodge >= 5,
   },
   {
@@ -155,12 +161,19 @@ export const GOALS: readonly GoalDef[] = [
     title: 'Close your first season',
     gus: "Earn 8 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
     done: (s) => s.stats.seasonsClosed > 0,
+    progress: (s) => s.season.coins.toNumber() / PRESTIGE.divisor,
   },
   {
     id: 'nextStar',
     title: 'Earn your next Flyway Star',
-    gus: "New marsh, same old crew-building. Rebuild fast, tie your chain again, and spend your stars in the Legacy tab. Every season goes quicker than the last.",
+    gus: "New marsh, same old crew-building. Rebuild fast and spend your stars in the Legacy tab. Every season goes quicker than the last.",
     done: () => false,
+    progress: (s) => {
+      const n = starsFor(s.season.coins);
+      const lo = PRESTIGE.divisor * n * n;
+      const hi = PRESTIGE.divisor * (n + 1) * (n + 1);
+      return (s.season.coins.toNumber() - lo) / (hi - lo);
+    },
     later: true,
   },
   {

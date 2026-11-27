@@ -84,7 +84,12 @@ export type DuckPick =
 
 const MAX_DUCKS = 48;
 const MAX_VISIBLE_PER_FLOCK = 6;
-const MAX_FLOATERS = 12;
+/** When the marsh is busy: fewer, bigger flocks on screen. */
+const CALM_FLOCKS = 3;
+const CALM_PER_FLOCK = 8;
+const MAX_FLOATERS = 14;
+/** Downward pull on a shot bird (px/s² at scale 1). */
+const FALL_G = 340;
 const FOLLOW_LAG = 0.22;
 
 /**
@@ -118,6 +123,10 @@ export class DuckLayer implements Layer {
   /** Birds come down on dry ground (the goose field): dust, not splashes; no drifting. */
   onGround = false;
   /** Species for ambient flyovers. */
+  /** Busy marsh: draw fewer, bigger flocks. */
+  calm = false;
+  /** Species of flocks that weren't drawn, so their shot birds look right. */
+  private readonly unseen = new Map<number, SpeciesId>();
   flyoverSpecies: SpeciesId[] = ['mallard', 'mallard', 'teal', 'pintail', 'gadwall'];
 
   constructor(private readonly tex: TextureLibrary, private readonly fx: EffectsLayer) {
@@ -166,7 +175,14 @@ export class DuckLayer implements Layer {
   /** A sim flock arrived: fly in and circle high, waiting for a call. */
   arrive(id: number, size: number, species: SpeciesId = 'mallard', golden = false): void {
     if (this.findHunt(id)) return;
-    const ducks = this.take(Math.min(size, MAX_VISIBLE_PER_FLOCK));
+    // Busy marsh: only a few flocks are drawn; the rest still hunt, unseen,
+    // and their birds drop out of the sky over the decoys when shot.
+    if (this.calm && !golden && this.flocks.filter((f) => f.kind === 'hunt' && f.ducks.length > 0).length >= CALM_FLOCKS) {
+      this.unseen.set(id, species);
+      if (this.unseen.size > 200) this.unseen.delete(this.unseen.keys().next().value!);
+      return;
+    }
+    const ducks = this.take(Math.min(size, this.calm ? CALM_PER_FLOCK : MAX_VISIBLE_PER_FLOCK));
     if (ducks.length === 0) return;
     const l = this.l;
     const f = this.newFlock('hunt', ducks, this.rnd() > 0.5 ? 1 : -1);
@@ -215,8 +231,9 @@ export class DuckLayer implements Layer {
     const f = this.findHunt(id);
     const l = this.l;
     if (!f) {
-      // No visible flock (e.g. pool exhausted): still show birds landing.
-      for (let i = 0; i < Math.min(downed, 3); i++) this.addFloater(this.randomWaterPoint(), true);
+      // A flock that wasn't drawn: its birds still fall from the sky over the spread.
+      this.dropFromSky(Math.min(downed, 4), this.unseen.get(id) ?? 'mallard');
+      this.unseen.delete(id);
       return;
     }
     const species = f.species;
@@ -227,12 +244,16 @@ export class DuckLayer implements Layer {
       if (toDrop > 0) {
         toDrop--;
         d.mode = 'tumble';
-        const prev = this.sampleAt(f, f.age - d.index * FOLLOW_LAG - 0.05);
-        d.vx = clamp((d.x - prev.x) * 20, -80 * l.scale, 80 * l.scale) * 0.5;
         d.vy = -25 * l.scale;
         d.spin = (this.rnd() > 0.5 ? 1 : -1) * (3 + this.rnd() * 3);
+        // Carried by its momentum toward the decoys, it lands on the water
+        // near the spread (not straight down wherever the flock was).
         const p = this.randomWaterPoint();
         d.landY = Math.max(p.y, Math.min(l.h - 20 * l.scale, d.y + 30 * l.scale));
+        const g = FALL_G * l.scale;
+        const t = (-d.vy + Math.sqrt(d.vy * d.vy + 2 * g * Math.max(0, d.landY - d.y))) / g;
+        const landX = lerp(d.x, p.x, 0.7);
+        d.vx = clamp((landX - d.x) / Math.max(0.3, t), -260 * l.scale, 260 * l.scale);
         this.fx.featherPuff(d.x, d.y, l.scale * d.depth);
       } else {
         this.exit(d, true);
@@ -488,7 +509,14 @@ export class DuckLayer implements Layer {
   }
 
   private addFloater(p: Point, splash: boolean, species: SpeciesId = 'mallard', drake = this.rnd() < 0.6): void {
-    if (this.floaters.length >= MAX_FLOATERS) return;
+    // Full water: the oldest free bird fades away so the new one can land
+    // right where it fell (it never just vanishes or pops in elsewhere).
+    if (this.floaters.filter((f) => f.fade === 0).length >= MAX_FLOATERS) {
+      const old = this.floaters.find((f) => !f.reserved && f.fade === 0);
+      if (!old) return;
+      old.fade = 1;
+    }
+    if (this.floaters.length >= MAX_FLOATERS + 8) return;
     const s = new Sprite(this.tex.get(`duck.swim.${species}.${drake ? 'drake' : 'hen'}`));
     s.anchor.set(0.45, 30 / 34);
     this.waterView.addChild(s);
@@ -510,6 +538,33 @@ export class DuckLayer implements Layer {
       x: a.decoyCenter.x + (this.rnd() - 0.5) * a.decoySpread * 2.4,
       y: a.decoyCenter.y + (this.rnd() - 0.3) * waterH * 0.3,
     };
+  }
+
+  /** Shot birds from a flock that wasn't drawn: they tumble down from the sky onto the spread. */
+  private dropFromSky(n: number, species: SpeciesId): void {
+    const l = this.l;
+    const ducks = this.take(n);
+    for (let i = ducks.length; i < n; i++) this.addFloater(this.randomWaterPoint(), true, species);
+    for (const d of ducks) {
+      this.setLook(d, species);
+      const p = this.randomWaterPoint();
+      const top = l.skyTop ?? 0;
+      d.flock = null;
+      d.mode = 'tumble';
+      d.depth = 0.8 + this.rnd() * 0.2;
+      d.facing = d.targetFacing = this.rnd() > 0.5 ? 1 : -1;
+      d.x = p.x + (this.rnd() - 0.5) * 80 * l.scale;
+      d.y = top + (l.horizon - top) * (0.45 + this.rnd() * 0.3);
+      d.root.visible = true;
+      d.root.rotation = 0;
+      d.vy = -25 * l.scale;
+      d.spin = (this.rnd() > 0.5 ? 1 : -1) * (3 + this.rnd() * 3);
+      d.landY = Math.max(p.y, d.y + 30 * l.scale);
+      const g = FALL_G * l.scale;
+      const t = (-d.vy + Math.sqrt(d.vy * d.vy + 2 * g * Math.max(0, d.landY - d.y))) / g;
+      d.vx = clamp((p.x - d.x) / Math.max(0.3, t), -200 * l.scale, 200 * l.scale);
+      this.fx.featherPuff(d.x, d.y, l.scale * d.depth);
+    }
   }
 
   // ------------------------------------------------------------------ internals
@@ -616,7 +671,7 @@ export class DuckLayer implements Layer {
     // Free-flying ducks (tumbling or exiting)
     for (const d of this.ducks) {
       if (d.mode === 'tumble') {
-        d.vy += 340 * l.scale * dt;
+        d.vy += FALL_G * l.scale * dt;
         d.x += d.vx * dt;
         d.y += d.vy * dt;
         d.root.rotation += d.spin * dt;

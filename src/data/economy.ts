@@ -384,12 +384,23 @@ export const LEDGER = {
 } as const;
 
 /** Hunter's Rhythm: quick manual taps in a row build a streak that pays a bonus. */
-export const STREAK = {
-  /** Seconds between manual actions before the streak fades. */
-  window: 10,
-  max: 10,
-  /** Bonus coins per streak level on each bird you retrieve by hand (× its value). */
-  bonusPerLevel: 0.06,
+/**
+ * Crew Rhythm: fills while the hunt flows (birds don't pile up, nobody's
+ * stuck, flocks get worked) and pays extra coins on every bird.
+ */
+export const RHYTHM = {
+  /** Coin bonus at a full meter (0.15 = +15%). */
+  maxBonus: 0.15,
+  /** Seconds to fill from empty when everything flows. */
+  riseSeconds: 150,
+  /** Seconds to empty when things back up. */
+  fallSeconds: 60,
+  /** Each of your own taps nudges it up this much. */
+  tapGain: 0.02,
+  /** A flock leaving without being worked knocks it down this much. */
+  missPenalty: 0.03,
+  /** Seconds after your last tap that your hand still counts as "in the hunt". */
+  handWindow: 10,
 } as const;
 
 /** First Light: a once-a-day welcome gift. */

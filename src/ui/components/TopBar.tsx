@@ -1,5 +1,6 @@
 import { GAME_TITLE } from '../../config';
-import { STREAK } from '../../data/economy';
+import { useState } from 'preact/hooks';
+import { RHYTHM } from '../../data/economy';
 import type { Notation } from '../../util/format';
 import type { HudSnapshot } from '../hudState';
 import { activityLabel, windLabel } from '../hudState';
@@ -65,15 +66,34 @@ export function TopBar({ hud, notation, onSettings }: { hud: HudSnapshot; notati
   );
 }
 
-/** Hunter's Rhythm: a little meter over the marsh while you're on a roll. */
+const SNAG_TEXT: Record<string, string> = {
+  idle: 'Tap the marsh, or carve some help in the Workshop, to get it going.',
+  piling: 'Birds are piling up on the water. More retrievers would help.',
+  stuck: "Someone on the crew is stuck. Tap the ! button to sort it out.",
+  waiting: 'Flocks are circling with nobody calling them in.',
+};
+
+/** Crew Rhythm: how smoothly the hunt is flowing. Tap it for the why. */
 export function RhythmMeter({ hud }: { hud: HudSnapshot }) {
-  if (hud.streak < 2) return null;
-  const pct = Math.round(hud.streak * STREAK.bonusPerLevel * 100);
+  const [open, setOpen] = useState(false);
+  const r = hud.rhythm;
+  if (!r.crew && r.level < 0.01) return null;
+  const status = r.snag ? SNAG_TEXT[r.snag] : r.level > 0.98 ? 'In full swing. Every bird pays the most it can.' : "Everything's moving. It's building.";
   return (
-    <div class={`rhythm ${hud.streak >= 10 ? 'is-max' : ''}`} aria-live="off" title="Tap quickly in a row to build your rhythm. Birds you fetch by hand pay extra.">
-      <span class="rhythm__label">Rhythm ×{hud.streak}</span>
-      <span class="rhythm__bonus">+{pct}%</span>
-      <span class="rhythm__bar"><span style={{ width: `${Math.round(hud.streakLeft * 100)}%` }} /></span>
-    </div>
+    <>
+      <button class="rhythm" onClick={() => setOpen(!open)} aria-expanded={open} aria-label={`Crew Rhythm: plus ${r.bonus} percent coins`}>
+        <Icon name="beat" size={16} />
+        <span class="rhythm__label">Rhythm</span>
+        <span class="rhythm__bar" aria-hidden="true"><span style={{ width: `${Math.round(r.level * 100)}%` }} /></span>
+        <span class="rhythm__bonus">+{r.bonus}%</span>
+      </button>
+      {open && (
+        <button class="rhythm-pop" onClick={() => setOpen(false)}>
+          <strong>Crew Rhythm · +{r.bonus}% coins</strong>
+          <span>Fills while the hunt flows: birds get fetched, nobody's stuck, and flocks get worked. Your own taps help too. At full, every bird pays {Math.round(RHYTHM.maxBonus * 100)}% more.</span>
+          <em class={r.snag ? 'is-snag' : ''}>{status}</em>
+        </button>
+      )}
+    </>
   );
 }

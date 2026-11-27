@@ -1117,9 +1117,13 @@ button {
 }
 
 .btn--buy {
-  display: grid;
-  justify-items: start;
+  /* A column flexbox, not a grid: Safari stretched grid buttons tall. */
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
   gap: 1px;
+  height: auto;
   padding: 6px 12px;
   text-align: left;
 }
@@ -3112,7 +3116,6 @@ select {
   border-radius: 12px;
   background: rgba(45, 37, 32, 0.86);
   color: var(--c-cream);
-  pointer-events: none;
   animation: pop-in 0.3s cubic-bezier(0.3, 0.7, 0.4, 1.4);
 }
 
@@ -4884,3 +4887,107 @@ html.ios-standalone body { background: #4a3221; }
 .lb__who span { font-size: 12px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb__value { font-weight: 800; font-size: 13.5px; text-align: right; font-variant-numeric: tabular-nums; }
 .lb__gap { text-align: center; opacity: 0.5; }
+
+/* ---- Safari layout guards --------------------------------------------- */
+/* Pictures always keep their shape, even if Safari stretches their box. */
+img { object-fit: contain; max-width: 100%; }
+/* Buttons and pictures inside grid/flex rows sit at their own height. */
+.rung__next .btn, .ws-row__more > .btn, .room .btn, .dog-card__next .btn, .carving .btn { align-self: start; }
+.moment img, .carving__art img, .guide-tile img { flex: none; align-self: center; }
+.moment img { height: auto; }
+
+/* ---- Crew Rhythm meter --------------------------------------------------- */
+.rhythm {
+  position: absolute;
+  left: 10px;
+  top: calc(var(--hud-top) + 44px);
+  bottom: auto;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: auto auto 54px minmax(2.4em, auto);
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-height: 38px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(45, 37, 32, 0.86);
+  color: var(--c-cream);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.25);
+}
+.rhythm .icon { color: var(--c-gold); }
+.rhythm__label { font-family: inherit; font-size: 13px; font-weight: 800; }
+.rhythm__bonus {
+  font-size: 12.5px;
+  font-weight: 800;
+  opacity: 0.9;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rhythm__bar {
+  grid-column: auto;
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(244, 233, 212, 0.18);
+  overflow: hidden;
+}
+.rhythm__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8fa67a, var(--c-gold));
+  transition: width 0.8s ease-out;
+}
+.reduce-motion .rhythm__bar span { transition: none; }
+.rhythm-pop {
+  position: absolute;
+  left: 10px;
+  top: calc(var(--hud-top) + 88px);
+  z-index: 6;
+  display: grid;
+  gap: 4px;
+  width: min(280px, calc(100% - 20px));
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(253, 247, 234, 0.97);
+  color: var(--ui-text);
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 4px 14px rgba(20, 12, 6, 0.3);
+  animation: ws-open 0.2s ease-out;
+}
+.reduce-motion .rhythm-pop { animation: none; }
+.rhythm-pop strong { font-family: var(--ui-fontHeading); font-size: 16px; }
+.rhythm-pop span { font-size: 12.5px; color: var(--ui-textSoft); }
+.rhythm-pop em { font-style: normal; font-size: 12.5px; font-weight: 800; color: var(--c-sageDark, #4d6142); }
+.rhythm-pop em.is-snag { color: #9a3f1c; }
+/* Out of the way while a menu is open. */
+.layout.has-sheet .rhythm, .layout.has-sheet .rhythm-pop, .layout.is-tall .rhythm { display: none; }
+
+/* Goal strip: a thin bar along the bottom edge that fills as you get closer. */
+.goal-strip { position: absolute; overflow: hidden; }
+.goal-strip__pct { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
+.goal-strip__bar {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(90, 60, 30, 0.12);
+  overflow: hidden;
+  pointer-events: none;
+}
+.goal-strip__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c-sage, #5e7352);
+  transition: width 1s ease-out;
+}
+.reduce-motion .goal-strip__bar span { transition: none; }

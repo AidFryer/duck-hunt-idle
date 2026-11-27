@@ -1,3 +1,4 @@
+import { rhythmMultiplier } from './rhythm';
 import { GUESTS } from '../data/guests';
 import { DOG_FX } from '../data/training';
 import { carvingFx } from './carvings';
@@ -281,7 +282,8 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   // their square root, so feathers keep pace with coins as the lodge grows.
   const coinBoost = reputationMultiplier(state) * rooms * rungFx(state).coins * extra;
   return {
-    coins: Math.round(s.coins * coinBoost * stars * 100) / 100,
+    // Crew Rhythm lifts coins only.
+    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * 100) / 100,
     feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
   };
 }

@@ -1,8 +1,10 @@
+import { busyMarsh } from '../sim/volley';
 import { stageFor } from '../data/calendar';
 import { CARVINGS, CARVING_ORDER } from '../data/carvings';
 import { Container } from 'pixi.js';
 import { TextureLibrary } from './assets/TextureLibrary';
 import { BlindLayer } from './layers/BlindLayer';
+import { DrifterLayer } from './layers/DrifterLayer';
 import { CloudLayer } from './layers/CloudLayer';
 import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
@@ -39,6 +41,8 @@ export interface TapTarget {
   ground?: GroundId;
   flockId?: number;
   floater?: Floater;
+  /** The tap fished out a drifting decoy. */
+  drifter?: boolean;
   at: Point;
 }
 
@@ -66,6 +70,8 @@ export class MarshScene {
   readonly crew: CrewLayer;
   readonly weather: WeatherLayer;
   readonly hint: HintLayer;
+  /** A stray decoy drifting by, to tap for a gift. */
+  readonly drifter: DrifterLayer;
   private readonly shore: ShoreLayer;
   private readonly props: PropsLayer;
   private readonly life: LodgeLifeLayer;
@@ -105,6 +111,7 @@ export class MarshScene {
     this.life = new LodgeLifeLayer(tex);
     const blind = (this.blind = new BlindLayer(tex, this.fx));
     const midReeds = new ReedLayer(tex, 21, midReedClumps, 0.9);
+    this.drifter = new DrifterLayer(tex, this.fx);
     this.ducks = new DuckLayer(tex, this.fx);
     this.crew = new CrewLayer(tex, this.fx, this.ducks);
     const nearFog = new FogLayer(tex, [
@@ -127,7 +134,7 @@ export class MarshScene {
     this.hint = new HintLayer(this.ducks);
     this.layers = [
       this.sky, clouds, farFog, land, this.water, this.plots, shore, this.life, this.timber, this.props, midReeds, blind,
-      this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
+      this.drifter, this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
     if (variant !== 'marsh') {
@@ -144,7 +151,7 @@ export class MarshScene {
     }
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, this.props, this.life, midReeds,
+      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.drifter, this.crew, this.props, this.life, midReeds,
       this.ducks, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
   }
@@ -157,6 +164,7 @@ export class MarshScene {
   }
 
   private pickHere(x: number, y: number): TapTarget {
+    if (this.drifter.hit(x, y)) return { job: null, drifter: true, at: this.drifter.at };
     const p = this.ducks.pick(x, y);
     if (p?.kind === 'flock') return { job: p.called ? 'shoot' : 'call', flockId: p.id, at: p.at };
     if (p?.kind === 'floater') return { job: 'retrieve', floater: p.floater, at: p.at };
@@ -262,7 +270,6 @@ export class MarshScene {
       case 'featureUnlocked':
       case 'perkBought':
       case 'flockReturned':
-      case 'streak':
       case 'dailyBonus':
       case 'planEarned':
       case 'goldenShot':
@@ -280,6 +287,8 @@ export class MarshScene {
         this.fx.confetti(a.x, a.y - 60 * this.layout.scale, this.layout.scale, 30);
         return a;
       }
+      case 'drifterClaimed':
+        return this.drifter.collect();
       case 'carvingBought': {
         const a = this.layout.anchors.decoyCenter;
         this.fx.sparkle(a.x, a.y, this.layout.scale, 14);
@@ -326,6 +335,8 @@ export class MarshScene {
     const h = ground(state, g);
     this.blind.reconcile(h.decoys);
     this.blind.setCarvings(g === 'marsh' ? CARVING_ORDER.filter((id) => state.carvings[id] && !CARVINGS[id].look.goose) : []);
+    // A busy marsh draws fewer, bigger flocks (the rest hunt unseen).
+    this.ducks.calm = busyMarsh(state);
     this.ducks.reconcileGround(h, state, g);
     if (g !== 'bay' && state.flyway !== this.flyway) {
       this.flyway = state.flyway;

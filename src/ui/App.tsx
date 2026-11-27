@@ -153,8 +153,9 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             <button class="goal-strip" onClick={() => openTab('marsh')} key={`gs-${hud.goalId}`}>
               <span class="goal-strip__tag">Next</span>
               <span class="goal-strip__text">{hud.goalTitle}</span>
-              {hud.lodge.next && ['cabin', 'lodge3', 'club', 'grand'].includes(hud.goalId) && <span class="goal-strip__pct">{lodgePct(hud)}%</span>}
+              {goalPct(hud) !== null && <span class="goal-strip__pct">{goalPct(hud)}%</span>}
               <span class="goal-strip__chev" aria-hidden="true">›</span>
+              {goalPct(hud) !== null && <span class="goal-strip__bar" aria-hidden="true"><span style={{ width: `${goalPct(hud)}%` }} /></span>}
             </button>
           )
         )}
@@ -253,6 +254,12 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
 }
 
 /** How far along the next lodge is, by its slowest requirement. */
+/** Progress on the current goal, in whole percent (null when it can't be measured). */
+function goalPct(hud: HudSnapshot): number | null {
+  if (hud.lodge.next && ['cabin', 'lodge3', 'club', 'grand'].includes(hud.goalId)) return lodgePct(hud);
+  return hud.goalProgress === null ? null : Math.floor(hud.goalProgress * 100);
+}
+
 function lodgePct(hud: HudSnapshot): number {
   const reqs = hud.lodge.next?.reqs ?? [];
   if (reqs.length === 0) return 0;

@@ -1,10 +1,11 @@
+import { rhythmMiss, rhythmTap, stepRhythm } from './rhythm';
 import { markPace, stepVolley } from './volley';
 import { guestBirds, guestGolden, refreshGuests } from './guests';
 import { dogHas, dogSwim } from './training';
 import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
-import { ACRES, BOTS, FIELD_JOBS, GOLDEN, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD_JOBS, GOLDEN, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -113,7 +114,8 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
   if (source === 'manual') {
     state.stats.manualActions += 1;
     state.stats.manualByJob[job] = (state.stats.manualByJob[job] ?? 0) + 1;
-    bumpStreak(state, events);
+    state.hunt.lastManualAt = state.elapsed;
+    rhythmTap(state);
   }
   const hunt = state.hunt;
   const src = source === 'keeper' ? 'manual' : source;
@@ -163,18 +165,9 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
     }
     case 'retrieve':
     case 'log': {
-      const species = job === 'log' ? undefined : h.downed[0];
       // Your retriever brings two at a time once she's learned Fetch Two.
       const fetch = job !== 'log' && source === 'manual' && dogHas(state, DOG_FX.fetchTwoLevel) ? 2 : 1;
       doMany(state, job as ManyJob, fetch, source, events);
-      // Hunter's Rhythm pays a bonus on birds you fetch by hand.
-      if (source === 'manual' && species && hunt.streak > 1) {
-        const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * hunt.streak * 100) / 100;
-        state.currencies.coins = state.currencies.coins.add(bonus);
-        state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(bonus);
-        state.season.coins = state.season.coins.add(bonus);
-        events.push({ type: 'streak', level: hunt.streak, bonus });
-      }
       return true;
     }
   }
@@ -197,21 +190,6 @@ function discoveryReward(state: GameState, species: SpeciesId): { coins: number;
   return { coins, feathers };
 }
 
-/** Manual actions in quick succession build the streak; a pause resets it. */
-function bumpStreak(state: GameState, events: EventSink): void {
-  const h = state.hunt;
-  const quick = state.elapsed - h.lastManualAt <= STREAK.window;
-  const before = h.streak;
-  h.streak = quick ? Math.min(STREAK.max, h.streak + 1) : 1;
-  h.lastManualAt = state.elapsed;
-  if (h.streak > before && h.streak > 1) events.push({ type: 'streak', level: h.streak, bonus: 0 });
-}
-
-/** Let the streak fade once the player stops tapping. */
-export function decayStreak(state: GameState): void {
-  const h = state.hunt;
-  if (h.streak > 0 && state.elapsed - h.lastManualAt > STREAK.window) h.streak = 0;
-}
 
 /** Most per-action events emitted for one batch; the rest are summed into one. */
 const EVENT_CAP = 3;
@@ -293,7 +271,7 @@ function recordJobMany(state: GameState, job: JobId, n: number): void {
 export function stepHunt(state: GameState, dt: number, activity: number, events: EventSink): void {
   const h = state.hunt;
   advanceMetrics(state);
-  decayStreak(state);
+  stepRhythm(state, dt);
   markPace(state);
 
   stepGround(state, 'marsh', dt, activity, events);
@@ -389,6 +367,7 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
   const wait = incomingPatience(state, g);
   for (const left of h.incoming.filter((f) => f.age > (f.golden ? GOLDEN.incomingPatience : wait))) {
     h.incoming.splice(h.incoming.indexOf(left), 1);
+    rhythmMiss(state);
     events.push({ type: 'flockLeft', flockId: left.id, ...tag(g) });
     // Big-sky flyways: some marsh flocks circle back for another look.
     if (!field && !left.golden && rand(state) < FLYWAYS[state.flyway].returnChance) {
@@ -408,6 +387,7 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
     h.committed.splice(h.committed.indexOf(fl), 1);
     state.stats.flocksFlared += 1;
     if (!fl.golden) state.stats.lostToday += 1;
+    rhythmMiss(state);
     events.push({ type: 'flockFlared', flockId: fl.id, ...tag(g) });
   }
 }

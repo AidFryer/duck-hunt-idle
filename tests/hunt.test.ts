@@ -35,9 +35,8 @@ describe('manual hunt pipeline', () => {
     for (let i = 0; i < downed; i++) doAction(s, 'retrieve', 'manual', ev);
     expect(s.hunt.bag).toBe(downed);
     expect(s.hunt.ledger).toHaveLength(downed);
-    // Birds pay when logged; only the Hunter's Rhythm bonus pays on the spot.
-    const rhythm = ev.filter((e) => e.type === 'streak').reduce((t, e) => t + (e.type === 'streak' ? e.bonus : 0), 0);
-    expect(s.currencies.coins.toNumber()).toBeCloseTo(rhythm, 6);
+    // Birds pay when logged, not on the spot.
+    expect(s.currencies.coins.toNumber()).toBe(0);
     expect(s.currencies.feathers.toNumber()).toBe(downed * SPECIES.mallard.feathers);
     for (let i = 0; i < downed; i++) doAction(s, 'log', 'manual', ev);
     expect(s.hunt.ledger).toHaveLength(0);

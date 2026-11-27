@@ -89,6 +89,7 @@ const paths: Record<IconName, preact.JSX.Element> = {
       <path d="M10 20v-5h4v5M16 6V3h2v4.5" />
     </>
   ),
+  beat: <path d="M7.5 21h9L13.6 4h-3.2zM12 16l5-8.5M9.5 21l.6-3h3.8l.6 3" />,
   podium: <path d="M3 20h18M4.5 20v-6h5v6M9.5 20V9h5v11M14.5 20v-8.5h5V20M12 4.5l.8 1.6 1.7.2-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.2z" />,
   trophy: (
     <>

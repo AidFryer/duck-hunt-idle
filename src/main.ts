@@ -31,6 +31,8 @@ import { setDogCoat } from './render/assets/painters';
 import { clearDogPortraits } from './ui/portraits';
 import { buyCarving } from './sim/carvings';
 import { busyMarsh, fireVolley } from './sim/volley';
+import { claimDrifter, drifterReady } from './sim/drifter';
+import { MarshScene } from './render/MarshScene';
 import { claimGuest } from './sim/guests';
 import { CARVINGS } from './data/carvings';
 import { plantCrop } from './sim/crops';
@@ -201,6 +203,13 @@ async function syncOnline(): Promise<void> {
   }
 }
 setInterval(() => void syncOnline(), 5 * 60_000);
+
+// Now and then a stray decoy drifts across the water you're looking at.
+setInterval(() => {
+  const v = renderer?.view;
+  if (!v || !(v instanceof MarshScene) || document.hidden || !drifterReady(state)) return;
+  if (!v.drifter.active && Math.random() < 0.12) v.drifter.spawn(Math.random());
+}, 5000);
 void probeOnline();
 setTimeout(() => void syncOnline(), 15_000);
 document.addEventListener('visibilitychange', () => {
@@ -423,11 +432,9 @@ function onEvent(e: SimEvent, at: Point | null): void {
         feedback.toast(`A golden flock is circling ${where}! Call it in and shoot it yourself before it leaves.${away ? ' (Switch over to see it.)' : ''}`, 'good', 5000);
       }
       break;
-    case 'streak':
-      if (lastTapAt) {
-        if (e.bonus > 0) feedback.float(`+${formatNumber(e.bonus, n)} rhythm`, lastTapAt.x, lastTapAt.y - 34, 'coins', 0.15);
-        else if (e.level === 5 || e.level === 10) feedback.float(`Rhythm ×${e.level}!`, lastTapAt.x, lastTapAt.y - 34, 'info');
-      }
+    case 'drifterClaimed':
+      if (at) feedback.pickup(formatNumber(e.coins, n), formatNumber(e.feathers, n), at.x, at.y - 30);
+      audio.play?.('coin');
       break;
     case 'dailyBonus':
       pushMoment({ kind: 'daily', coins: e.coins, feathers: e.feathers });
@@ -462,6 +469,10 @@ function tapNote(text: string, at: Point): void {
 /** The player tapped the marsh: work out what they meant and do it. */
 function onSceneTap(t: TapTarget): void {
   lastTapAt = t.at;
+  if (t.drifter) {
+    controls.claimDrifter();
+    return;
+  }
   let step = t.job;
   if (!step) return;
   const g = t.ground ?? 'marsh';
@@ -618,6 +629,11 @@ const controls: GameControls = {
       keep();
       return null;
     }
+  },
+  claimDrifter() {
+    const ok = claimDrifter(state, runner.sink);
+    if (ok) hud.set(snapshot(state));
+    return ok;
   },
   onlineStatus() {
     return { enabled: onlineEnabled() && onlineReady() === true, joined: !!state.online, name: state.online?.name ?? state.profile.name, takenName };

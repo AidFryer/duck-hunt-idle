@@ -5,7 +5,8 @@ import {
   type GroundId,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
-import { STREAK } from '../data/economy';
+import { RHYTHM } from '../data/economy';
+import { rhythmSnag, rhythmTarget, type RhythmSnag } from '../sim/rhythm';
 import { currentGoal } from '../data/goals';
 import { FEATURE_ORDER, FEATURES, type FeatureId } from '../data/features';
 import { ACHIEVEMENTS } from '../data/achievements';
@@ -160,9 +161,8 @@ export interface HudSnapshot {
   committed: number;
   downed: number;
   ledger: number;
-  /** Hunter's Rhythm level and how much of its window is left (0–1). */
-  streak: number;
-  streakLeft: number;
+  /** Crew Rhythm: fill (0–1), the coin bonus it pays (%), where it's heading, and what's holding it back. */
+  rhythm: { level: number; bonus: number; rising: boolean; snag: RhythmSnag; crew: boolean };
   reputation: number;
   keeperRate: number;
   can: Record<HuntStage, boolean>;
@@ -269,6 +269,8 @@ export interface HudSnapshot {
   lifetimeCoins: Decimal;
   goalId: string;
   goalTitle: string;
+  /** How far along the current goal is (0–1), when it can be measured. */
+  goalProgress: number | null;
   goalGus: string;
   goalIndex: number;
 }
@@ -521,8 +523,13 @@ export function snapshot(state: GameState): HudSnapshot {
     committed: state.hunt.committed.length,
     downed: state.hunt.downed.length,
     ledger: state.hunt.ledger.length,
-    streak: state.hunt.streak,
-    streakLeft: state.hunt.streak > 0 ? Math.max(0, 1 - (state.elapsed - state.hunt.lastManualAt) / STREAK.window) : 0,
+    rhythm: {
+      level: state.hunt.rhythm,
+      bonus: Math.round(state.hunt.rhythm * RHYTHM.maxBonus * 100),
+      rising: rhythmTarget(state) > state.hunt.rhythm + 0.005,
+      snag: rhythmSnag(state),
+      crew: BOT_ORDER.some((id) => state.bots[id].owned > 0),
+    },
     reputation: reputationMultiplier(state),
     keeperRate: LEDGER.keeperRate,
     can: {
@@ -696,6 +703,7 @@ export function snapshot(state: GameState): HudSnapshot {
     lifetimeCoins: state.stats.lifetimeCoins,
     goalId: goal.goal.id,
     goalTitle: goal.goal.title,
+    goalProgress: goal.goal.progress ? Math.max(0, Math.min(1, goal.goal.progress(state))) : null,
     goalGus: goal.goal.gus,
     goalIndex: goal.index,
   };

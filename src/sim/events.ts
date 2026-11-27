@@ -55,13 +55,13 @@ export type SimEvent =
   | { type: 'achievement'; id: string }
   | { type: 'workflowChanged' }
   | { type: 'featureUnlocked'; feature: FeatureId }
-  | { type: 'streak'; level: number; bonus: number }
   | { type: 'lodgeBuilt'; level: number }
   | { type: 'decoysBought'; ground: GroundId; decoys: number }
   | { type: 'cropPlanted'; plot: number; crop: CropId }
   | { type: 'planEarned'; bot: BotId }
   | { type: 'rungBuilt'; rung: RungId }
   | { type: 'dailyBonus'; coins: number; feathers: number }
+  | { type: 'drifterClaimed'; coins: number; feathers: number }
   | { type: 'perkBought'; perk: PerkId }
   | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }
   | { type: 'flockReturned'; flockId: number }

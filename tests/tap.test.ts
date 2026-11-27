@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { TICK_SECONDS } from '../src/config';
-import { STREAK } from '../src/data/economy';
+import { RHYTHM } from '../src/data/economy';
+import { birdValue } from '../src/sim/economy';
+import { rhythmSnag, rhythmTarget } from '../src/sim/rhythm';
+import { claimDrifter, drifterReady, DRIFTER } from '../src/sim/drifter';
 import type { SimEvent } from '../src/sim/events';
 import { doAction } from '../src/sim/hunt';
 import { claimDailyBonus } from '../src/sim/daily';
@@ -36,40 +39,35 @@ describe('tapping a specific flock', () => {
   });
 });
 
-describe("Hunter's Rhythm", () => {
-  it('builds with quick taps, caps, and fades after a pause', () => {
+describe('Crew Rhythm', () => {
+  it('your taps nudge it up, and it fades when nobody is hunting', () => {
     const s = createInitialState(9);
-    const ev: SimEvent[] = [];
     const fetch = () => {
       s.hunt.downed.push('mallard');
-      doAction(s, 'retrieve', 'manual', ev);
+      doAction(s, 'retrieve', 'manual', []);
     };
-    for (let i = 0; i < 3; i++) fetch();
-    expect(s.hunt.streak).toBe(3);
-    for (let i = 0; i < 20; i++) fetch();
-    expect(s.hunt.streak).toBe(STREAK.max);
-    advance(s, STREAK.window + 1, TICK_SECONDS, []);
-    expect(s.hunt.streak).toBe(0);
+    for (let i = 0; i < 5; i++) fetch();
+    expect(s.hunt.rhythm).toBeCloseTo(5 * RHYTHM.tapGain, 5);
+    advance(s, RHYTHM.handWindow + RHYTHM.fallSeconds + 2, TICK_SECONDS, []);
+    expect(s.hunt.rhythm).toBe(0);
   });
 
-  it('bots and Gus never build it', () => {
+  it('a working crew builds it when the hunt flows, and it pays extra coins', () => {
     const s = createInitialState(9);
-    s.hunt.downed.push('mallard', 'mallard');
-    doAction(s, 'retrieve', 'retriever', []);
-    doAction(s, 'retrieve', 'retriever', []);
-    expect(s.hunt.streak).toBe(0);
+    s.bots.caller.owned = 1;
+    const before = birdValue(s, 'mallard').coins;
+    advance(s, 60, TICK_SECONDS, []);
+    expect(s.hunt.rhythm).toBeGreaterThan(0.2);
+    expect(birdValue(s, 'mallard').coins).toBeGreaterThan(before);
   });
 
-  it('pays a bonus on birds fetched by hand during a streak', () => {
+  it('birds piling up on the water pull it down', () => {
     const s = createInitialState(9);
-    s.hunt.downed.push('mallard', 'mallard', 'mallard');
-    doAction(s, 'retrieve', 'manual', []);
-    doAction(s, 'retrieve', 'manual', []);
-    const ev: SimEvent[] = [];
-    doAction(s, 'retrieve', 'manual', ev);
-    const bonus = ev.find((e) => e.type === 'streak' && e.bonus > 0);
-    expect(bonus).toBeDefined();
-    expect(s.currencies.coins.toNumber()).toBeGreaterThan(0);
+    s.bots.caller.owned = 1;
+    s.hunt.rhythm = 1;
+    for (let i = 0; i < 30; i++) s.hunt.downed.push('mallard');
+    expect(rhythmTarget(s)).toBeLessThan(0.7);
+    expect(rhythmSnag(s)).toBe('piling');
   });
 });
 
@@ -108,5 +106,22 @@ describe('First Light daily gift', () => {
     const back = importSave(exportSave(s));
     expect(back.meta.lastDailyBonus).toBe('2026-11-26');
     expect(claimDailyBonus(back, '2026-11-26')).toBe(0);
+  });
+});
+
+describe('drifting decoy', () => {
+  it('only comes by once there is a crew, and not too often', () => {
+    const s = createInitialState(3);
+    s.elapsed = 1000;
+    expect(drifterReady(s)).toBe(false);
+    s.bots.caller.owned = 1;
+    expect(drifterReady(s)).toBe(true);
+    const ev: SimEvent[] = [];
+    expect(claimDrifter(s, ev)).toBe(true);
+    expect(s.currencies.coins.toNumber()).toBeGreaterThanOrEqual(DRIFTER.minCoins);
+    expect(ev.some((e) => e.type === 'drifterClaimed')).toBe(true);
+    expect(claimDrifter(s, [])).toBe(false);
+    s.elapsed += DRIFTER.minGapSeconds;
+    expect(drifterReady(s)).toBe(true);
   });
 });

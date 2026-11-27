@@ -137,6 +137,13 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   18: (s) => ({ ...s, version: 19 }),
   // v20: a spot for the online leaderboard identity.
   19: (s) => ({ ...s, online: s.online ?? null, version: 20 }),
+  // v21: the tap streak becomes Crew Rhythm (starts empty).
+  20: (s) => {
+    const hunt = { ...((s.hunt as Json) ?? {}) };
+    delete hunt.streak;
+    hunt.rhythm = 0;
+    return { ...s, hunt, drifterAt: typeof s.elapsed === 'number' ? s.elapsed : 0, version: 21 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

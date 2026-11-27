@@ -8,7 +8,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 /**
  * Saves older than this are from before the everyone-starts-over update.
  * They load only when restored by hand; a normal start begins fresh.
@@ -153,8 +153,8 @@ export interface GameState {
     ledger: SpeciesId[];
     /** Ray's own logging progress (0–1). */
     keeperProgress: number;
-    /** Hunter's Rhythm streak level (0 = none). */
-    streak: number;
+    /** Crew Rhythm, 0–1: how smoothly the hunt is flowing (pays extra coins). */
+    rhythm: number;
     /** Sim time of the last manual action. */
     lastManualAt: number;
   };
@@ -172,6 +172,8 @@ export interface GameState {
    * proves it's us, and the name it holds there. Null until it joins.
    */
   online: { id: string; secret: string; name: string } | null;
+  /** Sim time a drifting decoy was last fished out (see sim/drifter.ts). */
+  drifterAt: number;
   /** Guest hunting parties: the booking board and the guestbook. */
   guests: { board: GuestRequest[]; served: number; nextId: number };
   /** Crew Training skills learned (kept across seasons). */
@@ -346,7 +348,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       bag: 0,
       ledger: [],
       keeperProgress: 0,
-      streak: 0,
+      rhythm: 0,
       lastManualAt: -999,
     },
     field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
@@ -355,6 +357,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     goldenTimer: 200,
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
     online: null,
+    drifterAt: 0,
     carvings: {},
     guests: { board: [], served: 0, nextId: 1 },
     training: {},
