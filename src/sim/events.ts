@@ -1,3 +1,6 @@
+import type { GroundId } from '../data/economy';
+/** Events from grounds other than the marsh carry their ground. */
+export type OtherGround = Exclude<GroundId, 'marsh'>;
 import type { CarvingId } from '../data/carvings';
 import type { TrainingId } from '../data/training';
 import type { StageId } from '../data/calendar';
@@ -17,9 +20,9 @@ export type ActionSource = 'manual' | BotId;
  * HUD drain them to play animations and feedback. Never saved.
  */
 export type SimEvent =
-  | { type: 'decoySet'; decoys: number; source: ActionSource; ground?: 'field' }
-  | { type: 'decoyDrift'; decoys: number; ground?: 'field' }
-  | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field'; golden?: boolean }
+  | { type: 'decoySet'; decoys: number; source: ActionSource; ground?: OtherGround }
+  | { type: 'decoyDrift'; decoys: number; ground?: OtherGround }
+  | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: OtherGround; golden?: boolean }
   | { type: 'volleyUnlocked' }
   | { type: 'trainingLearned'; training: TrainingId }
   | { type: 'dogLevel'; level: number }
@@ -28,13 +31,13 @@ export type SimEvent =
   | { type: 'stageChanged'; stage: StageId }
   | { type: 'volley'; birds: number; coins: number; feathers: number }
   | { type: 'carvingBought'; carving: CarvingId }
-  | { type: 'goldenShot'; coins: number; feathers: number; ground?: 'field' }
-  | { type: 'flockPassed'; size: number; ground?: 'field' }
-  | { type: 'flockLeft'; flockId: number; ground?: 'field' }
-  | { type: 'flockCalled'; flockId: number; source: ActionSource; ground?: 'field' }
-  | { type: 'flockFlared'; flockId: number; ground?: 'field' }
-  | { type: 'shot'; flockId: number; downed: number; source: ActionSource; ground?: 'field' }
-  | { type: 'retrieved'; species: SpeciesId; feathers: number; count: number; source: ActionSource; ground?: 'field' }
+  | { type: 'goldenShot'; coins: number; feathers: number; ground?: OtherGround }
+  | { type: 'flockPassed'; size: number; ground?: OtherGround }
+  | { type: 'flockLeft'; flockId: number; ground?: OtherGround }
+  | { type: 'flockCalled'; flockId: number; source: ActionSource; ground?: OtherGround }
+  | { type: 'flockFlared'; flockId: number; ground?: OtherGround }
+  | { type: 'shot'; flockId: number; downed: number; source: ActionSource; ground?: OtherGround }
+  | { type: 'retrieved'; species: SpeciesId; feathers: number; count: number; source: ActionSource; ground?: OtherGround }
   | { type: 'logged'; coins: number; count: number; source: ActionSource | 'keeper' }
   | { type: 'scouted'; source: ActionSource }
   | { type: 'problem'; problemId: number; bot: BotId; job: JobId; kind: ProblemKind }
@@ -54,7 +57,7 @@ export type SimEvent =
   | { type: 'featureUnlocked'; feature: FeatureId }
   | { type: 'streak'; level: number; bonus: number }
   | { type: 'lodgeBuilt'; level: number }
-  | { type: 'decoysBought'; ground: 'marsh' | 'field'; decoys: number }
+  | { type: 'decoysBought'; ground: GroundId; decoys: number }
   | { type: 'cropPlanted'; plot: number; crop: CropId }
   | { type: 'planEarned'; bot: BotId }
   | { type: 'rungBuilt'; rung: RungId }

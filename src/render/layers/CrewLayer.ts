@@ -15,7 +15,7 @@ import { waterDepthScale } from '../types';
 const VISIBLE: Record<BotId, number> = {
   scout: 2, setter: 2, caller: 3, blind: 3, retriever: 2, ledger: 2, foreman: 1, tinker: 1,
   // Field crew are drawn in the goose field, not on the marsh.
-  staker: 0, flagger: 0, layout: 0, fieldDog: 0,
+  staker: 0, flagger: 0, layout: 0, fieldDog: 0, guide: 0, boatman: 0,
 };
 
 type BotKind = 'scout' | 'setter' | 'caller' | 'blind' | 'ledger' | 'foreman' | 'tinker';
@@ -444,7 +444,7 @@ export class CrewLayer implements Layer {
   private readonly front = new Container();
   private readonly bubbles: Bubble[] = [];
   private readonly bubbleLayer = new Container();
-  private owned: Record<BotId, number> = { scout: 0, setter: 0, caller: 0, blind: 0, retriever: 0, ledger: 0, foreman: 0, tinker: 0, staker: 0, flagger: 0, layout: 0, fieldDog: 0 };
+  private owned: Record<BotId, number> = { scout: 0, setter: 0, caller: 0, blind: 0, retriever: 0, ledger: 0, foreman: 0, tinker: 0, staker: 0, flagger: 0, layout: 0, fieldDog: 0, guide: 0, boatman: 0 };
   private stuckCount: Record<BotId, number> = { ...this.owned };
   private c!: CrewLayout;
   private l!: SceneLayout;
@@ -560,9 +560,10 @@ export class CrewLayer implements Layer {
 
   /** Match visible bots and "!" bubbles to the sim. */
   sync(state: GameState): void {
-    for (const k of [...KINDS, 'retriever'] as BotId[]) this.owned[k] = state.bots[k].owned;
+    // Out at another ground only you and the dog are on the blind.
+    for (const k of [...KINDS, 'retriever'] as BotId[]) this.owned[k] = this.outpost ? 0 : state.bots[k].owned;
     for (const k of [...KINDS, 'retriever'] as BotId[]) this.stuckCount[k] = 0;
-    for (const p of state.problems.open) this.stuckCount[p.bot] += 1;
+    if (!this.outpost) for (const p of state.problems.open) if (p.bot in this.stuckCount) this.stuckCount[p.bot] += 1;
     for (const k of KINDS) {
       this.bots[k].forEach((b, i) => {
         if (state.lodge !== this.lodge) b.setLodge(state.lodge);
@@ -578,6 +579,8 @@ export class CrewLayer implements Layer {
   }
 
   private lodge = -1;
+  /** Drawn at a far ground: no marsh crew, just the blind and the dog. */
+  outpost = false;
 
   /** A bot was bought: pop it in with a hop and sparkle. */
   botBought(bot: BotId, ownedNow: number, count: number): void {

@@ -7,7 +7,8 @@ import type { SimRunner } from '../sim/runner';
 import type { Point } from './types';
 import { MarshScene, type TapTarget } from './MarshScene';
 import { FieldScene } from './FieldScene';
-import { FIELD_BOTS, type GroundId } from '../data/economy';
+import type { GroundId } from '../data/economy';
+import { eventGround } from './eventGround';
 import { computeSkyState, createSkyState } from './skyState';
 
 export interface RendererOptions {
@@ -23,14 +24,18 @@ export interface RendererOptions {
 export class Renderer {
   readonly app = new Application();
   scene!: MarshScene;
-  /** The goose field (built on first use; shares the marsh's textures). */
-  field: FieldScene | null = null;
+  /** The other grounds (each built on first visit; they share the marsh's textures). */
+  private readonly others = new Map<GroundId, MarshScene | FieldScene>();
   /** Which ground is on screen. */
   ground: GroundId = 'marsh';
 
   /** The scene being drawn right now. */
   get view(): MarshScene | FieldScene {
-    return this.ground === 'field' && this.field ? this.field : this.scene;
+    return this.others.get(this.ground) ?? this.scene;
+  }
+
+  private sceneFor(g: GroundId): MarshScene | FieldScene | null {
+    return g === 'marsh' ? this.scene : this.others.get(g) ?? null;
   }
   private readonly sky = createSkyState();
   private time = 0;
@@ -60,11 +65,11 @@ export class Renderer {
     this.runner = runner;
     if (this.ready) {
       this.app.stage.removeChild(this.scene.root);
-      if (this.field) {
-        this.app.stage.removeChild(this.field.root);
-        this.field.root.destroy({ children: true });
-        this.field = null;
+      for (const sc of this.others.values()) {
+        this.app.stage.removeChild(sc.root);
+        sc.root.destroy({ children: true });
       }
+      this.others.clear();
       const old = this.scene;
       old.root.destroy({ children: true });
       old.tex.destroy();
@@ -184,12 +189,12 @@ export class Renderer {
     const skyTop = this.measureSkyTop();
     const topMoved = Math.abs((this.scene.layout.skyTop ?? 0) - skyTop) > 1;
     this.scene.layout.skyTop = skyTop;
-    if (this.field) this.field.layout.skyTop = skyTop;
+    for (const sc of this.others.values()) sc.layout.skyTop = skyTop;
     if (w === this.lastW && h === this.lastH && !topMoved) return;
     this.lastW = w;
     this.lastH = h;
     this.scene.resize(w, h);
-    this.field?.resize(w, h);
+    for (const sc of this.others.values()) sc.resize(w, h);
   }
 
   private frame(dt: number): void {
@@ -208,10 +213,10 @@ export class Renderer {
     }
     const state = this.runner.state;
     for (const e of this.runner.drain()) {
-      // Each event animates in its own ground's scene, if that's on screen.
-      const forField = ('ground' in e && e.ground === 'field') || ('bot' in e && FIELD_BOTS.includes(e.bot));
-      // The volley plays wherever you're looking.
-      const sc = e.type === 'volley' ? this.view : forField ? this.field : this.scene;
+      // Each event animates in its own ground's scene, if that's on screen;
+      // events tied to no ground (the volley, a new lodge) play wherever you're looking.
+      const g = eventGround(e);
+      const sc = g ? this.sceneFor(g) : this.view;
       const at = sc && sc === this.view ? sc.handle(e) : null;
       this.onEvent?.(e, at);
     }
@@ -231,19 +236,22 @@ export class Renderer {
     this.placeHint();
   }
 
-  /** Switch between the marsh and the goose field. */
+  /** Switch which hunting ground is on screen. */
   setGround(g: GroundId): void {
-    if (g === 'field' && !this.field && this.ready) {
-      this.field = new FieldScene(this.scene.tex);
-      this.field.layout.skyTop = this.scene.layout.skyTop;
-      this.field.resize(this.app.screen.width, this.app.screen.height);
-      this.app.stage.addChildAt(this.field.root, 0);
+    if (g !== 'marsh' && !this.others.has(g) && this.ready) {
+      const sc = g === 'field' ? new FieldScene(this.scene.tex) : new MarshScene(g, this.scene.tex);
+      sc.layout.skyTop = this.scene.layout.skyTop;
+      sc.resize(this.app.screen.width, this.app.screen.height);
+      this.app.stage.addChildAt(sc.root, 0);
+      this.others.set(g, sc);
     }
-    this.ground = g === 'field' && this.field ? 'field' : 'marsh';
+    this.ground = g === 'marsh' || this.others.has(g) ? g : 'marsh';
     this.scene.root.visible = this.ground === 'marsh';
-    if (this.field) this.field.root.visible = this.ground === 'field';
     this.scene.root.position.set(0, 0);
-    this.field?.root.position.set(0, 0);
+    for (const [k, sc] of this.others) {
+      sc.root.visible = k === this.ground;
+      sc.root.position.set(0, 0);
+    }
     this.view.sync(this.runner.state);
   }
 

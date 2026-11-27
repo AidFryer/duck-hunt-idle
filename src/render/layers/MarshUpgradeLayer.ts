@@ -81,6 +81,8 @@ export class TimberLayer implements Layer {
   private readonly refl: Graphics;
   private l!: SceneLayout;
   private level = -1;
+  /** A whole flooded stand across the water (the Flooded Timber ground). */
+  stand = false;
 
   constructor() {
     this.view.addChild(this.g);
@@ -105,12 +107,19 @@ export class TimberLayer implements Layer {
     const { w, h, horizon: hz, scale: s } = l;
     const g = this.g.clear();
     const rnd = seededRandom(97);
-    const n = this.level * 2;
+    const n = this.stand ? 14 + this.level * 3 : this.level * 2;
     const waterH = h - hz;
-    const x0 = Math.max(l.anchors.lodge.x + 40 * s, w * 0.28);
-    const x1 = w * 0.44;
+    const x0 = this.stand ? -w * 0.02 : Math.max(l.anchors.lodge.x + 40 * s, w * 0.28);
+    const x1 = this.stand ? w * 1.02 : w * 0.44;
     const trees: { x: number; y: number; ht: number }[] = [];
-    for (let i = 0; i < n; i++) trees.push({ x: x0 + rnd() * (x1 - x0), y: hz + waterH * (0.04 + rnd() * 0.16), ht: (40 + rnd() * 50) * s });
+    for (let i = 0; i < n; i++) {
+      let x = x0 + rnd() * (x1 - x0);
+      // Keep the open hole around the decoys clear.
+      const dc = l.anchors.decoyCenter;
+      const gap = l.anchors.decoySpread * 0.35;
+      if (this.stand && Math.abs(x - dc.x) < gap) x = x < dc.x ? x - gap : x + gap;
+      trees.push({ x, y: hz + waterH * (0.03 + rnd() * (this.stand ? 0.22 : 0.16)), ht: (40 + rnd() * (this.stand ? 70 : 50)) * s });
+    }
     trees.sort((a, b) => a.y - b.y);
     for (const t of trees) {
       const k = 0.5 + ((t.y - hz) / waterH) * 1.2;

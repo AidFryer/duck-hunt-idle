@@ -8,7 +8,10 @@ import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
 import { HintLayer, chooseHint } from './layers/HintLayer';
 import type { Floater } from './layers/DuckLayer';
-import { FIELD_BOTS, type GroundId, type HuntStage } from '../data/economy';
+import { type GroundId, type HuntStage, type OutpostId } from '../data/economy';
+import { ground } from '../sim/hunt';
+import { SPECIES, type SpeciesId } from '../data/species';
+import { eventGround } from './eventGround';
 import { EffectsLayer } from './layers/EffectsLayer';
 import { FogLayer } from './layers/FogLayer';
 import { LandLayer } from './layers/LandLayer';
@@ -49,9 +52,12 @@ function mixColor(a: number, b: number, k: number): number {
   return (ch(16) << 16) | (ch(8) << 8) | ch(0);
 }
 
+/** Which ground a MarshScene draws: the home marsh or one of the far grounds. */
+export type WaterGround = 'marsh' | OutpostId;
+
 export class MarshScene {
   readonly root = new Container();
-  readonly tex = new TextureLibrary();
+  readonly tex: TextureLibrary;
   readonly sky: SkyLayer;
   readonly water: WaterLayer;
   readonly ducks: DuckLayer;
@@ -86,8 +92,8 @@ export class MarshScene {
     },
   };
 
-  constructor() {
-    const tex = this.tex;
+  constructor(readonly variant: WaterGround = 'marsh', shared?: TextureLibrary) {
+    const tex = (this.tex = shared ?? new TextureLibrary());
     this.sky = new SkyLayer(tex);
     const clouds = (this.clouds = new CloudLayer(tex));
     const farFog = new FogLayer(tex, [{ at: -0.02, speed: 6, alpha: 0.6, height: 0.5 }]);
@@ -124,6 +130,18 @@ export class MarshScene {
       this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
+    if (variant !== 'marsh') {
+      // Far grounds: no lodge, porch or plots, just water, blind and birds.
+      for (const v of [shore.view, shore.reflection, this.props.view, this.props.reflection, this.life.view, this.plots.view]) v.visible = false;
+      this.crew.outpost = true;
+      this.timber.stand = variant === 'timber';
+      // The bay is always salt water and open coast.
+      if (variant === 'bay') this.flyway = 'atlantic';
+      this.ducks.flyoverSpecies = flyoversFor(variant);
+      blind.setLooks(variant === 'bay'
+        ? ['decoy.species.surfScoter', 'decoy.species.commonEider', 'decoy.species.blackScoter', 'decoy.species.longtail']
+        : ['decoy.species.woodDuck', 'decoy.drake', 'decoy.hen']);
+    }
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
       this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.crew, this.props, this.life, midReeds,
@@ -131,8 +149,14 @@ export class MarshScene {
     ];
   }
 
-  /** Turn a tap at screen (x, y) into a hunt action. */
+  /** Turn a tap at screen (x, y) into a hunt action on this scene's ground. */
   pick(x: number, y: number): TapTarget {
+    const t = this.pickHere(x, y);
+    if (this.variant !== 'marsh') t.ground = this.variant;
+    return t;
+  }
+
+  private pickHere(x: number, y: number): TapTarget {
     const p = this.ducks.pick(x, y);
     if (p?.kind === 'flock') return { job: p.called ? 'shoot' : 'call', flockId: p.id, at: p.at };
     if (p?.kind === 'floater') return { job: 'retrieve', floater: p.floater, at: p.at };
@@ -165,9 +189,16 @@ export class MarshScene {
    * HUD can show feedback (e.g. "+5 coins"), or null.
    */
   handle(e: SimEvent): Point | null {
-    // Field crew live in the goose field scene; the marsh ignores them.
-    if ('bot' in e && FIELD_BOTS.includes(e.bot)) return null;
-    if ('ground' in e && e.ground === 'field') return null;
+    // Each scene only plays its own ground's events.
+    const g = eventGround(e);
+    if (g && g !== this.variant) return null;
+    if (this.variant !== 'marsh' && 'bot' in e) {
+      // The far crews aren't drawn on the blind; cheer at the blind instead.
+      const a = this.layout.anchors.blind;
+      if (e.type === 'botBought' || e.type === 'botLevel' || e.type === 'botMilestone') this.fx.sparkle(a.x, a.y - 20 * this.layout.scale, this.layout.scale, 12);
+      if (e.type === 'botMoved' || e.type === 'problemRetry') return null;
+      return { x: a.x, y: a.y - 40 * this.layout.scale };
+    }
     switch (e.type) {
       case 'decoySet':
         this.blind.tossDecoy(this.crew.decoyFrom(e.source));
@@ -255,7 +286,6 @@ export class MarshScene {
         return a;
       }
       case 'decoysBought': {
-        if (e.ground === 'field') return null;
         const a = this.layout.anchors.decoyCenter;
         this.fx.sparkle(a.x, a.y, this.layout.scale, 10);
         return a;
@@ -292,10 +322,12 @@ export class MarshScene {
 
   /** Bring visuals in line with the sim (on load and every frame, cheaply). */
   sync(state: GameState): void {
-    this.blind.reconcile(state.hunt.decoys);
-    this.blind.setCarvings(CARVING_ORDER.filter((id) => state.carvings[id] && !CARVINGS[id].look.goose));
-    this.ducks.reconcile(state);
-    if (state.flyway !== this.flyway) {
+    const g = this.variant;
+    const h = ground(state, g);
+    this.blind.reconcile(h.decoys);
+    this.blind.setCarvings(g === 'marsh' ? CARVING_ORDER.filter((id) => state.carvings[id] && !CARVINGS[id].look.goose) : []);
+    this.ducks.reconcileGround(h, state, g);
+    if (g !== 'bay' && state.flyway !== this.flyway) {
       this.flyway = state.flyway;
       this.resize(this.layout.w, this.layout.h);
     }
@@ -309,12 +341,13 @@ export class MarshScene {
     this.shore.setLevel(state.lodge);
     this.life.setLevel(state.lodge);
     this.props.sync(state);
-    this.hint.target = chooseHint(state, 'marsh', this.ducks, this.hintLabels);
+    this.hint.target = chooseHint(state, g, this.ducks, this.hintLabels);
     const w = state.environment.weather;
     this.weather.weather = w;
     for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;
     this.plots.setPlots(state.plots, plotCount(state.lodge));
-    this.timber.setLevel(state.upgrades.timber ?? 0);
+    // The Pin Oak Stand grows the flooded timber, not the home marsh.
+    this.timber.setLevel(g === 'timber' ? state.upgrades.timber ?? 0 : 0);
     this.fx.steamBoost = 1 + (state.upgrades.coffee ?? 0) * 0.35;
   }
 
@@ -332,6 +365,12 @@ export class MarshScene {
     }
     for (const layer of this.layers) layer.update(frame);
   }
+}
+
+/** Birds that fly over each far ground just for scenery. */
+function flyoversFor(g: OutpostId): SpeciesId[] {
+  const local = (Object.keys(SPECIES) as SpeciesId[]).filter((id) => SPECIES[id].ground === g || SPECIES[id].alsoAt?.includes(g));
+  return local.length ? local : ['mallard'];
 }
 
 /** Reeds along the far bank, around the blind and beside the lodge bank. */

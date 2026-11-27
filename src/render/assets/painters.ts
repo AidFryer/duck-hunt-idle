@@ -1289,7 +1289,7 @@ export function paintPegLeg(): Canvas {
   return t.canvas;
 }
 
-export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker' | 'staker' | 'flagger' | 'layout';
+export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker' | 'staker' | 'flagger' | 'layout' | 'guide' | 'boatman';
 
 /**
  * Decoy-bot: an upright carved decoy body on peg legs with a duck head,
@@ -1484,6 +1484,43 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fillRect(17, 20.5, 6, 7.5);
     ctx.fillStyle = css(palette.brass);
     ctx.fillRect(18.5, 18.4, 3, 1.4);
+  }
+  if (kind === 'guide') {
+    // Camo cap with a bill, and a lanyard of calls
+    ctx.fillStyle = css(0x5a6a3a);
+    ctx.beginPath();
+    ctx.ellipse(15.5, 4.2, 6.5, 3.4, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(0x3e4a28);
+    ctx.beginPath();
+    ctx.roundRect(15, 3.2, 8.5, 1.8, 0.8);
+    ctx.fill();
+    ctx.fillStyle = css(0x8a6a3a);
+    for (const [x, y] of [[14, 16], [17, 17.5]] as const) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, 2, 4, 0.8);
+      ctx.fill();
+    }
+  }
+  if (kind === 'boatman') {
+    // Yellow sou'wester and a life ring
+    ctx.fillStyle = css(0xe8b84a);
+    ctx.beginPath();
+    ctx.ellipse(15.5, 4.6, 7.5, 3.2, 0, Math.PI, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(15.5, 4.6, 9.5, 1.6, 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = css(0xd85a3a);
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(6, 24, 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = css(0xf4f2ec);
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(6, 24, 4, 0.3, 0.9);
+    ctx.stroke();
   }
   if (kind === 'tinker') {
     // Goggles pushed up and a wrench

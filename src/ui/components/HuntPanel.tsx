@@ -8,6 +8,17 @@ import type { HudSnapshot } from '../hudState';
  */
 export function HuntPanel({ hud, ground = 'marsh' }: { hud: HudSnapshot; ground?: GroundId }) {
   const field = ground === 'field';
+  if (ground === 'timber' || ground === 'bay') {
+    return (
+      <p class="hunt-status__how">
+        {ground === 'timber' ? (
+          <><strong>The flooded timber.</strong> Wood ducks and black ducks drop through the oaks in small, quick flocks. Hire a Timber Guide in the Workshop to hunt it while you're away.</>
+        ) : (
+          <><strong>The coastal bay.</strong> Big rafts of sea ducks, slow to decoy. Scoters and eiders live out here. Hire a Bay Boatman in the Workshop to work it.</>
+        )}
+      </p>
+    );
+  }
   if (!field && hud.lifetimeBirds >= 40) return null;
   return (
     <p class="hunt-status__how">

@@ -1,7 +1,8 @@
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
-  BOT_ORDER, BOTS, DECOYS, FIELD, FOREMAN, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
+  BOT_ORDER, BOTS, DECOYS, FOREMAN, GROUND_LODGE, GROUND_NAMES, GROUND_ORDER, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
+  type GroundId,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
 import { STREAK } from '../data/economy';
@@ -29,7 +30,7 @@ import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, decoyBagPrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
   milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, maxCommitted, botPriceMult, type Price,
-  patchMultiplier,
+  patchMultiplier, groundOpen, GROUND_PARAMS,
 } from '../sim/economy';
 import { canDo, fieldOpen } from '../sim/hunt';
 import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
@@ -219,7 +220,9 @@ export interface HudSnapshot {
   calendar: { id: StageId; name: string; blurb: string; day: number; of: number; nextName: string };
   carvings: { id: CarvingId; status: CarvingStatus; affordable: boolean }[];
   maxCircling: number;
-  spreads: Record<'marsh' | 'field', { decoys: number; draw: number; price: Price; affordable: boolean }>;
+  spreads: Record<GroundId, { decoys: number; draw: number; price: Price; affordable: boolean }>;
+  /** Every hunting ground, open or not, in the order they open. */
+  grounds: { id: GroundId; name: string; open: boolean; lodgeName: string }[];
   plots: {
     open: number;
     /** Lodge that opens the next plot (null when all four are open). */
@@ -293,6 +296,10 @@ function queueFor(state: GameState, job: JobId): { text: string; backedUp: boole
       return { text: `${state.field.committed.length} over the spread`, backedUp: state.field.committed.length >= maxCommitted(state, 'field') };
     case 'fRetrieve':
       return { text: `${state.field.downed.length} in the stubble`, backedUp: state.field.downed.length >= 6 };
+    case 'tCall': case 'tShoot': case 'tRetrieve': case 'tHunt':
+      return { text: `${state.timber.downed.length} birds down in the timber`, backedUp: state.timber.downed.length >= 8 };
+    case 'bCall': case 'bShoot': case 'bRetrieve': case 'bHunt':
+      return { text: `${state.bay.downed.length} birds on the bay`, backedUp: state.bay.downed.length >= 10 };
     case 'foreman': {
       const open = state.problems.open.length;
       return { text: `${open} open`, backedUp: open > foremanCapacity(state) };
@@ -349,11 +356,11 @@ function planSnap(state: GameState, id: BotId): PlanSnapshot {
   return { earned: !!state.plans[id], open: state.lodge >= p.lodge, lodgeName: lodgeDef(p.lodge).name, req: req(state, p.counter, p.count) };
 }
 
-function spreadSnap(state: GameState, g: 'marsh' | 'field'): HudSnapshot['spreads']['marsh'] {
+function spreadSnap(state: GameState, g: GroundId): HudSnapshot['spreads']['marsh'] {
   const decoys = spreadSize(state, g);
-  const base = g === 'field' ? FIELD.baseSpreadSize : HUNT.baseSpreadSize;
+  const base = GROUND_PARAMS[g].baseSpreadSize;
   const price = decoyBagPrice(state, g);
-  return { decoys, draw: Math.pow(decoys / base, DECOYS.drawExponent), price, affordable: canAfford(state, price) && (g === 'marsh' || state.lodge >= 4) };
+  return { decoys, draw: Math.pow(decoys / base, DECOYS.drawExponent), price, affordable: canAfford(state, price) && groundOpen(state, g) };
 }
 
 function rungSnap(state: GameState, id: RungId): RungSnapshot {
@@ -625,7 +632,10 @@ export function snapshot(state: GameState): HudSnapshot {
     spreads: {
       marsh: spreadSnap(state, 'marsh'),
       field: spreadSnap(state, 'field'),
+      timber: spreadSnap(state, 'timber'),
+      bay: spreadSnap(state, 'bay'),
     },
+    grounds: GROUND_ORDER.map((id) => ({ id, name: GROUND_NAMES[id], open: groundOpen(state, id), lodgeName: lodgeDef(GROUND_LODGE[id]).name })),
     plots: {
       open: plotCount(state.lodge),
       nextLodgeName: plotCount(state.lodge) < 4 ? lodgeDef(Math.max(2, state.lodge + 1)).name : null,

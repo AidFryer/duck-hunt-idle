@@ -30,10 +30,10 @@ describe('the goose field', () => {
     advance(s, 600, 0.5, ev);
     const arrivals = ev.filter((e) => e.type === 'flockArrived') as Extract<SimEvent, { type: 'flockArrived' }>[];
     const field = arrivals.filter((e) => e.ground === 'field');
-    const marsh = arrivals.filter((e) => e.ground !== 'field');
+    const marsh = arrivals.filter((e) => e.ground === undefined);
     expect(field.length).toBeGreaterThan(3);
     expect(field.every((e) => SPECIES[e.species].ground === 'field')).toBe(true);
-    expect(marsh.every((e) => SPECIES[e.species].ground === undefined)).toBe(true);
+    expect(marsh.filter((e) => e.ground === undefined).every((e) => SPECIES[e.species].ground === undefined)).toBe(true);
   });
 
   it('the field pipeline works by hand and logs geese at the lodge', () => {

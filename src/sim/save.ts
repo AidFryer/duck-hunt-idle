@@ -131,6 +131,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     if (kinds.has('doubleCheck')) Object.assign(t, { rDrill: true, rCheck: true });
     return { ...s, training: t, version: 17 };
   },
+  // v18: Flooded Timber and Coastal Bay (new grounds, bags and bots fill in with defaults).
+  17: (s) => ({ ...s, version: 18 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

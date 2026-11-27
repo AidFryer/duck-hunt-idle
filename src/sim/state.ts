@@ -8,7 +8,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -155,6 +155,9 @@ export interface GameState {
   };
   /** The goose field (opens with the Sporting Club). Flock ids share hunt.nextFlockId. */
   field: GroundState;
+  /** Flooded Timber and Coastal Bay. */
+  timber: GroundState;
+  bay: GroundState;
   /** Sim seconds until the next golden flock. */
   goldenTimer: number;
   /** The player's name and picture. */
@@ -179,7 +182,7 @@ export interface GameState {
     feathersRate: number;
   };
   /** Bags of decoys bought for each spread. */
-  decoyBags: { marsh: number; field: number };
+  decoyBags: { marsh: number; field: number; timber: number; bay: number };
   /** Food plots on the far bank (how many are usable depends on the lodge). */
   plots: { crop: CropId | null; growth: number }[];
   bots: Record<BotId, BotState>;
@@ -337,6 +340,8 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       lastManualAt: -999,
     },
     field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
+    timber: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
+    bay: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
     goldenTimer: 200,
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
     carvings: {},
@@ -345,7 +350,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     dog: { level: 1, swim: 0 },
     volley: { unlocked: false, charge: 0, fired: 0, birdsRate: 0, coinsRate: 0, feathersRate: 0 },
     plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
-    decoyBags: { marsh: 0, field: 0 },
+    decoyBags: { marsh: 0, field: 0, timber: 0, bay: 0 },
     bots: createBotStates(),
     assign: createAssignments(),
     jobs: createJobs(),

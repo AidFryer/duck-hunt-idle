@@ -1,3 +1,4 @@
+import { GroundPicker } from './components/GroundPicker';
 import { TrophyWall } from './components/TrophyWall';
 import { Tally, VolleyButton } from './components/Volley';
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -77,7 +78,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const botsAlert = BOT_ORDER.some((id) => hud.bots[id].revealed && hud.bots[id].affordable);
   const upgradesAlert = hud.acreAffordable || hud.upgrades.some((u) => u.revealed && u.affordable);
   const n = prefs.notation;
-  const ground = hud.field.open ? prefs.ground : 'marsh';
+  const ground = hud.grounds.find((g) => g.id === prefs.ground)?.open ? prefs.ground : 'marsh';
 
   return (
     <div class={`layout layout--app ${sheetOpen ? 'has-sheet' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
@@ -128,11 +129,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         </div>
         <Tally hud={hud} notation={n} />
         <VolleyButton hud={hud} controls={controls} notation={n} />
-        {hud.field.open && (
-          <button class="ground-switch" onClick={() => controls.setGround(ground === 'field' ? 'marsh' : 'field')}>
-            {ground === 'field' ? '‹ Back to the marsh' : 'To the goose field ›'}
-          </button>
-        )}
+        <GroundPicker hud={hud} ground={ground} onPick={(g) => controls.setGround(g)} />
         {tutorialOn ? (
           <div class="float-tutorial">
             <Tutorial

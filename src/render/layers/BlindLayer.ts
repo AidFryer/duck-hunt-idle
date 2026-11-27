@@ -40,6 +40,14 @@ export class BlindLayer implements Layer {
   private l!: SceneLayout;
 
   private carvingKey = '';
+  /** Texture keys the plain decoys cycle through (front to back). */
+  private looks = ['decoy.drake', 'decoy.drake', 'decoy.hen'];
+
+  /** Use other decoys (sea ducks out on the bay, say). */
+  setLooks(keys: string[]): void {
+    this.looks = keys;
+    this.carvingKey = '\u0000';
+  }
 
   /** Carved decoys from the collection take a few spots in the spread. */
   setCarvings(ids: readonly CarvingId[]): void {
@@ -50,7 +58,7 @@ export class BlindLayer implements Layer {
       // Every third slot, from the front of the spread, until the carvings run out.
       const k = i % 3 === 1 ? (i - 1) / 3 : -1;
       const id = k >= 0 ? ids[k] : undefined;
-      const t = this.tex.get(id ? `carving.${id}` : i % 3 === 2 ? 'decoy.hen' : 'decoy.drake');
+      const t = this.tex.get(id ? `carving.${id}` : this.looks[i % this.looks.length]!);
       d.s.texture = t;
       d.refl.texture = t;
       if (id) d.s.anchor.set(0.45, 31 / 36);

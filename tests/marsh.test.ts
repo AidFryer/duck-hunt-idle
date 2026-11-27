@@ -39,16 +39,18 @@ describe('species & field guide', () => {
     expect(species.has('mallard')).toBe(true);
   });
 
-  it('timber makes wood ducks more likely; cold fronts favour rare birds', () => {
+  it('nest boxes bring more wood ducks to the timber; cold fronts favour rare sea ducks', () => {
     const s = rich();
-    s.upgrades.nestBoxes = 1;
-    s.rungs.floatingRig = true;
-    const before = speciesWeights(s, 12).woodDuck;
-    s.upgrades.timber = 3;
-    expect(speciesWeights(s, 12).woodDuck).toBeGreaterThan(before * 2);
-    const eider = speciesWeights(s, 6).kingEider;
+    const before = speciesWeights(s, 12, 'timber').woodDuck;
+    expect(before).toBeGreaterThan(0);
+    s.upgrades.nestBoxes = 3;
+    expect(speciesWeights(s, 12, 'timber').woodDuck).toBeGreaterThan(before * 2);
+    expect(speciesWeights(s, 12, 'marsh').woodDuck).toBe(0); // they live in the timber now
+    s.upgrades.breakwater = 1;
+    const eider = speciesWeights(s, 6, 'bay').kingEider;
+    expect(eider).toBeGreaterThan(0);
     s.environment.weather = 'coldFront';
-    expect(speciesWeights(s, 6).kingEider).toBeGreaterThan(eider * 3);
+    expect(speciesWeights(s, 6, 'bay').kingEider).toBeGreaterThan(eider * 3);
   });
 
   it('first harvest of a species adds a Field Guide entry', () => {
@@ -177,8 +179,9 @@ describe('species need the marsh to be ready', () => {
     expect(w.mallard).toBeGreaterThan(0);
     expect(w.teal).toBeGreaterThan(0);
     for (const id of ['woodDuck', 'pintail', 'canvasback', 'kingEider', 'harlequin', 'scaup'] as const) expect(w[id]).toBe(0);
-    s.upgrades.nestBoxes = 1;
-    expect(speciesWeights(s, 7).woodDuck).toBeGreaterThan(0);
+    expect(speciesWeights(s, 7, 'bay').harlequin).toBe(0);
+    s.upgrades.kelpLine = 1;
+    expect(speciesWeights(s, 7, 'bay').harlequin).toBeGreaterThan(0);
     s.upgrades.deepPool = 1;
     expect(speciesWeights(s, 7).canvasback).toBe(0); // also needs wild celery
     s.upgrades.celeryBeds = 1;
@@ -194,9 +197,10 @@ describe('new flyways', () => {
     expect(speciesWeights(s, 10).eurasianWigeon).toBe(0);
     s.flyway = 'pacific';
     expect(speciesWeights(s, 10).eurasianWigeon).toBeGreaterThan(0);
-    expect(speciesWeights(s, 10).longtail).toBe(0);
+    s.upgrades.breakwater = 1;
+    expect(speciesWeights(s, 10, 'bay').spectacledEider).toBeGreaterThan(0);
     s.flyway = 'atlantic';
-    expect(speciesWeights(s, 10).longtail).toBeGreaterThan(0);
+    expect(speciesWeights(s, 10, 'bay').spectacledEider).toBe(0);
   });
 });
 

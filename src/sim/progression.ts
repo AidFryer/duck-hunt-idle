@@ -161,7 +161,7 @@ interface Fx {
   coins: number;
 }
 
-const fxCache: Record<GroundId, Fx | null> = { marsh: null, field: null };
+const fxCache: Record<GroundId, Fx | null> = { marsh: null, field: null, timber: null, bay: null };
 
 /**
  * Combined effects of every rung owned (cached until the set changes).

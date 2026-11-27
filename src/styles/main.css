@@ -3628,6 +3628,49 @@ select {
   box-shadow: 0 1px 3px rgba(40, 26, 14, 0.25);
 }
 
+.ground-pick {
+  position: absolute;
+  right: 10px;
+  top: calc(var(--hud-top) + 44px);
+  z-index: 4;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.ground-pick .ground-switch { position: static; }
+.ground-menu {
+  display: grid;
+  gap: 4px;
+  min-width: 200px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--c-cream, #f6ecd8);
+  box-shadow: 0 6px 18px rgba(40, 26, 14, 0.3);
+  animation: ground-menu-in 0.18s ease-out;
+}
+.reduce-motion .ground-menu { animation: none; }
+@keyframes ground-menu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.ground-menu__item {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ui-text, #2d2520);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ground-menu__item strong { font-size: 14px; }
+.ground-menu__item span { font-size: 12px; opacity: 0.72; }
+button.ground-menu__item:hover { background: rgba(120, 140, 90, 0.14); }
+.ground-menu__item.is-here { background: rgba(120, 140, 90, 0.2); }
+.ground-menu__item.is-locked { opacity: 0.55; cursor: default; }
+
 .group-head {
   margin: 8px 2px -4px;
   font-family: var(--ui-fontHeading);

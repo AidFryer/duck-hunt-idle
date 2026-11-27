@@ -13,12 +13,19 @@ type Up = HudSnapshot['upgrades'][number];
 const byWhen = (a: Up, b: Up) => a.lodge - b.lodge || a.price.coins.cmp(b.price.coins);
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room);
+  const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room && !UPGRADES[u.id].ground);
+  const groundOpen = (g: string) => hud.grounds.some((x) => x.id === g && x.open);
+  const far = (['timber', 'bay'] as const).map((g) => ({
+    g,
+    name: hud.grounds.find((x) => x.id === g)!.name,
+    open: groundOpen(g),
+    ups: hud.upgrades.filter((u) => UPGRADES[u.id].ground === g && u.revealed).sort(byWhen),
+  }));
   const field = hud.upgrades.filter((u) => UPGRADES[u.id].field);
   const open = marsh.filter((u) => u.revealed).sort(byWhen);
   const ready = open.filter((u) => u.level < u.max);
   const maxed = open.filter((u) => u.level >= u.max);
-  const soon = marsh.filter((u) => !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
+  const soon = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room && !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
   return (
     <div class="tab-body upgrades-tab">
       <FoodPlots hud={hud} controls={controls} notation={notation} />
@@ -64,6 +71,15 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
           </ul>
         </>
       )}
+
+      {far.filter((f) => f.open && f.ups.length > 0).map((f) => (
+        <>
+          <h4 class="group-head">{f.name}</h4>
+          <ul class="up-list">
+            {f.ups.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+          </ul>
+        </>
+      ))}
     </div>
   );
 }

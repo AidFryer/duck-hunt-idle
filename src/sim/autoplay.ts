@@ -13,9 +13,9 @@ import { fireVolley } from './volley';
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
-import { acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price } from './economy';
+import { groundOpen, acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price } from './economy';
 import type { SimEvent } from './events';
-import { doAction, canDo, fieldOpen, type ActionJob } from './hunt';
+import { doAction, canDo, fieldOpen, ground, type ActionJob } from './hunt';
 import { fixAll } from './problems';
 import { closeSeason, nextFlyway, starsFor } from './prestige';
 import type { GameState } from './state';
@@ -86,6 +86,11 @@ function wanted(s: GameState): BotId[] {
     if (f.committed.length >= 1 || own('layout') < own('flagger')) out.push('layout');
     if (f.incoming.length >= 2 || own('flagger') < 1) out.push('flagger');
   }
+  for (const [g, bot] of [['timber', 'guide'], ['bay', 'boatman']] as const) {
+    if (!groundOpen(s, g)) continue;
+    const d = ground(s, g);
+    if (d.incoming.length >= 2 || d.downed.length > 3 || own(bot) < 3) out.push(bot);
+  }
   return out.filter((id) => !!s.plans[id]);
 }
 
@@ -134,7 +139,7 @@ function options(s: GameState): Option[] {
   if (s.unlocks.upgrades === undefined) return opts;
   opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
   opts.push({ price: decoyBagPrice(s), buy: () => buyDecoyBag(s) });
-  if (s.lodge >= 4) opts.push({ price: decoyBagPrice(s, 'field'), buy: () => buyDecoyBag(s, 'field') });
+  for (const g of ['field', 'timber', 'bay'] as const) if (groundOpen(s, g)) opts.push({ price: decoyBagPrice(s, g), buy: () => buyDecoyBag(s, g) });
   for (const u of UPGRADE_ORDER) {
     const lvl = s.upgrades[u] ?? 0;
     if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;

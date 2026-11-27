@@ -1,4 +1,5 @@
 import type { Notation } from '../util/format';
+import type { GroundId } from '../data/economy';
 
 /** Per-device preferences (not part of the game save). */
 export interface Prefs {
@@ -16,7 +17,7 @@ export interface Prefs {
   /** The first-run tutorial has been finished or skipped. */
   tutorialDone: boolean;
   /** Which hunting ground was on screen last. */
-  ground: 'marsh' | 'field';
+  ground: GroundId;
   /** Vibration ticks on shots and big moments. */
   haptics: boolean;
   /** The "add to home screen" tip has been shown. */

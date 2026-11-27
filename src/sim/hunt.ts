@@ -4,12 +4,12 @@ import { dogHas, dogSwim } from './training';
 import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
-import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD_JOBS, GOLDEN, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
 import { clockAt } from './clock';
-import { birdValue, botReliability, committedPatience, extraFlockSize, flockDraw, incomingPatience, maxCommitted, maxIncoming, shotFraction, spreadSize } from './economy';
+import { GROUND_PARAMS, birdValue, botReliability, committedPatience, extraFlockSize, flockDraw, groundOpen, incomingPatience, maxCommitted, maxIncoming, shotFraction, spreadSize } from './economy';
 import { checkPlans } from './progression';
 import { stepCrops } from './crops';
 import { UPGRADE_EFFECTS } from '../data/upgrades';
@@ -27,7 +27,7 @@ import { rand, type FlockState, type GameState, type GroundState } from './state
  * Each action is a pure state transition used by taps, Gus, and bots.
  */
 
-export type ActionJob = HuntStage | 'scout' | FieldJob;
+export type ActionJob = HuntStage | 'scout' | FieldJob | OutpostJob;
 
 /** Which ground and which of the four steps a pipeline job is. */
 const JOB_STEP: Partial<Record<JobId, { g: GroundId; step: Step }>> = {
@@ -39,10 +39,16 @@ const JOB_STEP: Partial<Record<JobId, { g: GroundId; step: Step }>> = {
   flag: { g: 'field', step: 'call' },
   fShoot: { g: 'field', step: 'shoot' },
   fRetrieve: { g: 'field', step: 'retrieve' },
+  tCall: { g: 'timber', step: 'call' },
+  tShoot: { g: 'timber', step: 'shoot' },
+  tRetrieve: { g: 'timber', step: 'retrieve' },
+  bCall: { g: 'bay', step: 'call' },
+  bShoot: { g: 'bay', step: 'shoot' },
+  bRetrieve: { g: 'bay', step: 'retrieve' },
 };
 
 export function ground(state: GameState, g: GroundId): GroundState {
-  return g === 'field' ? state.field : state.hunt;
+  return g === 'marsh' ? state.hunt : state[g];
 }
 
 /** Is the goose field open? */
@@ -74,13 +80,13 @@ function pickIndex(list: FlockState[], targetId: number | undefined, source: Act
 }
 
 /** Tag events from the field so the right scene animates them. */
-const tag = (g: GroundId) => (g === 'field' ? { ground: 'field' as const } : {});
+const tag = (g: GroundId) => (g === 'marsh' ? {} : { ground: g as Exclude<GroundId, 'marsh'> });
 
 export function canDo(state: GameState, job: ActionJob, targetId?: number): boolean {
   if (job === 'scout') return state.hunt.incoming.length < maxIncoming(state);
   if (job === 'log') return state.hunt.ledger.length > 0;
   const js = JOB_STEP[job]!;
-  if (js.g === 'field' && !fieldOpen(state)) return false;
+  if (js.g !== 'marsh' && !groundOpen(state, js.g)) return false;
   const h = ground(state, js.g);
   switch (js.step) {
     case 'decoys':
@@ -148,7 +154,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
         guestGolden(state);
         events.push({ type: 'goldenShot', coins, feathers: GOLDEN.feathers, ...tag(g) });
       }
-      const room = (g === 'field' ? FIELD.maxDowned : HUNT.maxDowned) - h.downed.length;
+      const room = GROUND_PARAMS[g].maxDowned - h.downed.length;
       const downed = Math.max(0, Math.min(room, Math.max(1, Math.ceil(flock.size * shotFraction(state, g)))));
       for (let i = 0; i < downed; i++) h.downed.push(flock.species);
       if (g === 'marsh') state.stats.shots += 1;
@@ -160,7 +166,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
       const species = job === 'log' ? undefined : h.downed[0];
       // Your retriever brings two at a time once she's learned Fetch Two.
       const fetch = job !== 'log' && source === 'manual' && dogHas(state, DOG_FX.fetchTwoLevel) ? 2 : 1;
-      doMany(state, job as 'retrieve' | 'log' | 'fRetrieve', fetch, source, events);
+      doMany(state, job as ManyJob, fetch, source, events);
       // Hunter's Rhythm pays a bonus on birds you fetch by hand.
       if (source === 'manual' && species && hunt.streak > 1) {
         const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * hunt.streak * 100) / 100;
@@ -215,11 +221,14 @@ const EVENT_CAP = 3;
  * catch-up). Returns how many were done. Emits individual events for the
  * first few (for animations) and one combined event for the rest.
  */
-export function doMany(state: GameState, job: 'retrieve' | 'log' | 'fRetrieve', count: number, source: ActionSource | 'keeper', events: EventSink): number {
+export type ManyJob = 'retrieve' | 'log' | 'fRetrieve' | 'tRetrieve' | 'bRetrieve';
+const RETRIEVE_GROUND: Partial<Record<ManyJob, GroundId>> = { retrieve: 'marsh', fRetrieve: 'field', tRetrieve: 'timber', bRetrieve: 'bay' };
+
+export function doMany(state: GameState, job: ManyJob, count: number, source: ActionSource | 'keeper', events: EventSink): number {
   const h = state.hunt;
   const src = source === 'keeper' ? 'manual' : source;
-  if (job === 'retrieve' || job === 'fRetrieve') {
-    const g: GroundId = job === 'fRetrieve' ? 'field' : 'marsh';
+  if (job !== 'log') {
+    const g: GroundId = RETRIEVE_GROUND[job]!;
     const gr = ground(state, g);
     const n = Math.min(count, gr.downed.length);
     if (n <= 0) return 0;
@@ -289,6 +298,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 
   stepGround(state, 'marsh', dt, activity, events);
   if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
+  for (const o of OUTPOSTS) if (groundOpen(state, o)) stepGround(state, o, dt, activity, events);
   stepGolden(state, dt, activity, events);
   // Swims on Her Own: your retriever fetches a bird now and then by herself.
   const swim = dogSwim(state, dt);
@@ -303,6 +313,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   const table = rateTable(state);
   for (let i = PIPELINE_JOBS.length - 1; i >= 0; i--) runJob(state, table, PIPELINE_JOBS[i]!, dt, events);
   if (fieldOpen(state)) for (let i = FIELD_JOBS.length - 1; i >= 0; i--) runJob(state, table, FIELD_JOBS[i]!, dt, events);
+  for (const o of OUTPOSTS) if (groundOpen(state, o)) runOutpost(state, table, o, dt, events);
 
   stepForemen(state, events, table.total.foreman ?? 0);
   stepTinkers(state, dt, events, table.total.tinker ?? 0);
@@ -324,10 +335,11 @@ function stepGolden(state: GameState, dt: number, activity: number, events: Even
   state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden * (1 + UPGRADE_EFFECTS.mapRoomGolden * (state.upgrades.mapRoom ?? 0));
   if (state.goldenTimer > 0) return;
   state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
-  const g: GroundId = fieldOpen(state) && rand(state) < GOLDEN.fieldShare ? 'field' : 'marsh';
+  const others = GROUND_ORDER.filter((x) => x !== 'marsh' && groundOpen(state, x));
+  const g: GroundId = others.length > 0 && rand(state) < GOLDEN.fieldShare ? others[Math.floor(rand(state) * others.length)]! : 'marsh';
   const h = ground(state, g);
   if (h.incoming.some((f) => f.golden) || h.committed.some((f) => f.golden)) return;
-  const P = g === 'field' ? FIELD : HUNT;
+  const P = GROUND_PARAMS[g];
   const species = pickSpecies(state, clockAt(state.clock.dayTime).hour, g);
   const raw = P.flockSizeMin + rand(state) * (P.flockSizeMax - P.flockSizeMin);
   const size = Math.max(2, Math.round(raw * SPECIES[species].flockSize * GOLDEN.sizeMult));
@@ -339,8 +351,8 @@ function stepGolden(state: GameState, dt: number, activity: number, events: Even
 /** Decoy drift, arrivals and patience for one hunting ground. */
 function stepGround(state: GameState, g: GroundId, dt: number, activity: number, events: EventSink): void {
   const h = ground(state, g);
-  const field = g === 'field';
-  const P = field ? FIELD : HUNT;
+  const field = g !== 'marsh';
+  const P = GROUND_PARAMS[g];
   const nextId = () => state.hunt.nextFlockId++;
 
   // The spread is always out (decoys no longer drift loose).
@@ -406,6 +418,43 @@ function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[n
   // Snags get rarer while others are already waiting, so they never pile up.
   const crowd = 1 + state.problems.open.length * 0.5;
   return (base * PROBLEM_RATE) / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0)) / crowd;
+}
+
+/** Timber Guides and Bay Boatmen: one crew does every step, the furthest-along first. */
+function runOutpost(state: GameState, t: RateTable, g: OutpostId, dt: number, events: EventSink): void {
+  const job: JobId = g === 'timber' ? 'tHunt' : 'bHunt';
+  const steps = GROUND_JOBS[g];
+  const rate = t.total[job] ?? 0;
+  const j = state.jobs[job];
+  if (rate <= 0) {
+    j.progress = 0;
+    return;
+  }
+  j.progress += rate * dt;
+  const h = ground(state, g);
+  // Fetching goes in batches; calling and shooting one flock at a time.
+  for (let guard = 0; j.progress >= 1 && guard < 400; guard++) {
+    if (h.downed.length > 0) {
+      const n = Math.min(Math.floor(j.progress), h.downed.length);
+      j.progress -= n;
+      doMany(state, steps.retrieve as ManyJob, n, 'retriever', events);
+      continue;
+    }
+    const step = canDo(state, steps.shoot as ActionJob) && botCanDo(state, steps.shoot as ActionJob) ? steps.shoot : botCanDo(state, steps.call as ActionJob) ? steps.call : null;
+    if (!step) {
+      j.progress = Math.min(j.progress, 1);
+      return;
+    }
+    j.progress -= 1;
+    const bot = pickFrom(t, job, rand(state));
+    if (!bot) return;
+    if (rand(state) < problemChance(state, t, bot, job) && raiseProblem(state, bot, job, events)) {
+      recordJob(state, job, false);
+      continue;
+    }
+    doAction(state, step as ActionJob, bot, events);
+    recordJob(state, job, true);
+  }
 }
 
 function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: EventSink): void {

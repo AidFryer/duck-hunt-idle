@@ -4,7 +4,8 @@ import type { SpeciesId } from './species';
 export type UpgradeId =
   | 'timber' | 'rice' | 'millet' | 'blinds' | 'decoyQuality' | 'lodgeRooms' | 'coffee' | 'cot'
   | 'nestBoxes' | 'weathervane' | 'celeryBeds' | 'boatHouse' | 'lanterns' | 'deepPool' | 'guestDock' | 'smokehouse' | 'carvingShed'
-  | 'cornStubble' | 'winterWheat' | 'roostPond' | 'trophyRoom' | 'mapRoom';
+  | 'cornStubble' | 'winterWheat' | 'roostPond' | 'trophyRoom' | 'mapRoom'
+  | 'musselBeds' | 'kelpLine' | 'breakwater';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -22,14 +23,16 @@ export interface UpgradeDef {
   lodge: number;
   /** Shown with the goose field's upgrades. */
   field?: boolean;
+  /** Belongs to another hunting ground (timber or bay). */
+  ground?: 'timber' | 'bay';
   /** A room of the lodge (built from the Lodge sheet, not the Land sheet). */
   room?: boolean;
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   timber: {
-    id: 'timber', name: 'Flooded Timber', blurb: 'Flood a stand of oaks. Wood ducks love the cover.',
-    effect: '+10% flocks, brings black ducks', maxLevel: 8,
+    id: 'timber', name: 'Pin Oak Stand', ground: 'timber', blurb: 'Let more pin oaks stand in the water. Mallards and black ducks pile into the acorns.',
+    effect: '+10% timber flocks, brings black ducks', maxLevel: 8,
     costCoins: 6000, costFeathers: 450, costGrowth: 2.4, revealAtCoins: 150, lodge: 3,
   },
   rice: {
@@ -68,9 +71,9 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     costCoins: 90_000, costFeathers: 4500, costGrowth: 3, revealAtCoins: 1000, lodge: 4,
   },
   nestBoxes: {
-    id: 'nestBoxes', name: 'Nest Boxes', blurb: 'Cedar boxes on posts along the bank, each with a little round door.',
-    effect: '+5% flocks, brings wood ducks', maxLevel: 3,
-    costCoins: 300, costFeathers: 25, costGrowth: 2.5, revealAtCoins: 0, lodge: 1,
+    id: 'nestBoxes', name: 'Nest Boxes', ground: 'timber', blurb: 'Cedar boxes on posts along the bank, each with a little round door.',
+    effect: '+5% timber flocks, more wood ducks', maxLevel: 3,
+    costCoins: 1500, costFeathers: 125, costGrowth: 2.5, revealAtCoins: 0, lodge: 3,
   },
   weathervane: {
     id: 'weathervane', name: 'Weathervane', blurb: 'A copper mallard on the roof. Now you know which way to set the spread.',
@@ -137,6 +140,21 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     effect: 'Golden flocks 10% more often', maxLevel: 5,
     costCoins: 300_000, costFeathers: 15_000, costGrowth: 2.6, revealAtCoins: 0, lodge: 4,
   },
+  musselBeds: {
+    id: 'musselBeds', name: 'Mussel Beds', ground: 'bay', blurb: 'Seed mussel beds off the point. Scoters and eiders dive for them all winter.',
+    effect: '+10% bay flocks, brings white-winged & black scoters and eiders', maxLevel: 6,
+    costCoins: 4_000_000, costFeathers: 200_000, costGrowth: 2.5, revealAtCoins: 0, lodge: 5,
+  },
+  kelpLine: {
+    id: 'kelpLine', name: 'Kelp Line', ground: 'bay', blurb: 'A long line of kelp beds where the bay meets the open sea.',
+    effect: '+8% bay flocks, brings long-tails & harlequins', maxLevel: 5,
+    costCoins: 10_000_000, costFeathers: 450_000, costGrowth: 2.6, revealAtCoins: 0, lodge: 5,
+  },
+  breakwater: {
+    id: 'breakwater', name: 'Breakwater', ground: 'bay', blurb: 'A stone breakwater calms the water so big rafts settle in.',
+    effect: '+2 birds per bay flock, brings rare eiders', maxLevel: 5,
+    costCoins: 25_000_000, costFeathers: 1_000_000, costGrowth: 2.6, revealAtCoins: 0, lodge: 5,
+  },
 };
 
 export const UPGRADE_ORDER: readonly UpgradeId[] = [
@@ -144,6 +162,7 @@ export const UPGRADE_ORDER: readonly UpgradeId[] = [
   'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
   'deepPool', 'guestDock', 'smokehouse', 'cot',
   'carvingShed', 'cornStubble', 'winterWheat', 'roostPond', 'trophyRoom', 'mapRoom',
+  'musselBeds', 'kelpLine', 'breakwater',
 ];
 
 /** Per-level effect sizes (sim reads these). */
@@ -171,18 +190,24 @@ export const UPGRADE_EFFECTS = {
   winterWheatFlockSize: 1,
   roostPondFlockRate: 0.08,
   trophyRoomPatch: 0.25,
+  musselBedsFlockRate: 0.1,
+  kelpLineFlockRate: 0.08,
+  breakwaterFlockSize: 2,
   mapRoomGolden: 0.1,
 } as const;
 
 /** Species weight multipliers per upgrade level: weight × (1 + k × level). */
 export const UPGRADE_SPECIES: Partial<Record<UpgradeId, Partial<Record<SpeciesId, number>>>> = {
-  timber: { woodDuck: 0.8, mallard: 0.15, blackDuck: 0.2 },
+  timber: { mallard: 0.15, blackDuck: 0.3 },
   nestBoxes: { woodDuck: 0.6 },
   celeryBeds: { wigeon: 0.5, ringNeck: 0.5, canvasback: 0.4 },
   deepPool: { redhead: 0.5, canvasback: 0.4, scaup: 0.4, bufflehead: 0.3 },
   cornStubble: { canadaGoose: 0.2, cacklingGoose: 0.5 },
   winterWheat: { snowGoose: 0.5, rossGoose: 0.4, whiteFront: 0.3 },
   roostPond: { brant: 0.5, sandhillCrane: 0.4 },
+  musselBeds: { whiteWingedScoter: 0.4, blackScoter: 0.4, commonEider: 0.3 },
+  kelpLine: { longtail: 0.4, harlequin: 0.4 },
+  breakwater: { kingEider: 0.3, spectacledEider: 0.3, stellersEider: 0.3 },
 };
 
 export const OFFLINE = {

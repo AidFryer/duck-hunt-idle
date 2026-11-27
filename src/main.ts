@@ -14,11 +14,11 @@ import { applyCssTokens } from './data/palette';
 import { Renderer } from './render/Renderer';
 import type { Point } from './render/types';
 import { jumpToPhase } from './sim/actions';
-import { buyAcre, buyBot, buyDecoyBag, levelUpBot } from './sim/economy';
+import { buyAcre, buyBot, buyDecoyBag, groundOpen, levelUpBot } from './sim/economy';
 import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
-import { canDo, doAction, fieldOpen, type ActionJob } from './sim/hunt';
+import { canDo, doAction, type ActionJob } from './sim/hunt';
 import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
@@ -139,7 +139,7 @@ setInterval(() => {
   // Words next to the hint ring until the player has the hang of it.
   if (renderer?.scene) renderer.scene.hintLabels = true;
   // Leaving the field open after a reset or import is not possible: fall back.
-  if (prefs.get().ground === 'field' && !fieldOpen(state) && renderer?.ground === 'field') controls.setGround('marsh');
+  if (renderer && renderer.ground !== 'marsh' && !groundOpen(state, renderer.ground)) controls.setGround('marsh');
 }, 200);
 
 // --- Autosave ---------------------------------------------------------------
@@ -353,8 +353,8 @@ function onEvent(e: SimEvent, at: Point | null): void {
       break;
     case 'flockArrived':
       if (e.golden) {
-        const away = (e.ground === 'field') !== (prefs.get().ground === 'field' && renderer?.ground === 'field');
-        const where = e.ground === 'field' ? 'over the goose field' : 'over the marsh';
+        const away = (e.ground ?? 'marsh') !== (renderer?.ground ?? 'marsh');
+        const where = { marsh: 'over the marsh', field: 'over the goose field', timber: 'over the flooded timber', bay: 'out on the bay' }[e.ground ?? 'marsh'];
         feedback.toast(`A golden flock is circling ${where}! Call it in and shoot it yourself before it leaves.${away ? ' (Switch over to see it.)' : ''}`, 'good', 5000);
       }
       break;
@@ -504,7 +504,7 @@ const controls: GameControls = {
     return ok;
   },
   setGround(g: GroundId) {
-    const next = g === 'field' && fieldOpen(state) ? 'field' : 'marsh';
+    const next = groundOpen(state, g) ? g : 'marsh';
     updatePrefs({ ...prefs.get(), ground: next });
     renderer?.setGround(next);
     hud.set(snapshot(state));
@@ -695,7 +695,8 @@ async function startScene(host: HTMLElement): Promise<void> {
   renderer.onFix = (bot) => controls.fixBot(bot);
   renderer.onTap = onSceneTap;
   await renderer.init();
-  if (prefs.get().ground === 'field' && fieldOpen(state)) renderer.setGround('field');
+  const lastGround = prefs.get().ground;
+  if (lastGround !== 'marsh' && groundOpen(state, lastGround)) renderer.setGround(lastGround);
   document.body.classList.add('is-ready');
   if (loaded.kind === 'loaded') {
     const away = (Date.now() - state.meta.lastSaved) / 1000;

@@ -111,8 +111,10 @@ export interface SpeciesDef {
   size: number;
   /** Flock size multiplier (pintail come in big groups, eiders alone-ish). */
   flockSize: number;
-  /** Where it's hunted: the marsh (default) or the goose field. */
-  ground?: 'field';
+  /** Where it's hunted: the marsh (default), the goose field, the timber or the bay. */
+  ground?: 'field' | 'timber' | 'bay';
+  /** Other grounds it also visits. */
+  alsoAt?: readonly ('marsh' | 'field' | 'timber' | 'bay')[];
   guide: string;
   /** Hint shown on the undiscovered Field Guide page. */
   hint: string;
@@ -133,7 +135,7 @@ const henBase = (head: number, body: number, bill: number, speculum: number): Du
 
 export const SPECIES: Record<SpeciesId, SpeciesDef> = {
   mallard: {
-    id: 'mallard', name: 'Mallard', rarity: 'common',
+    id: 'mallard', name: 'Mallard', rarity: 'common', alsoAt: ['timber'],
     coins: 5, feathers: 1, weight: 100,
     hours: [[5.5, 9], [16.5, 19.5]], weather: ['clear', 'drizzle'],
     size: 1, flockSize: 1,
@@ -146,12 +148,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x9a7550, 0x9a7550, 0xc98a3c, 0x3a5ec0),
   },
   woodDuck: {
-    id: 'woodDuck', name: 'Wood Duck', rarity: 'uncommon',
+    id: 'woodDuck', name: 'Wood Duck', rarity: 'uncommon', ground: 'timber',
     coins: 9, feathers: 2, weight: 40,
     hours: [[5.8, 8], [17.5, 19.6]], weather: ['clear', 'fog'],
     size: 0.92, flockSize: 0.7,
     guide: 'Painted like a carousel horse: a swept-back crest, white face lines and a red eye. Loves flooded timber and nests in tree hollows.',
-    hint: 'Look for them at first light, around flooded timber.',
+    hint: 'Lives in the Flooded Timber. Look at first light.',
     drake: {
       head: 0x24504a, headSheen: 0x6a3f8a, breast: 0x7a3a2a, flank: 0xd8c08a, back: 0x3a3028,
       tail: 0x2a2622, bill: 0xd8483a, speculum: 0x3a5ec0, crest: true, faceLines: true,
@@ -224,7 +226,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x9a7a5a, 0xb8a890, 0x2a2622, 0xc8c4bc),
   },
   blackDuck: {
-    id: 'blackDuck', name: 'Black Duck', rarity: 'rare',
+    id: 'blackDuck', name: 'Black Duck', rarity: 'rare', ground: 'timber',
     coins: 12, feathers: 2, weight: 18,
     hours: [[17, 20], [5, 7]], weather: ['coldFront', 'fog', 'drizzle'],
     size: 1.02, flockSize: 0.8,
@@ -237,12 +239,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x7a6a58, 0x3e322a, 0x8a8a4a, 0x4a3a9a),
   },
   kingEider: {
-    id: 'kingEider', name: 'King Eider', rarity: 'legendary',
+    id: 'kingEider', name: 'King Eider', rarity: 'legendary', ground: 'bay',
     coins: 120, feathers: 25, weight: 0.6,
     hours: [[5.5, 8]], weather: ['coldFront', 'fog'],
     size: 1.2, flockSize: 0.4,
     guide: 'A sea duck from the far north, almost never this far inland. Orange bill shield, pale blue crown, black back. Old-timers say seeing one brings a good season.',
-    hint: 'A legend. Only the fiercest cold fronts push one this far south.',
+    hint: 'A legend of the Coastal Bay. A breakwater and a cold front might do it.',
     drake: {
       head: 0xa8c0d8, eyePatch: 0xb8d8a8, breast: 0xf0dcc0, flank: 0x1e1a18, back: 0x1e1a18,
       tail: 0x1e1a18, bill: 0xf08a2a, speculum: 0x1e1a18, billShield: true, sidePatch: 0xf4efe4,
@@ -302,7 +304,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x6a5440, 0x7a6450, 0x6a7a8a, 0xe4e0d8), eyePatch: 0xf0ece4 },
   },
   bufflehead: {
-    id: 'bufflehead', name: 'Bufflehead', rarity: 'uncommon',
+    id: 'bufflehead', name: 'Bufflehead', rarity: 'uncommon', alsoAt: ['bay'],
     coins: 10, feathers: 2, weight: 20,
     hours: [[7, 15]], weather: ['coldFront', 'clear'],
     size: 0.72, flockSize: 0.8,
@@ -315,12 +317,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x4a4238, 0x7a7068, 0x4a4640, 0xf4f2ec), eyePatch: 0xf0ece4 },
   },
   hoodedMerganser: {
-    id: 'hoodedMerganser', name: 'Hooded Merganser', rarity: 'rare',
+    id: 'hoodedMerganser', name: 'Hooded Merganser', rarity: 'rare', ground: 'timber',
     coins: 18, feathers: 3, weight: 10,
     hours: [[6, 9], [16, 18.5]], weather: ['fog', 'clear'],
     size: 0.85, flockSize: 0.6,
     guide: 'Fans a white-and-black hood like a sail. Thin toothed bill for catching minnows in the timber.',
-    hint: 'Shy timber birds. Only a long, patient call coaxes them in.',
+    hint: 'Shy timber birds. A Pin Oak Stand brings them in.',
     drake: {
       head: 0x1e1a18, eyePatch: 0xf4f2ec, breast: 0xf0ece4, flank: 0xb0622e, back: 0x1e1a18,
       tail: 0x2a2622, bill: 0x1e1a18, speculum: 0xf0ece4, crest: true,
@@ -341,12 +343,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x9a7a5a, 0xa48262, 0x4a4640, 0x2f8a5a),
   },
   harlequin: {
-    id: 'harlequin', name: 'Harlequin Duck', rarity: 'rare',
+    id: 'harlequin', name: 'Harlequin Duck', rarity: 'rare', ground: 'bay',
     coins: 24, feathers: 4, weight: 6,
     hours: [[6, 10]], weather: ['coldFront', 'wind'],
     size: 0.86, flockSize: 0.5,
     guide: 'Slate blue with bold white marks and rusty sides, like a painted toy. A mountain-stream bird; seeing one inland is a story to tell.',
-    hint: 'Only a master caller\'s lure brings one this far from the rapids.',
+    hint: 'Only a Coastal Bay kelp line brings one this far from the rapids.',
     drake: {
       head: 0x3a4a62, eyePatch: 0xf4f2ec, breast: 0x3a4a62, flank: 0xa8522e, back: 0x34425a,
       tail: 0x1e1a18, bill: 0x4a4a4a, speculum: 0x3a4a8a, faceLines: true, sidePatch: 0x3a4a62,
@@ -511,12 +513,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x9a7a5e, 0xa8805e, 0x9ab0c0, 0x2f7a5a),
   },
   longtail: {
-    id: 'longtail', name: 'Long-tailed Duck', rarity: 'rare',
+    id: 'longtail', name: 'Long-tailed Duck', rarity: 'rare', ground: 'bay',
     coins: 24, feathers: 4, weight: 8,
     hours: [[7, 12]], weather: ['coldFront', 'wind'],
     size: 0.95, flockSize: 0.8,
     guide: 'A chattering sea duck in black, white and soft tan, trailing two long tail feathers. Dives deeper than almost any duck.',
-    hint: 'Only on the Atlantic, out over a deep pool.',
+    hint: 'A Coastal Bay bird that loves the kelp line.',
     drake: {
       head: 0xf0ece4, eyePatch: 0x6a5a4a, breast: 0x2a2622, flank: 0xe8e4dc, back: 0x3a3430,
       tail: 0x1e1a18, bill: 0xe8a0b0, speculum: 0x3a3430, longTail: true,
@@ -579,7 +581,7 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x6a5a4a, 0x8a7a68, 0x3a3a3a, 0x6a5a4a), eyePatch: 0xd8ccb8 },
   },
   goldeneye: {
-    id: 'goldeneye', name: 'Common Goldeneye', rarity: 'uncommon',
+    id: 'goldeneye', name: 'Common Goldeneye', rarity: 'uncommon', alsoAt: ['bay'],
     coins: 11, feathers: 2, weight: 16,
     hours: [[6, 10], [15, 17]], weather: ['coldFront', 'wind'],
     size: 0.95, flockSize: 0.8,
@@ -605,12 +607,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x9a4a22, 0xa8a8a8, 0xc0402a, 0xf0ece4), crest: true },
   },
   greaterScaup: {
-    id: 'greaterScaup', name: 'Greater Scaup', rarity: 'uncommon',
+    id: 'greaterScaup', name: 'Greater Scaup', rarity: 'uncommon', ground: 'bay',
     coins: 12, feathers: 2, weight: 14,
     hours: [[6, 10], [14, 17]], weather: ['wind', 'coldFront'],
     size: 1, flockSize: 1.4,
     guide: 'The big-water bluebill, with a rounder green-glossed head than its lesser cousin. Rafts up by the thousand on the coasts.',
-    hint: 'A coastal diver of the Atlantic and Pacific.',
+    hint: 'Rafts up in the Coastal Bay.',
     drake: {
       head: 0x1e2a24, headSheen: 0x2f5a44, breast: 0x1e1a18, flank: 0xe8e4dc, back: 0xa8aaa8,
       tail: 0x1e1a18, bill: 0x7a9ac0, speculum: 0xf0ece4,
@@ -650,12 +652,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     },
   },
   redBreastedMerganser: {
-    id: 'redBreastedMerganser', name: 'Red-breasted Merganser', rarity: 'rare',
+    id: 'redBreastedMerganser', name: 'Red-breasted Merganser', rarity: 'rare', ground: 'bay',
     coins: 15, feathers: 3, weight: 8,
     hours: [[7, 11], [14, 16.5]], weather: ['wind', 'coldFront'],
     size: 1, flockSize: 0.8,
     guide: 'A shaggy-crested sawbill of salt bays, with a white collar and a speckled rusty chest. One of the fastest ducks in the air.',
-    hint: 'Salt water birds of the Atlantic coast.',
+    hint: 'Salt water birds of the Coastal Bay.',
     drake: {
       head: 0x1e3a2e, headSheen: 0x2f6b4a, crest: true, neckMark: 'ring', breast: 0x9a6a44, flank: 0x8a8a8a,
       back: 0x1e1a18, tail: 0x5a5a5a, bill: 0xc0402a, speculum: 0xf0ece4,
@@ -676,12 +678,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x5a3a22, 0x9a9a9a, 0xd8a83a, 0xf0ece4),
   },
   surfScoter: {
-    id: 'surfScoter', name: 'Surf Scoter', rarity: 'rare',
+    id: 'surfScoter', name: 'Surf Scoter', rarity: 'rare', ground: 'bay',
     coins: 17, feathers: 3, weight: 7,
     hours: [[6, 11]], weather: ['wind', 'coldFront'],
     size: 1.05, flockSize: 1.1,
     guide: 'The "skunk-head coot": jet black with white patches on the head and a big painted bill of orange, white and black.',
-    hint: 'A sea duck of both coasts. Deep water helps.',
+    hint: 'A Coastal Bay regular.',
     drake: {
       head: 0x1e1a18, eyePatch: 0xf4f2ec, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18,
       tail: 0x1e1a18, bill: 0xe8702a, speculum: 0x1e1a18, billShield: true,
@@ -689,12 +691,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x4a3e34, 0x4e4238, 0x3a3a3a, 0x4a3e34),
   },
   whiteWingedScoter: {
-    id: 'whiteWingedScoter', name: 'White-winged Scoter', rarity: 'rare',
+    id: 'whiteWingedScoter', name: 'White-winged Scoter', rarity: 'rare', ground: 'bay',
     coins: 18, feathers: 3, weight: 6,
     hours: [[6, 11]], weather: ['wind', 'coldFront'],
     size: 1.2, flockSize: 1,
     guide: 'The biggest scoter, all black but for a white wing patch that flashes in flight and a tiny white comma by the eye.',
-    hint: 'Big water on the coasts.',
+    hint: 'Big water in the Coastal Bay, over the mussel beds.',
     drake: {
       head: 0x1e1a18, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18, tail: 0x1e1a18,
       bill: 0xe8803a, speculum: 0xf4f2ec, billShield: true,
@@ -702,12 +704,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x4a3e34, 0x4e4238, 0x3a3a3a, 0xf4f2ec),
   },
   blackScoter: {
-    id: 'blackScoter', name: 'Black Scoter', rarity: 'rare',
+    id: 'blackScoter', name: 'Black Scoter', rarity: 'rare', ground: 'bay',
     coins: 17, feathers: 3, weight: 6,
     hours: [[6, 11]], weather: ['coldFront', 'fog'],
     size: 1, flockSize: 1.1,
     guide: 'Black from bill to tail except for a big butter-yellow knob on the bill. Whistles a mournful note over the swells.',
-    hint: 'An Atlantic sea duck.',
+    hint: 'A sea duck of the Coastal Bay. Mussel beds bring them.',
     drake: {
       head: 0x1e1a18, breast: 0x1e1a18, flank: 0x1e1a18, back: 0x1e1a18, tail: 0x1e1a18,
       bill: 0xf2c43a, speculum: 0x1e1a18, billShield: true,
@@ -715,12 +717,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x3a322c, 0x5a4e44, 0x3a3a3a, 0x3a322c), eyePatch: 0xb8aea0 },
   },
   commonEider: {
-    id: 'commonEider', name: 'Common Eider', rarity: 'rare',
+    id: 'commonEider', name: 'Common Eider', rarity: 'rare', ground: 'bay',
     coins: 30, feathers: 6, weight: 4,
     hours: [[6, 11]], weather: ['coldFront', 'wind'],
     size: 1.3, flockSize: 1,
     guide: 'The big sea duck of eiderdown fame. Drakes are white above and black below, with a soft green wash on the back of the head.',
-    hint: 'Out on the Atlantic, and only for a fine rig.',
+    hint: 'Out on the Coastal Bay, over the mussel beds.',
     drake: {
       head: 0xf4f2ec, crown: 0x1e1a18, breast: 0xf0e4d4, flank: 0x1e1a18, back: 0xf4f2ec,
       tail: 0x1e1a18, bill: 0x9aa070, speculum: 0x1e1a18, sidePatch: 0xf4f2ec,
@@ -728,12 +730,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: henBase(0x8a5e3a, 0x8a5e3a, 0x6a6a5a, 0x5a3a24),
   },
   tuftedDuck: {
-    id: 'tuftedDuck', name: 'Tufted Duck', rarity: 'legendary',
+    id: 'tuftedDuck', name: 'Tufted Duck', rarity: 'legendary', ground: 'bay',
     coins: 90, feathers: 18, weight: 0.8,
     hours: [[6, 10], [15, 17]], weather: ['wind', 'fog'],
     size: 0.95, flockSize: 0.4,
     guide: 'An Old World diver that wanders over now and then, tagging along with scaup. Look for the floppy tuft on the back of the head.',
-    hint: 'A stray from across the ocean. Coastal flyways only.',
+    hint: 'A stray in the Coastal Bay. Coastal flyways only.',
     drake: {
       head: 0x1e1a2a, headSheen: 0x3a2a5a, crest: true, breast: 0x1e1a18, flank: 0xf4f2ec,
       back: 0x1e1a18, tail: 0x1e1a18, bill: 0x7a8aa0, speculum: 0xf0ece4,
@@ -741,12 +743,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x4a3a2e, 0x6a5a4a, 0x6a7a8a, 0xf0ece4), crest: true },
   },
   spectacledEider: {
-    id: 'spectacledEider', name: 'Spectacled Eider', rarity: 'legendary',
+    id: 'spectacledEider', name: 'Spectacled Eider', rarity: 'legendary', ground: 'bay',
     coins: 140, feathers: 30, weight: 0.4,
     hours: [[6, 10]], weather: ['coldFront'],
     size: 1.2, flockSize: 0.4,
     guide: 'A ghost of the Bering Sea: pale green head and great white "goggles" around the eyes. Few hunters ever see one.',
-    hint: 'Far out on the Pacific, for the finest rig on the water.',
+    hint: 'Behind the breakwater on the Pacific coast.',
     drake: {
       head: 0xc8d8a0, eyePatch: 0xf4f2ec, breast: 0x2a2a2a, flank: 0x2a2a2a, back: 0xf4f2ec,
       tail: 0x1e1a18, bill: 0xe8803a, speculum: 0x1e1a18,
@@ -754,12 +756,12 @@ export const SPECIES: Record<SpeciesId, SpeciesDef> = {
     hen: { ...henBase(0x8a6a48, 0x8a6a48, 0x6a6a5a, 0x5a3a24), eyePatch: 0xc8b8a0 },
   },
   stellersEider: {
-    id: 'stellersEider', name: "Steller's Eider", rarity: 'legendary',
+    id: 'stellersEider', name: "Steller's Eider", rarity: 'legendary', ground: 'bay',
     coins: 130, feathers: 28, weight: 0.4,
     hours: [[6, 10]], weather: ['coldFront', 'wind'],
     size: 0.95, flockSize: 0.5,
     guide: 'The smallest eider: a white head with a tiny green tuft, a black collar and a warm butterscotch chest.',
-    hint: 'A Pacific rarity. Only the floating rig draws one.',
+    hint: 'A Pacific rarity behind the breakwater.',
     drake: {
       head: 0xf4f2ec, crown: 0x8aa87a, neckMark: 'ring', breast: 0xc8904a, flank: 0xd8a060, back: 0x1e1a18,
       tail: 0x1e1a18, bill: 0x6a7a8a, speculum: 0x3a4a8a,
@@ -827,8 +829,9 @@ export const SPECIES_ORDER: readonly SpeciesId[] = [
 ];
 
 /** Species hunted at a ground. */
-export function speciesAt(ground: 'marsh' | 'field', id: SpeciesId): boolean {
-  return (SPECIES[id].ground ?? 'marsh') === ground;
+export function speciesAt(ground: 'marsh' | 'field' | 'timber' | 'bay', id: SpeciesId): boolean {
+  const d = SPECIES[id];
+  return (d.ground ?? 'marsh') === ground || !!d.alsoAt?.includes(ground);
 }
 
 export const RARITY_STARS: Record<Rarity, number> = { common: 1, uncommon: 2, rare: 3, legendary: 4 };

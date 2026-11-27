@@ -64,6 +64,8 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
   state.currencies = fresh.currencies;
   state.hunt = fresh.hunt;
   state.field = fresh.field;
+  state.timber = fresh.timber;
+  state.bay = fresh.bay;
   state.bots = fresh.bots;
   state.assign = createAssignments();
   state.jobs = createJobs();

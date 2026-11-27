@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { BOT_MILESTONES, BOTS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId } from '../../data/economy';
+import { BOT_MILESTONES, BOTS, DECOYS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId, type GroundId } from '../../data/economy';
 import { PLANS } from '../../data/progression';
 import { botPrice } from '../../sim/economy';
 import { formatNumber, formatRate, type Notation } from '../../util/format';
@@ -22,8 +22,10 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
   const toggle = (id: string) => setOpenId((o) => (o === id ? null : id));
   const shown = WORKSHOP_ORDER.filter((id) => showBot(hud, id));
   const groups: { key: string; title: string; ids: BotId[] }[] = [
-    { key: 'marsh', title: 'Marsh crew', ids: shown.filter((id) => !FIELD_BOTS.includes(id) && id !== 'tinker' && id !== 'foreman') },
+    { key: 'marsh', title: 'Marsh crew', ids: shown.filter((id) => !FIELD_BOTS.includes(id) && !FAR_CREW.includes(id) && id !== 'tinker' && id !== 'foreman') },
+    { key: 'timber', title: 'Timber crew', ids: shown.filter((id) => id === 'guide') },
     { key: 'field', title: 'Goose field crew', ids: shown.filter((id) => FIELD_BOTS.includes(id)) },
+    { key: 'bay', title: 'Bay crew', ids: shown.filter((id) => id === 'boatman') },
     { key: 'lodge', title: 'Lodge crew', ids: shown.filter((id) => id === 'tinker' || id === 'foreman') },
   ];
   const sections = [
@@ -72,10 +74,13 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
 
 /** Decoy spreads (and their rigs) for each ground, plus the collection. */
 function DecoysSection({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
+  const open = (g: GroundId) => hud.grounds.some((x) => x.id === g && x.open);
   return (
     <>
       <SpreadCard ground="marsh" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.setter} />
+      {open('timber') && <SpreadCard ground="timber" hud={hud} controls={controls} notation={notation} rigs={[]} />}
       {hud.field.open && <SpreadCard ground="field" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.staker} />}
+      {open('bay') && <SpreadCard ground="bay" hud={hud} controls={controls} notation={notation} rigs={[]} />}
       <DecoyCollection hud={hud} controls={controls} notation={notation} />
     </>
   );
@@ -248,15 +253,17 @@ function Ladder({ rungs, owned, controls, notation }: { rungs: RungSnapshot[]; o
 }
 
 /** The decoy spread: always out; buy bags of decoys and build bigger rigs. */
-function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: 'marsh' | 'field'; hud: HudSnapshot; controls: GameControls; notation: Notation; rigs: RungSnapshot[] }) {
+const SPREAD_NAME: Record<GroundId, string> = { marsh: 'Decoy spread', field: 'Goose spread', timber: 'Timber spread', bay: 'Bay rig' };
+
+function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: GroundId; hud: HudSnapshot; controls: GameControls; notation: Notation; rigs: RungSnapshot[] }) {
   const sp = hud.spreads[ground];
   const next = rigs.find((r) => !r.built);
-  const per = ground === 'field' ? 4 : 2;
+  const per = DECOYS[ground].perBag;
   return (
-    <section class="spread-card" aria-label={ground === 'field' ? 'Goose decoy spread' : 'Decoy spread'}>
+    <section class="spread-card" aria-label={SPREAD_NAME[ground]}>
       <div class="spread-card__head">
         <div>
-          <h4>{ground === 'field' ? 'Goose spread' : 'Decoy spread'}</h4>
+          <h4>{SPREAD_NAME[ground]}</h4>
           <p>
             {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)}
           </p>
@@ -291,6 +298,9 @@ function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: 'marsh'
     </section>
   );
 }
+
+/** Crews that work one far ground on their own. */
+const FAR_CREW: BotId[] = ['guide', 'boatman'];
 
 export function pulse(el: HTMLElement, ok: boolean): void {
   el.classList.remove('is-pressed', 'is-nope');
