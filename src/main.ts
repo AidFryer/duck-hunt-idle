@@ -396,7 +396,7 @@ function onSceneTap(t: TapTarget): void {
     if (canDo(state, jobs.retrieve)) step = 'retrieve';
     else return splash(false);
   }
-  if (step === 'call' && !canDo(state, jobs.call)) return tapNote(g === 'field' ? 'Shoot the geese over the spread first' : 'Shoot the low flock first', t.at);
+  if (step === 'call' && !canDo(state, jobs.call, t.flockId)) return tapNote(g === 'field' ? 'Shoot the geese over the spread first' : 'Shoot the low flock first', t.at);
   if (step === 'retrieve' && t.floater) view?.ducks.prefer(t.floater);
   doAction(state, jobs[step] as ActionJob, 'manual', runner.sink, t.flockId);
   hud.set(snapshot(state));

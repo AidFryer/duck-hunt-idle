@@ -71,7 +71,7 @@ function pickIndex(list: FlockState[], targetId: number | undefined, source: Act
 /** Tag events from the field so the right scene animates them. */
 const tag = (g: GroundId) => (g === 'field' ? { ground: 'field' as const } : {});
 
-export function canDo(state: GameState, job: ActionJob): boolean {
+export function canDo(state: GameState, job: ActionJob, targetId?: number): boolean {
   if (job === 'scout') return state.hunt.incoming.length < maxIncoming(state);
   if (job === 'log') return state.hunt.ledger.length > 0;
   const js = JOB_STEP[job]!;
@@ -81,7 +81,10 @@ export function canDo(state: GameState, job: ActionJob): boolean {
     case 'decoys':
       return false; // decoys stay out; the spread grows by buying decoys
     case 'call':
-      return h.incoming.length > 0 && h.committed.length < maxCommitted(state, js.g);
+      if (h.incoming.length === 0) return false;
+      // A golden flock you tap always comes in, even over a full spread.
+      if (targetId !== undefined && h.incoming.some((f) => f.id === targetId && f.golden)) return true;
+      return h.committed.length < maxCommitted(state, js.g);
     case 'shoot':
       return h.committed.length > 0;
     case 'retrieve':
@@ -94,7 +97,7 @@ export function canDo(state: GameState, job: ActionJob): boolean {
  * (the one the player tapped); otherwise the one that's waited longest.
  */
 export function doAction(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink, targetId?: number): boolean {
-  if (!canDo(state, job)) return false;
+  if (!canDo(state, job, source === 'manual' ? targetId : undefined)) return false;
   if (source !== 'manual' && !botCanDo(state, job)) return false;
   if (source === 'manual') {
     state.stats.manualActions += 1;

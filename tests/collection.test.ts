@@ -121,3 +121,25 @@ describe('save', () => {
     expect(up.carvings).toEqual({});
   });
 });
+
+describe('golden flocks in a busy marsh', () => {
+  it('a tapped golden flock comes in even when the spread is full', async () => {
+    const { canDo, doAction } = await import('../src/sim/hunt');
+    const { maxCommitted } = await import('../src/sim/economy');
+    const s = rich();
+    s.lodge = 5;
+    const h = s.hunt;
+    const full = maxCommitted(s, 'marsh');
+    for (let i = 0; i < full; i++) h.committed.push({ id: 100 + i, size: 4, species: 'mallard', age: 0 });
+    h.incoming.push({ id: 7, size: 4, species: 'mallard', age: 0 });
+    h.incoming.push({ id: 8, size: 6, species: 'mallard', age: 0, golden: true });
+    expect(canDo(s, 'call')).toBe(false); // a plain flock still waits its turn
+    expect(canDo(s, 'call', 8)).toBe(true);
+    expect(doAction(s, 'call', 'manual', [], 8)).toBe(true);
+    expect(h.committed.some((f) => f.id === 8)).toBe(true);
+    expect(doAction(s, 'call', 'caller', [], 8)).toBe(false); // bots can't use the golden pass
+    const ev: SimEvent[] = [];
+    expect(doAction(s, 'shoot', 'manual', ev, 8)).toBe(true);
+    expect(ev.some((e) => e.type === 'goldenShot')).toBe(true);
+  });
+});

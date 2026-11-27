@@ -201,7 +201,7 @@ export class DuckLayer implements Layer {
   volley(): number {
     let n = 0;
     for (const f of [...this.flocks]) {
-      if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
+      if (f.kind !== 'hunt' || f.ducks.length === 0 || f.golden) continue;
       n += f.ducks.length;
       this.shoot(f.id, f.ducks.length);
     }
@@ -407,9 +407,10 @@ export class DuckLayer implements Layer {
       const b = this.bounds(f);
       if (!b) continue;
       const d = Math.hypot(x - b.x, y - b.y);
-      const reach = Math.max(b.r, 30) + slop;
+      const reach = (Math.max(b.r, 30) + slop) * (f.golden ? 1.5 : 1);
       if (d > reach) continue;
-      const score = d / reach - (f.called ? 0.3 : 0);
+      // Golden flocks win any close call, then flocks already over the decoys.
+      const score = d / reach - (f.called ? 0.3 : 0) - (f.golden ? 0.8 : 0);
       if (score < bestScore) {
         bestScore = score;
         best = { kind: 'flock', id: f.id, called: f.called, at: { x: b.x, y: b.y } };
@@ -453,7 +454,7 @@ export class DuckLayer implements Layer {
       if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
       const b = this.bounds(f);
       if (!b) continue;
-      const d = Math.hypot(x - b.x, y - b.y) - b.r;
+      const d = Math.hypot(x - b.x, y - b.y) - b.r - (f.golden ? 40 : 0);
       if (d < bd) {
         bd = d;
         best = { kind: 'flock', id: f.id, called: f.called, at: { x: b.x, y: b.y } };
