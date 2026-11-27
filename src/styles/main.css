@@ -699,16 +699,6 @@ button {
   display: inline-block;
 }
 
-.counter[data-bump='1'] {
-  animation: bump 0.35s cubic-bezier(0.3, 0.7, 0.4, 1.6);
-}
-
-@keyframes bump {
-  40% {
-    transform: scale(1.22);
-    color: var(--c-rust);
-  }
-}
 
 .tab {
   position: relative;
@@ -4425,21 +4415,17 @@ select {
 .ws-list > li:nth-child(5), .up-list > li:nth-child(5), .carving-grid > li:nth-child(5) { animation-delay: 0.12s; }
 .ws-list > li:nth-child(n + 6), .up-list > li:nth-child(n + 6), .carving-grid > li:nth-child(n + 6) { animation-delay: 0.15s; }
 @keyframes row-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } }
-.bump { display: inline-block; animation: bump 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
-@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.35); color: #ffd98a; } 100% { transform: scale(1); } }
 /* Buy buttons you can afford breathe a little. */
 .ws-row__buy:not([aria-disabled="true"]), .carving .btn:not([aria-disabled="true"]) { animation: can-buy 2.6s ease-in-out infinite; }
 @keyframes can-buy { 50% { box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.28); } }
 .reduce-motion .panel__content > .tab-body,
 .reduce-motion .ws-list > li, .reduce-motion .up-list > li, .reduce-motion .carving-grid > li,
 .reduce-motion .patch-grid > div, .reduce-motion .guide-grid > button,
-.reduce-motion .bump, .reduce-motion .ws-row__buy, .reduce-motion .carving .btn { animation: none !important; }
+.reduce-motion .reduce-motion .ws-row__buy, .reduce-motion .carving .btn { animation: none !important; }
 
 /* ------------------------------------------------------------ steady top bar
    Every slot has a fixed width, so the bar never shifts as numbers grow or
    change quickly. Room for values up to "8.88Qa". */
-.counter--steady[data-bump='1'] { animation: flash 0.45s ease-out; }
-@keyframes flash { 30% { color: var(--c-rust); } }
 .topbar { font-variant-numeric: tabular-nums; }
 .purse__value,
 .chip--birds .chip__value {
@@ -4497,3 +4483,11 @@ select {
   .rail-btn--problems .rail-btn__mark { font-size: 16px; }
   .stage-card { left: 0; top: calc(100% + 6px); }
 }
+
+/* Numbers never flash or bounce: they just count. */
+.counter, .bump { animation: none !important; transform: none !important; }
+/* Calm, not flashy: no wobbling counts, no pulsing prices. */
+.rail-btn--problems.is-alert, .problems-btn.is-alert { animation: none; }
+.ws-row__buy:not([aria-disabled="true"]), .carving .btn:not([aria-disabled="true"]) { animation: none; }
+.volley.is-ready { animation: none; }
+.volley.is-ready .volley__ring { box-shadow: 0 0 0 4px rgba(242, 196, 109, 0.4), 0 4px 14px rgba(20, 12, 6, 0.4); }
