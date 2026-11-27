@@ -4767,6 +4767,8 @@ select {
 html.tall-fix,
 html.tall-fix body {
   height: var(--app-h);
+  /* Same wood as the bottom of the dock, so the screen's bottom edge is one color. */
+  background: #4a3221;
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -4774,6 +4776,10 @@ html.tall-fix #app { height: var(--app-h); position: relative; }
 html.tall-fix .layout { position: absolute; }
 html.tall-fix .drawer-backdrop,
 html.tall-fix .away-backdrop { position: absolute; }
+
+/* Home-screen app: the page behind everything matches the dock's wood. */
+html.ios-standalone,
+html.ios-standalone body { background: #4a3221; }
 
 /* Messages while a menu is open sit just under the top bar and never stretch. */
 .layout--app.has-sheet .scene .toasts,
