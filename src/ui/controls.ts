@@ -19,6 +19,8 @@ export interface GameControls {
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;
   buyUpgrade(id: UpgradeId): boolean;
+  /** Hand over a filled guest booking. */
+  claimGuest(id: number): boolean;
   buildLodge(): boolean;
   setProfile(name: string, avatar: string): void;
   /** Name the retriever and pick its breed. */

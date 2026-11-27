@@ -7,7 +7,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -44,6 +44,21 @@ export interface BotState {
 }
 
 /** A bot that hit a snag (an "exception" in orchestrator terms). */
+export interface GuestRequest {
+  id: number;
+  who: string;
+  kind: 'birds' | 'species' | 'weather' | 'geese' | 'golden';
+  species?: SpeciesId;
+  weather?: string;
+  target: number;
+  progress: number;
+  coins: number;
+  feathers: number;
+  /** In-game day after which an unfilled booking leaves. */
+  expires: number;
+  claimed: boolean;
+}
+
 export interface Problem {
   id: number;
   bot: BotId;
@@ -143,6 +158,8 @@ export interface GameState {
   goldenTimer: number;
   /** The player's name and picture. */
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
+  /** Guest hunting parties: the booking board and the guestbook. */
+  guests: { board: GuestRequest[]; served: number; nextId: number };
   /** Carved decoys on the lodge shelf (permanent). */
   carvings: Partial<Record<CarvingId, true>>;
   /** The Big Volley: unlocked for good once the marsh gets busy. */
@@ -318,6 +335,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     goldenTimer: 200,
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
     carvings: {},
+    guests: { board: [], served: 0, nextId: 1 },
     volley: { unlocked: false, charge: 0, fired: 0, birdsRate: 0, coinsRate: 0, feathersRate: 0 },
     plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
     decoyBags: { marsh: 0, field: 0 },

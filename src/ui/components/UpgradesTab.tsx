@@ -13,7 +13,7 @@ type Up = HudSnapshot['upgrades'][number];
 const byWhen = (a: Up, b: Up) => a.lodge - b.lodge || a.price.coins.cmp(b.price.coins);
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field);
+  const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room);
   const field = hud.upgrades.filter((u) => UPGRADES[u.id].field);
   const open = marsh.filter((u) => u.revealed).sort(byWhen);
   const ready = open.filter((u) => u.level < u.max);
@@ -23,7 +23,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
     <div class="tab-body upgrades-tab">
       <FoodPlots hud={hud} controls={controls} notation={notation} />
 
-      <h4 class="group-head">Marsh & lodge</h4>
+      <h4 class="group-head">Marsh & habitat</h4>
       <ul class="up-list">
         <li class="up-row">
           <div class="up-row__text">

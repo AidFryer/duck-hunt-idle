@@ -4680,3 +4680,44 @@ select {
 .float-tutorial .tutorial__bubble { padding: 10px 12px; font-size: 14px; line-height: 1.35; }
 .float-tutorial .tutorial__bubble p { margin: 0 0 6px; }
 .float-tutorial .tutorial__name { padding: 6px 10px; font-size: 14px; }
+
+/* ------------------------------------------------------------ lodge: guests & rooms */
+.lodge-section { display: grid; gap: 6px; }
+.lodge-section .card__hint { margin: 0; }
+.lodge-section.is-locked { padding: 10px 12px; border-radius: 14px; border: 1px dashed var(--ui-panelEdge); background: rgba(255, 255, 255, 0.3); }
+.guest-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.guest {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--c-cream);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+}
+.guest.is-ready { background: #f6f1e0; box-shadow: 0 0 0 2px rgba(110, 133, 88, 0.45); }
+.guest__text { flex: 1; display: grid; gap: 3px; min-width: 0; }
+.guest__text strong { font-size: 14.5px; }
+.guest__text > span:not(.guest__bar) { font-size: 12.5px; color: var(--ui-textSoft); }
+.guest__bar { display: block; height: 6px; border-radius: 6px; background: rgba(107, 74, 47, 0.15); overflow: hidden; }
+.guest__bar span { display: block; height: 100%; border-radius: 6px; background: var(--c-sageDark); transition: width 0.4s ease; }
+.guest__meta { font-size: 11.5px !important; }
+.guest__pay { display: inline-flex; align-items: center; gap: 3px; flex: none; font-weight: 800; font-size: 13px; color: var(--c-wood); }
+.room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.room {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--c-cream);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+}
+.room.is-built { background: #f8f2e2; }
+.room.is-maxed { box-shadow: 0 0 0 2px rgba(201, 160, 78, 0.5); }
+.room.is-locked { opacity: 0.6; background: rgba(255, 255, 255, 0.3); box-shadow: none; border: 1px dashed var(--ui-panelEdge); }
+.room__icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: radial-gradient(circle at 50% 35%, #fff6e2, var(--ui-panelShade)); color: var(--c-wood); }
+.room strong { font-size: 14px; }
+.room__lvl { font-size: 11.5px; font-weight: 800; color: var(--c-sageDark); }
+.room__effect { font-size: 12px; color: var(--ui-textSoft); }
+.room .btn { margin-top: 4px; justify-self: start; }

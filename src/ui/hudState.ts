@@ -13,6 +13,8 @@ import { CARVING_ORDER, type CarvingId } from '../data/carvings';
 import { CALENDAR, stageDay, stageFor, stageIndex, type StageId } from '../data/calendar';
 import { canAffordCarving, carvingStatus, type CarvingStatus } from '../sim/carvings';
 import { busyMarsh, volleyPayout } from '../sim/volley';
+import { GUESTS } from '../data/guests';
+import { requestText } from '../sim/guests';
 import { SPECIES, SPECIES_ORDER, type SpeciesId } from '../data/species';
 import { UPGRADE_ORDER, UPGRADES, type UpgradeId } from '../data/upgrades';
 import { WEATHER, type WeatherId } from '../data/weather';
@@ -194,6 +196,14 @@ export interface HudSnapshot {
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
   /** Coins-per-bird bonus from patches (e.g. 0.36 for +36%). */
   patchBonus: number;
+  guests: {
+    open: boolean;
+    board: { id: number; who: string; text: string; progress: number; target: number; coins: number; feathers: number; ready: boolean; daysLeft: number }[];
+    served: number;
+    /** Parties until the next guestbook line, and the bonus so far. */
+    toNextLine: number;
+    bookBonus: number;
+  };
   volley: {
     unlocked: boolean;
     charge: number;
@@ -584,6 +594,16 @@ export function snapshot(state: GameState): HudSnapshot {
     lodge: lodgeSnap(state),
     profile: { ...state.profile },
     patchBonus: patchMultiplier(state) - 1,
+    guests: {
+      open: state.lodge >= GUESTS.fromLodge,
+      board: state.guests.board.map((r) => ({
+        id: r.id, who: r.who, text: requestText(r), progress: r.progress, target: r.target, coins: r.coins, feathers: r.feathers,
+        ready: r.progress >= r.target, daysLeft: Math.max(0, r.expires - state.clock.day),
+      })),
+      served: state.guests.served,
+      toNextLine: GUESTS.bookEvery - (state.guests.served % GUESTS.bookEvery),
+      bookBonus: GUESTS.bookBonus * Math.floor(state.guests.served / GUESTS.bookEvery),
+    },
     volley: {
       unlocked: state.volley.unlocked,
       charge: state.volley.charge,

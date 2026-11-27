@@ -237,6 +237,8 @@ export class MarshScene {
       case 'goldenShot':
       case 'volleyUnlocked':
       case 'stageChanged':
+      case 'guestBooked':
+      case 'guestServed':
         return null;
       case 'volley': {
         this.ducks.volley();

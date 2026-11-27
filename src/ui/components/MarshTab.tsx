@@ -6,6 +6,7 @@ import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { HuntPanel } from './HuntPanel';
 import { LodgePanel } from './Lodge';
+import { GuestBoard, LodgeRooms } from './LodgeLife';
 import type { Notation } from '../../util/format';
 import type { GroundId } from '../../data/economy';
 
@@ -26,6 +27,8 @@ export function MarshTab({ hud, controls, devTools, tutorial, notation, ground =
       {tutorial}
       {!tutorial && <LodgePanel hud={hud} controls={controls} notation={notation} />}
       <HuntPanel hud={hud} ground={ground} />
+      {hud.lodge.level >= 2 && <GuestBoard hud={hud} controls={controls} notation={notation} />}
+      {hud.lodge.level >= 2 && <LodgeRooms hud={hud} controls={controls} notation={notation} />}
 
       {!tutorial && <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">
@@ -37,14 +40,6 @@ export function MarshTab({ hud, controls, devTools, tutorial, notation, ground =
           <p class="speech__name">{KEEPER_NAME}, old lodge keeper</p>
           <p>{hud.goalGus}</p>
         </div>
-      </div>}
-
-      {!tutorial && <div class="goal" key={`g-${hud.goalId}`}>
-        <span class="goal__tag">Next goal</span>
-        <p>{hud.goalTitle}</p>
-        <p class="goal__hint">
-          Today's birds: {hud.bag} · Best day: {hud.bestBag} · Lifetime: {hud.lifetimeBirds}
-        </p>
       </div>}
 
       {devTools && (

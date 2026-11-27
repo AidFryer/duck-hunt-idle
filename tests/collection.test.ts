@@ -143,3 +143,40 @@ describe('golden flocks in a busy marsh', () => {
     expect(ev.some((e) => e.type === 'goldenShot')).toBe(true);
   });
 });
+
+describe('guest hunting parties', () => {
+  it('book at the Marsh Lodge, count birds, and pay out into the guestbook', async () => {
+    const { refreshGuests, guestBirds, claimGuest } = await import('../src/sim/guests');
+    const { GUESTS } = await import('../src/data/guests');
+    const s = rich();
+    s.lodge = 2;
+    refreshGuests(s);
+    expect(s.guests.board).toHaveLength(0); // not yet
+    s.lodge = 3;
+    s.guide.mallard = { count: 10, firstAt: 0 };
+    s.guide.teal = { count: 10, firstAt: 0 };
+    refreshGuests(s);
+    expect(s.guests.board.length).toBe(GUESTS.slots);
+    const birds = s.guests.board.find((r) => r.kind === 'birds') ?? s.guests.board[0]!;
+    // Fill it by hand: bring in plenty of the right birds.
+    for (let i = 0; i < 400; i++) guestBirds(s, birds.kind === 'species' ? [birds.species!] : ['mallard'], false);
+    if (birds.kind === 'golden') birds.progress = birds.target;
+    expect(birds.progress).toBe(birds.target);
+    const coins = s.currencies.coins;
+    const ev: SimEvent[] = [];
+    expect(claimGuest(s, birds.id, ev)).toBe(true);
+    expect(s.currencies.coins.gt(coins)).toBe(true);
+    expect(s.guests.served).toBe(1);
+    expect(ev.some((e) => e.type === 'guestServed')).toBe(true);
+    expect(claimGuest(s, birds.id, ev)).toBe(false);
+  });
+
+  it('the Trophy Room makes every patch count for more', () => {
+    const s = rich();
+    s.stats.lifetimeBirds = 1;
+    checkAchievements(s, []);
+    const base = birdValue(s, 'mallard').coins;
+    s.upgrades.trophyRoom = 4;
+    expect(birdValue(s, 'mallard').coins).toBeGreaterThan(base);
+  });
+});

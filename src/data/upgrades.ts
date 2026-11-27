@@ -4,7 +4,7 @@ import type { SpeciesId } from './species';
 export type UpgradeId =
   | 'timber' | 'rice' | 'millet' | 'blinds' | 'decoyQuality' | 'lodgeRooms' | 'coffee' | 'cot'
   | 'nestBoxes' | 'weathervane' | 'celeryBeds' | 'boatHouse' | 'lanterns' | 'deepPool' | 'guestDock' | 'smokehouse' | 'carvingShed'
-  | 'cornStubble' | 'winterWheat' | 'roostPond';
+  | 'cornStubble' | 'winterWheat' | 'roostPond' | 'trophyRoom' | 'mapRoom';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -22,6 +22,8 @@ export interface UpgradeDef {
   lodge: number;
   /** Shown with the goose field's upgrades. */
   field?: boolean;
+  /** A room of the lodge (built from the Lodge sheet, not the Land sheet). */
+  room?: boolean;
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
@@ -51,17 +53,17 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     costCoins: 450, costFeathers: 40, costGrowth: 3, revealAtCoins: 120, lodge: 1,
   },
   lodgeRooms: {
-    id: 'lodgeRooms', name: 'Lodge Rooms', blurb: 'Fix up the guest rooms upstairs.',
+    id: 'lodgeRooms', name: 'Guest Rooms', room: true, blurb: 'Fix up the guest rooms upstairs. Paying hunters sleep better than you think.',
     effect: '+12% coins from every logged bird', maxLevel: 25,
     costCoins: 15_000, costFeathers: 600, costGrowth: 2.2, revealAtCoins: 500, lodge: 3,
   },
   coffee: {
-    id: 'coffee', name: 'The Coffee Pot', blurb: 'A better pot for the blind. Everybody perks up.',
+    id: 'coffee', name: 'Kitchen', room: true, blurb: 'A real kitchen with a big coffee pot. The whole crew perks up.',
     effect: '+4% speed for every bot', maxLevel: 10,
     costCoins: 750, costFeathers: 60, costGrowth: 2.8, revealAtCoins: 100, lodge: 2,
   },
   cot: {
-    id: 'cot', name: "Caretaker's Cot", blurb: 'Somebody to keep an eye on things overnight.',
+    id: 'cot', name: 'Bunkhouse', room: true, blurb: 'Bunks for a caretaker who keeps the crew working while you sleep.',
     effect: '+1 hour of offline progress', maxLevel: 4,
     costCoins: 90_000, costFeathers: 4500, costGrowth: 3, revealAtCoins: 1000, lodge: 4,
   },
@@ -81,12 +83,12 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     costCoins: 22_500, costFeathers: 1500, costGrowth: 2.4, revealAtCoins: 0, lodge: 3,
   },
   boatHouse: {
-    id: 'boatHouse', name: 'Boat House', blurb: 'A snug shed at the water with a ramp for the dogs.',
+    id: 'boatHouse', name: 'Boathouse', room: true, blurb: 'A snug shed at the water with a ramp for the dogs.',
     effect: '+15% retrieving speed', maxLevel: 4,
     costCoins: 30_000, costFeathers: 2000, costGrowth: 2.5, revealAtCoins: 0, lodge: 3,
   },
   lanterns: {
-    id: 'lanterns', name: 'Lantern Posts', blurb: 'Warm lanterns along the boardwalk, so the crew can work into the evening.',
+    id: 'lanterns', name: 'Lantern Walk', room: true, blurb: 'Warm lanterns along the boardwalk, so the crew can work into the evening.',
     effect: 'More flocks at night', maxLevel: 3,
     costCoins: 37_500, costFeathers: 2500, costGrowth: 2.6, revealAtCoins: 0, lodge: 3,
   },
@@ -96,17 +98,17 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     costCoins: 900_000, costFeathers: 45_000, costGrowth: 2.5, revealAtCoins: 0, lodge: 4,
   },
   guestDock: {
-    id: 'guestDock', name: 'Guest Dock', blurb: 'A long dock with rocking chairs. Guests tell their friends.',
+    id: 'guestDock', name: 'Guest Dock', room: true, blurb: 'A long dock with rocking chairs. Guests tell their friends.',
     effect: 'Reputation grows 15% faster', maxLevel: 10,
     costCoins: 750_000, costFeathers: 37_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
   },
   smokehouse: {
-    id: 'smokehouse', name: 'Smokehouse', blurb: 'A little smokehouse out back. Every bird is worth more feathers.',
+    id: 'smokehouse', name: 'Smokehouse', room: true, blurb: 'A little smokehouse out back. Every bird is worth more feathers.',
     effect: '+15% feathers per bird', maxLevel: 10,
     costCoins: 600_000, costFeathers: 22_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
   },
   carvingShed: {
-    id: 'carvingShed', name: 'Carving Shed', blurb: 'A proper shed with good light, sharp knives and a pot of glue.',
+    id: 'carvingShed', name: 'Carving Shed', room: true, blurb: 'A proper shed with good light, sharp knives and a pot of glue.',
     effect: 'Every bot 6% cheaper', maxLevel: 5,
     costCoins: 20_000_000, costFeathers: 800_000, costGrowth: 2.4, revealAtCoins: 0, lodge: 5,
   },
@@ -125,13 +127,23 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     effect: '+8% goose flocks, brings brant & cranes', maxLevel: 3, field: true,
     costCoins: 16_000_000, costFeathers: 600_000, costGrowth: 2.4, revealAtCoins: 0, lodge: 5,
   },
+  trophyRoom: {
+    id: 'trophyRoom', name: 'Trophy Room', room: true, blurb: 'Glass cases, a long table and every jacket patch framed on the wall.',
+    effect: 'Each patch adds 25% more', maxLevel: 8,
+    costCoins: 15_000, costFeathers: 1_000, costGrowth: 2.5, revealAtCoins: 0, lodge: 3,
+  },
+  mapRoom: {
+    id: 'mapRoom', name: 'Map Room', room: true, blurb: 'Charts of every flyway pinned up with little brass tacks.',
+    effect: 'Golden flocks 10% more often', maxLevel: 5,
+    costCoins: 300_000, costFeathers: 15_000, costGrowth: 2.6, revealAtCoins: 0, lodge: 4,
+  },
 };
 
 export const UPGRADE_ORDER: readonly UpgradeId[] = [
-  'weathervane', 'nestBoxes', 'decoyQuality', 'coffee',
+  'nestBoxes', 'decoyQuality', 'coffee',
   'timber', 'celeryBeds', 'blinds', 'boatHouse', 'lanterns', 'lodgeRooms',
   'deepPool', 'guestDock', 'smokehouse', 'cot',
-  'carvingShed', 'cornStubble', 'winterWheat', 'roostPond',
+  'carvingShed', 'cornStubble', 'winterWheat', 'roostPond', 'trophyRoom', 'mapRoom',
 ];
 
 /** Per-level effect sizes (sim reads these). */
@@ -158,6 +170,8 @@ export const UPGRADE_EFFECTS = {
   cornStubbleFlockRate: 0.1,
   winterWheatFlockSize: 1,
   roostPondFlockRate: 0.08,
+  trophyRoomPatch: 0.25,
+  mapRoomGolden: 0.1,
 } as const;
 
 /** Species weight multipliers per upgrade level: weight × (1 + k × level). */

@@ -1,3 +1,4 @@
+import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
 import { stageFor } from '../data/calendar';
 import { PATCH_COIN_BONUS } from '../data/achievements';
@@ -244,7 +245,9 @@ export function reputationMultiplier(state: GameState): number {
 
 /** Each patch on the jacket: a little more per bird. */
 export function patchMultiplier(state: GameState): number {
-  return 1 + PATCH_COIN_BONUS * Object.keys(state.achievements).length;
+  const trophy = 1 + UPGRADE_EFFECTS.trophyRoomPatch * (state.upgrades.trophyRoom ?? 0);
+  const guestbook = 1 + GUESTS.bookBonus * Math.floor(state.guests.served / GUESTS.bookEvery);
+  return (1 + PATCH_COIN_BONUS * trophy * Object.keys(state.achievements).length) * guestbook;
 }
 
 /** Coins (when logged) and feathers (when retrieved) for one bird. */

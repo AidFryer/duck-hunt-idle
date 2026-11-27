@@ -113,6 +113,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     };
     return { ...s, currencies: { ...cur, coins: trim(cur.coins, capCoins), feathers: trim(cur.feathers, capFeathers) }, version: 15 };
   },
+  // v16: lodge rooms (renamed upgrades, same ids) and guest bookings (defaults fill in).
+  15: (s) => ({ ...s, version: 16 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

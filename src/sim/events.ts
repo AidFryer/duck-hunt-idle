@@ -20,6 +20,8 @@ export type SimEvent =
   | { type: 'decoyDrift'; decoys: number; ground?: 'field' }
   | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field'; golden?: boolean }
   | { type: 'volleyUnlocked' }
+  | { type: 'guestBooked'; who: string }
+  | { type: 'guestServed'; who: string; coins: number; feathers: number; served: number }
   | { type: 'stageChanged'; stage: StageId }
   | { type: 'volley'; birds: number; coins: number; feathers: number }
   | { type: 'carvingBought'; carving: CarvingId }

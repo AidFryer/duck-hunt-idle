@@ -1,4 +1,6 @@
 import { markPace, stepVolley } from './volley';
+import { guestBirds, guestGolden, refreshGuests } from './guests';
+import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
 import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
@@ -140,6 +142,7 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
         state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(coins);
         state.season.coins = state.season.coins.add(coins);
         state.stats.goldenShot += 1;
+        guestGolden(state);
         events.push({ type: 'goldenShot', coins, feathers: GOLDEN.feathers, ...tag(g) });
       }
       const room = (g === 'field' ? FIELD.maxDowned : HUNT.maxDowned) - h.downed.length;
@@ -241,6 +244,7 @@ export function doMany(state: GameState, job: 'retrieve' | 'log' | 'fRetrieve', 
     }
     if (n > EVENT_CAP) events.push({ type: 'retrieved', species: restSpecies, feathers: restFeathers, count: n - EVENT_CAP, source: src, ...tag(g) });
     state.stats.lifetimeBirds += n;
+    guestBirds(state, birds, g === 'field');
     if (g === 'field') state.stats.geese += n;
     h.bag += n;
     state.stats.birdsByWeather[w] = (state.stats.birdsByWeather[w] ?? 0) + n;
@@ -300,6 +304,8 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   if (Math.floor(state.elapsed) !== Math.floor(state.elapsed - dt)) {
     checkAchievements(state, events);
     checkUnlocks(state, events);
+    // The first guests turn up as soon as there's a lodge for them.
+    if (state.lodge >= GUESTS.fromLodge && state.guests.nextId === 1) refreshGuests(state, events);
     checkPlans(state, events);
   }
 }
@@ -307,7 +313,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 /** Now and then, a golden flock (only while ducks are flying). */
 function stepGolden(state: GameState, dt: number, activity: number, events: EventSink): void {
   if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
-  state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden;
+  state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden * (1 + UPGRADE_EFFECTS.mapRoomGolden * (state.upgrades.mapRoom ?? 0));
   if (state.goldenTimer > 0) return;
   state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
   const g: GroundId = fieldOpen(state) && rand(state) < GOLDEN.fieldShare ? 'field' : 'marsh';

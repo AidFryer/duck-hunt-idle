@@ -29,6 +29,7 @@ import { setDogCoat } from './render/assets/painters';
 import { clearDogPortraits } from './ui/portraits';
 import { buyCarving } from './sim/carvings';
 import { busyMarsh, fireVolley } from './sim/volley';
+import { claimGuest } from './sim/guests';
 import { CARVINGS } from './data/carvings';
 import { plantCrop } from './sim/crops';
 import { claimDailyBonus, localDayKey } from './sim/daily';
@@ -244,6 +245,13 @@ function onEvent(e: SimEvent, at: Point | null): void {
       feedback.toast(`Big Volley! ${formatNumber(e.birds, n)} birds in one go.`, 'celebrate', 3200);
       break;
     }
+    case 'guestBooked':
+      if (!busy()) feedback.toast(`${e.who[0]!.toUpperCase()}${e.who.slice(1)} booked a hunt. See the Lodge.`, 'info', 3500);
+      break;
+    case 'guestServed':
+      buzz('big');
+      feedback.toast(`${e.who[0]!.toUpperCase()}${e.who.slice(1)} had a grand time! +${formatNumber(e.coins, n)} coins, +${formatNumber(e.feathers, n)} feathers.`, 'celebrate', 3500);
+      break;
     case 'stageChanged':
       pushMoment({ kind: 'stage', id: e.stage });
       break;
@@ -519,6 +527,11 @@ const controls: GameControls = {
   },
   buyCarving(id) {
     const ok = buyCarving(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  claimGuest(id) {
+    const ok = claimGuest(state, id, runner.sink);
     hud.set(snapshot(state));
     return ok;
   },

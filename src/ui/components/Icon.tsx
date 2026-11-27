@@ -52,6 +52,36 @@ const paths: Record<IconName, preact.JSX.Element> = {
     </>
   ),
   moon: <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" />,
+  bed: (
+    <>
+      <path d="M3 18V8M3 14h18v4M21 14v-2a3 3 0 0 0-3-3h-7v5" />
+      <circle cx="7" cy="11.5" r="1.8" />
+    </>
+  ),
+  mug: (
+    <>
+      <path d="M5 9h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z" />
+      <path d="M16 11h2a2 2 0 0 1 0 4h-2M8 3c0 1.5 1 1.5 1 3M12 3c0 1.5 1 1.5 1 3" />
+    </>
+  ),
+  boat: (
+    <>
+      <path d="M3 15h18l-2.5 4.5H5.5L3 15z" />
+      <path d="M12 4v11M12 5l6 8h-6" />
+    </>
+  ),
+  lamp: (
+    <>
+      <path d="M12 3v3M8 6h8l-1 9H9L8 6z" />
+      <path d="M10 15v3h4v-3M12 18v3" />
+    </>
+  ),
+  map: (
+    <>
+      <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z" />
+      <path d="M9 4v14M15 6v14" />
+    </>
+  ),
   lodge: (
     <>
       <path d="M3 11l9-7 9 7" />
