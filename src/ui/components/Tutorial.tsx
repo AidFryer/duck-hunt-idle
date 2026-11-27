@@ -22,9 +22,21 @@ const TEXT: Record<TutorialStep, string> = {
 };
 
 /** A short, skippable first-run walkthrough voiced by Ray. */
-export function Tutorial({ step, onNext, onSkip, name = '', onName }: { step: TutorialStep; onNext: () => void; onSkip: () => void; name?: string; onName?: (n: string) => void }) {
+export function Tutorial({ step, onNext, onSkip, name = '', onName, online = false }: { step: TutorialStep; onNext: () => void; onSkip: () => void; name?: string; onName?: (n: string) => Promise<string | null>; online?: boolean }) {
   const waiting = step !== 'welcome' && step !== 'done';
   const [draft, setDraft] = useState(name);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const next = async () => {
+    if (step === 'welcome' && onName) {
+      setBusy(true);
+      const e = await onName(draft);
+      setBusy(false);
+      setErr(e);
+      if (e) return;
+    }
+    onNext();
+  };
   return (
     <div class={`tutorial tutorial--inline tutorial--${step}`} role="dialog" aria-label="Tutorial">
       <div class="keeper__portrait" aria-hidden="true">
@@ -41,14 +53,18 @@ export function Tutorial({ step, onNext, onSkip, name = '', onName }: { step: Tu
             maxLength={18}
             placeholder="Your name (optional)"
             value={draft}
-            onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
-            onBlur={() => onName(draft)}
+            onInput={(e) => {
+              setDraft((e.currentTarget as HTMLInputElement).value);
+              setErr(null);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && void next()}
           />
         )}
+        {step === 'welcome' && onName && (err ? <p class="name-note is-bad">{err}</p> : online && <p class="name-note">Names are one of a kind and show on the leaderboard.</p>)}
         <div class="tutorial__actions">
           {!waiting && (
-            <button class="btn btn--primary btn--small" onClick={() => { if (step === 'welcome' && onName) onName(draft); onNext(); }}>
-              {step === 'done' ? "Let's go" : 'Show me'}
+            <button class="btn btn--primary btn--small" aria-disabled={busy} onClick={() => !busy && void next()}>
+              {step === 'done' ? "Let's go" : busy ? 'Checking…' : 'Show me'}
             </button>
           )}
           {waiting && <span class="tutorial__hint">{step === 'call' ? 'Watch the sky… then tap the flock ↑' : 'Tap where it glows ↑'}</span>}

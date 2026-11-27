@@ -4832,3 +4832,55 @@ html.ios-standalone body { background: #4a3221; }
 }
 .toasts { align-content: start; }
 .layout--app .toast { max-width: 100%; }
+
+/* ---- Names and the online leaderboard ---------------------------------- */
+.name-note { margin: 4px 2px 0; font-size: 12.5px; opacity: 0.75; }
+.name-note.is-bad { opacity: 1; color: #9a3f1c; }
+.lb { display: grid; gap: 12px; padding: 4px 2px 16px; }
+.lb-join {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(120, 140, 90, 0.14);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+}
+.lb-join h4 { margin: 0; font-family: var(--ui-fontDisplay, Georgia, serif); }
+.lb-join p { margin: 0; font-size: 13.5px; }
+.lb-join__row { display: flex; gap: 8px; }
+.lb-join__row input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(90, 60, 30, 0.25);
+  border-radius: 10px;
+  background: #fffaf0;
+  font: inherit;
+  font-size: 16px;
+}
+.lb__sorts { justify-self: center; }
+.lb__note { text-align: center; font-size: 14px; opacity: 0.8; }
+.lb__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lb__row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--c-cream, #f6ecd8);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+  animation: board-in 0.25s ease-out both;
+}
+.reduce-motion .lb__row { animation: none; }
+@keyframes board-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.lb__row.is-me { background: rgba(120, 140, 90, 0.22); outline: 1px solid rgba(94, 115, 82, 0.45); }
+.lb__row.is-top1 { background: rgba(232, 184, 74, 0.28); }
+.lb__row.is-top2 { background: rgba(190, 190, 200, 0.3); }
+.lb__row.is-top3 { background: rgba(196, 128, 72, 0.22); }
+.lb__rank { font-weight: 800; font-size: 16px; text-align: center; font-variant-numeric: tabular-nums; }
+.lb__who { display: grid; min-width: 0; }
+.lb__who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb__who span { font-size: 12px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb__value { font-weight: 800; font-size: 13.5px; text-align: right; font-variant-numeric: tabular-nums; }
+.lb__gap { text-align: center; opacity: 0.5; }

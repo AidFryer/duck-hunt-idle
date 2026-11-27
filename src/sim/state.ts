@@ -8,7 +8,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 /**
  * Saves older than this are from before the everyone-starts-over update.
  * They load only when restored by hand; a normal start begins fresh.
@@ -167,6 +167,11 @@ export interface GameState {
   goldenTimer: number;
   /** The player's name and picture. */
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
+  /**
+   * This lodge on the online leaderboard: its player id, the secret that
+   * proves it's us, and the name it holds there. Null until it joins.
+   */
+  online: { id: string; secret: string; name: string } | null;
   /** Guest hunting parties: the booking board and the guestbook. */
   guests: { board: GuestRequest[]; served: number; nextId: number };
   /** Crew Training skills learned (kept across seasons). */
@@ -349,6 +354,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     bay: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
     goldenTimer: 200,
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
+    online: null,
     carvings: {},
     guests: { board: [], served: 0, nextId: 1 },
     training: {},

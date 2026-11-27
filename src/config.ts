@@ -18,3 +18,11 @@ export const MAX_RENDER_RESOLUTION = 3;
 
 /** Save storage key (versioned format lives in src/sim/save.ts from Phase 2). */
 export const SAVE_KEY = 'duck-hunt-idle.save';
+
+/**
+ * The online leaderboard (Supabase). Both values are public by design: the
+ * key only allows the game's own functions (see supabase/leaderboard.sql).
+ * Leave them empty and every online feature quietly stays hidden.
+ */
+export const SUPABASE_URL = '';
+export const SUPABASE_KEY = '';

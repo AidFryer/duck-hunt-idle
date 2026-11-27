@@ -9,6 +9,7 @@ import type { PerkId } from '../data/legacy';
 import type { FlywayId } from '../data/flyways';
 import type { RungId } from '../data/progression';
 import type { CropId } from '../data/crops';
+import type { BoardRow, BoardSort } from '../app/online';
 
 /** Commands the HUD can issue. main.ts wires these to the sim and scene. */
 export interface GameControls {
@@ -23,6 +24,16 @@ export interface GameControls {
   claimGuest(id: number): boolean;
   buildLodge(): boolean;
   setProfile(name: string, avatar: string): void;
+  /**
+   * Take a name, checking the online leaderboard that it's free. Resolves to
+   * an error to show (taken, badly formed), or null when the name is set.
+   * Offline, the name is kept and joins the board later.
+   */
+  claimName(name: string): Promise<string | null>;
+  /** Is the leaderboard set up, and is this lodge on it? */
+  onlineStatus(): { enabled: boolean; joined: boolean; name: string; takenName: string | null };
+  /** Fetch the leaderboard (top 50 plus your own row). */
+  fetchBoard(sort: BoardSort): Promise<{ ok: true; rows: BoardRow[] } | { ok: false; error: string }>;
   /** Name the retriever and pick its breed. */
   setDog(name: string, breed: BreedId): void;
   /** Buy a carved decoy for the collection. */

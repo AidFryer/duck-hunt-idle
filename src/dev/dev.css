@@ -1,0 +1,29 @@
+:root {
+  --bg: #efe3cb; --card: #f8f0de; --ink: #2d2520; --dim: rgba(45, 37, 32, 0.65);
+  --sage: #5e7352; --rust: #b5562b; --line: rgba(90, 60, 30, 0.2);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 32px; }
+h1 { font-family: Georgia, serif; margin: 8px 0 14px; }
+.card { background: var(--card); border-radius: 12px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(40, 26, 14, 0.14); }
+.login { display: grid; gap: 8px; }
+.login input { font: inherit; font-size: 16px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: #fffaf0; }
+.btn { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 10px 14px; background: var(--rust); color: #fff8ec; cursor: pointer; }
+.btn.small { padding: 7px 12px; font-size: 14px; }
+.bad { color: #9a3f1c; margin: 0; }
+.note { color: var(--dim); text-align: center; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.stats .card { display: grid; text-align: center; padding: 10px 6px; }
+.stats strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+.stats span { font-size: 12px; color: var(--dim); }
+.bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.seg { display: flex; background: rgba(90, 60, 30, 0.1); border-radius: 10px; padding: 3px; }
+.seg button { font: inherit; font-size: 13px; border: 0; background: transparent; padding: 6px 10px; border-radius: 8px; cursor: pointer; color: var(--ink); }
+.seg button.on { background: var(--card); box-shadow: 0 1px 2px rgba(40, 26, 14, 0.15); font-weight: 700; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.player .top { display: flex; justify-content: space-between; gap: 8px; }
+.player .top span { font-size: 13px; color: var(--dim); white-space: nowrap; }
+.player .line { font-size: 14px; margin-top: 3px; }
+.player .dim { color: var(--dim); font-size: 12.5px; }
+.link { font: inherit; background: none; border: 0; color: var(--dim); text-decoration: underline; cursor: pointer; }

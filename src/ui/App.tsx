@@ -1,5 +1,6 @@
 import { GroundPicker } from './components/GroundPicker';
 import { TrophyWall } from './components/TrophyWall';
+import { Leaderboard } from './components/Leaderboard';
 import { Tally, VolleyButton } from './components/Volley';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Prefs } from '../app/prefs';
@@ -54,6 +55,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [problems, setProblems] = useState(false);
   const [guide, setGuide] = useState(false);
   const [trophies, setTrophies] = useState(false);
+  const [board, setBoard] = useState(false);
   const [stageInfo, setStageInfo] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
   const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
@@ -102,6 +104,11 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               <span class="bump" key={`t${hud.patches}`}>{hud.patches}</span>
             </button>
           )}
+          {controls.onlineStatus().enabled && (
+            <button class="rail-btn" onClick={() => setBoard(true)} aria-label="Leaderboard" title="Leaderboard">
+              <Icon name="podium" size={20} />
+            </button>
+          )}
           {hud.problemStats.total > 0 && (
             <button
               class={`rail-btn rail-btn--problems ${hud.needsYou ? 'is-alert' : ''}`}
@@ -137,7 +144,8 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
               onSkip={finishTutorial}
               name={hud.profile.name}
-              onName={(nm) => controls.setProfile(nm, hud.profile.avatar)}
+              onName={(nm) => controls.claimName(nm)}
+              online={controls.onlineStatus().enabled}
             />
           </div>
         ) : (
@@ -225,6 +233,17 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
               <button class="icon-btn icon-btn--dark" onClick={() => setTrophies(false)} aria-label="Close the Trophy Wall">✕</button>
             </header>
             <TrophyWall hud={hud} notation={n} />
+          </div>
+        </div>
+      )}
+      {board && (
+        <div class="drawer-backdrop" onClick={(e) => e.target === e.currentTarget && setBoard(false)}>
+          <div class="drawer guide-drawer" role="dialog" aria-label="Leaderboard" aria-modal="true">
+            <header class="drawer__head">
+              <h3>Leaderboard</h3>
+              <button class="icon-btn icon-btn--dark" onClick={() => setBoard(false)} aria-label="Close the leaderboard">✕</button>
+            </header>
+            <Leaderboard controls={controls} notation={n} />
           </div>
         </div>
       )}

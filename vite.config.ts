@@ -59,6 +59,8 @@ export default defineConfig({
   ],
   build: {
     target: 'es2022',
+    // The game, plus the owner's players page (dev.html, not linked from the game).
+    rollupOptions: { input: { main: 'index.html', dev: 'dev.html' } },
     chunkSizeWarningLimit: 1200,
   },
   test: {

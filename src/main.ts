@@ -22,7 +22,9 @@ import { canDo, doAction, type ActionJob } from './sim/hunt';
 import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
-import { installState } from './app/pwa';
+import { BUILD_STAMP, installState } from './app/pwa';
+import { failureText, joinGame, leaderboard, newSecret, onlineEnabled, OnlineFailure, renamePlayer, reportProgress, type Progress } from './app/online';
+import { speciesFound } from './sim/progression';
 import { NAME_MAX } from './data/avatars';
 import { BREEDS, DOG_NAME_MAX } from './data/crew';
 import { setDogCoat } from './render/assets/painters';
@@ -147,6 +149,60 @@ setInterval(() => {
   // Leaving the field open after a reset or import is not possible: fall back.
   if (renderer && renderer.ground !== 'marsh' && !groundOpen(state, renderer.ground)) controls.setGround('marsh');
 }, 200);
+
+// --- Online leaderboard -----------------------------------------------------
+// Joins with the player's name and sends progress now and then. Never blocks
+// the game; failures just wait for the next try.
+
+/** A name the board said was taken (so we don't keep asking). */
+let takenName: string | null = null;
+let syncing = false;
+
+function progressOf(s: GameState): Progress {
+  return {
+    lodge: s.lodge,
+    birds: s.stats.lifetimeBirds,
+    species: speciesFound(s),
+    stars: s.legacy.earned,
+    seasons: s.stats.seasonsClosed,
+    coins: s.stats.lifetimeCoins.toNumber(),
+    day: s.clock.day,
+    playHours: s.elapsed / 3600,
+    flyway: s.flyway,
+    build: BUILD_STAMP,
+  };
+}
+
+async function syncOnline(): Promise<void> {
+  if (!onlineEnabled() || syncing) return;
+  const s = state;
+  const name = s.profile.name.trim();
+  if (!s.online && (!name || name === takenName)) return;
+  syncing = true;
+  try {
+    if (!s.online) {
+      const secret = newSecret();
+      const id = await joinGame(name, secret);
+      s.online = { id, secret, name };
+    } else if (name && s.online.name !== name && name !== takenName) {
+      await renamePlayer(s.online.id, s.online.secret, name);
+      s.online.name = name;
+    }
+    await reportProgress(s.online.id, s.online.secret, progressOf(s));
+  } catch (e) {
+    const kind = e instanceof OnlineFailure ? e.kind : 'unknown';
+    if (kind === 'name_taken') takenName = name;
+    // The board forgot us (it was reset): join again next time.
+    if (kind === 'not_found') s.online = null;
+  } finally {
+    syncing = false;
+  }
+}
+setInterval(() => void syncOnline(), 5 * 60_000);
+setTimeout(() => void syncOnline(), 15_000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) void syncOnline();
+});
 
 // --- Autosave ---------------------------------------------------------------
 const save = () => saveGame(state);
@@ -524,6 +580,51 @@ const controls: GameControls = {
     const ok = plantCrop(state, plot, crop, runner.sink);
     hud.set(snapshot(state));
     return ok;
+  },
+  async claimName(raw) {
+    const s = state;
+    const name = raw.trim().replace(/\s+/g, ' ').slice(0, NAME_MAX);
+    const keep = () => {
+      if (s !== state) return;
+      s.profile = { ...s.profile, name };
+      hud.set(snapshot(s));
+      save();
+    };
+    if (!name || !onlineEnabled() || s.online?.name === name) {
+      keep();
+      return null;
+    }
+    try {
+      if (s.online) {
+        await renamePlayer(s.online.id, s.online.secret, name);
+        s.online.name = name;
+      } else {
+        const secret = newSecret();
+        const id = await joinGame(name, secret);
+        s.online = { id, secret, name };
+      }
+      takenName = null;
+      keep();
+      void syncOnline();
+      return null;
+    } catch (e) {
+      const kind = e instanceof OnlineFailure ? e.kind : 'unknown';
+      if (kind === 'name_taken' || kind === 'bad_name') return failureText(e);
+      if (kind === 'not_found') s.online = null;
+      // Offline or a hiccup: keep the name here; it joins the board later.
+      keep();
+      return null;
+    }
+  },
+  onlineStatus() {
+    return { enabled: onlineEnabled(), joined: !!state.online, name: state.online?.name ?? state.profile.name, takenName };
+  },
+  async fetchBoard(sort) {
+    try {
+      return { ok: true as const, rows: await leaderboard(sort, state.online?.id ?? null) };
+    } catch (e) {
+      return { ok: false as const, error: failureText(e) };
+    }
   },
   setProfile(name, avatar) {
     state.profile = { ...state.profile, name: name.trim().slice(0, NAME_MAX), avatar };

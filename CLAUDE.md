@@ -27,3 +27,11 @@ and `npm run build` before committing.
 
 - Bump `SAVE_VERSION` and add a migration in `src/sim/save.ts` for any state change.
 - Never clear a player's save without keeping a backup (`backupNow`).
+
+## Online leaderboard
+
+- Supabase, called only through the functions in `supabase/leaderboard.sql`
+  (the public key can't touch tables directly). Client: `src/app/online.ts`;
+  project address and public key: `src/config.ts` (empty = online hidden).
+- The game never waits on the network; every online call fails softly.
+- `dev.html` is the owner's players page (admin password, not linked in game).

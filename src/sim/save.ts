@@ -135,6 +135,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   17: (s) => ({ ...s, version: 18 }),
   // v19: no shape change; marks the fresh start (see FRESH_START_VERSION).
   18: (s) => ({ ...s, version: 19 }),
+  // v20: a spot for the online leaderboard identity.
+  19: (s) => ({ ...s, online: s.online ?? null, version: 20 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

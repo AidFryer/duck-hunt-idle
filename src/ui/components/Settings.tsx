@@ -17,6 +17,11 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
 }) {
   const [name, setName] = useState(profile.name);
+  const [nameErr, setNameErr] = useState<string | null>(null);
+  const saveName = async () => {
+    if (name.trim() === profile.name) return;
+    setNameErr(await controls.claimName(name));
+  };
   const [dogName, setDogName] = useState(profile.dogName);
   // A restore or import brings its own names along.
   useEffect(() => setName(profile.name), [profile.name]);
@@ -90,11 +95,15 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
               maxLength={NAME_MAX}
               placeholder="What should Ray call you?"
               value={name}
-              onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
-              onBlur={() => controls.setProfile(name, profile.avatar)}
+              onInput={(e) => {
+                setName((e.currentTarget as HTMLInputElement).value);
+                setNameErr(null);
+              }}
+              onBlur={() => void saveName()}
               onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
             />
           </label>
+          {nameErr && <p class="name-note is-bad">{nameErr}</p>}
           <div class="avatar-grid" role="radiogroup" aria-label="Profile picture">
             {AVATARS.map((a) => (
               <button
@@ -102,7 +111,7 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
                 aria-checked={profile.avatar === a.id}
                 class={`avatar-choice ${profile.avatar === a.id ? 'is-on' : ''}`}
                 title={a.name}
-                onClick={() => controls.setProfile(name, a.id)}
+                onClick={() => controls.setProfile(profile.name, a.id)}
               >
                 <img src={avatarPortrait(a.id)} alt={a.name} />
               </button>
