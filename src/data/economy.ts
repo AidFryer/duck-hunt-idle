@@ -87,8 +87,8 @@ export const GOLDEN = {
 export const DECOYS = {
   /** Flock draw ∝ (spread ÷ starting spread) ^ this. */
   drawExponent: 0.5,
-  marsh: { perBag: 2, costCoins: 60, costFeathers: 4, costGrowth: 1.45 },
-  field: { perBag: 4, costCoins: 2_000, costFeathers: 120, costGrowth: 1.45 },
+  marsh: { perBag: 2, costCoins: 60, costFeathers: 4, costGrowth: 1.6 },
+  field: { perBag: 4, costCoins: 30_000, costFeathers: 1_800, costGrowth: 1.6 },
 } as const;
 
 /** Bots that no longer have work now that decoys stay out (kept for old saves). */
@@ -190,15 +190,15 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'setter', name: 'Decoy Setter', job: 'decoys', crossJobs: others('decoys'),
     blurb: 'Wades out with a decoy under each arm and keeps the spread full.',
     baseSpeed: 0.1, reliability: 0.95,
-    costCoins: 90, costFeathers: 12, costGrowth: 1.15,
-    levelCostCoins: 360, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    costCoins: 90_000, costFeathers: 12_000, costGrowth: 1.17,
+    levelCostCoins: 360_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 15,
   },
   caller: {
     id: 'caller', name: 'Caller Bot', job: 'call', crossJobs: others('call'),
     blurb: 'A carved mallard with a brass reed in its beak. Calls circling flocks in.',
     baseSpeed: 0.2, reliability: 0.96,
-    costCoins: 75, costFeathers: 12, costGrowth: 1.15,
+    costCoins: 75, costFeathers: 12, costGrowth: 1.17,
     levelCostCoins: 450, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
@@ -206,7 +206,7 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'blind', name: 'Blind Bot', job: 'shoot', crossJobs: others('shoot'),
     blurb: 'Waits in the blind under a grass hat. Takes the shot with a soft pop.',
     baseSpeed: 0.2, reliability: 0.95,
-    costCoins: 120, costFeathers: 18, costGrowth: 1.15,
+    costCoins: 120, costFeathers: 18, costGrowth: 1.17,
     levelCostCoins: 660, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 10,
   },
@@ -214,7 +214,7 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'retriever', name: 'Robo-Retriever', job: 'retrieve', crossJobs: [],
     blurb: 'A clockwork pup that paddles out beside your Lab and brings birds back.',
     baseSpeed: 0.3, reliability: 0.95,
-    costCoins: 180, costFeathers: 24, costGrowth: 1.15,
+    costCoins: 180, costFeathers: 24, costGrowth: 1.17,
     levelCostCoins: 900, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 20,
   },
@@ -222,7 +222,7 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'ledger', name: 'Ledger Bot', job: 'log', crossJobs: others('log'),
     blurb: 'Sits on the lodge porch with spectacles and a tiny notebook, logging every bird.',
     baseSpeed: 0.4, reliability: 0.97,
-    costCoins: 360, costFeathers: 30, costGrowth: 1.15,
+    costCoins: 360, costFeathers: 30, costGrowth: 1.17,
     levelCostCoins: 1500, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 80,
   },
@@ -230,7 +230,7 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'scout', name: 'Scout Bot', job: 'scout', crossJobs: others('scout'),
     blurb: 'Perches on the blind roof with a tiny spyglass and spots flocks early.',
     baseSpeed: 0.25, reliability: 0.96,
-    costCoins: 600, costFeathers: 60, costGrowth: 1.15,
+    costCoins: 600, costFeathers: 60, costGrowth: 1.17,
     levelCostCoins: 2400, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 150,
   },
@@ -238,32 +238,32 @@ export const BOTS: Record<BotId, BotDef> = {
     id: 'staker', name: 'Decoy Staker', job: 'fDecoys', crossJobs: fieldOthers('fDecoys'),
     blurb: 'Carries a bundle of full-body goose decoys and stakes them out in tidy family groups.',
     baseSpeed: 0.08, reliability: 0.95,
-    costCoins: 9_000, costFeathers: 600, costGrowth: 1.15,
-    levelCostCoins: 30_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    costCoins: 135_000, costFeathers: 9000, costGrowth: 1.17,
+    levelCostCoins: 450_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
   flagger: {
     id: 'flagger', name: 'Flagger Bot', job: 'flag', crossJobs: fieldOthers('flag'),
     blurb: 'Waves a black flag low over the stubble so passing geese think there\'s a family landing.',
     baseSpeed: 0.15, reliability: 0.96,
-    costCoins: 8_000, costFeathers: 600, costGrowth: 1.15,
-    levelCostCoins: 36_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    costCoins: 120_000, costFeathers: 9000, costGrowth: 1.17,
+    levelCostCoins: 540_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
   layout: {
     id: 'layout', name: 'Layout Bot', job: 'fShoot', crossJobs: fieldOthers('fShoot'),
     blurb: 'Lies flat in a stubble-covered layout blind and sits up for the shot.',
     baseSpeed: 0.15, reliability: 0.95,
-    costCoins: 12_000, costFeathers: 900, costGrowth: 1.15,
-    levelCostCoins: 48_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    costCoins: 180_000, costFeathers: 13_500, costGrowth: 1.17,
+    levelCostCoins: 720_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
   fieldDog: {
     id: 'fieldDog', name: 'Field Pup', job: 'fRetrieve', crossJobs: [],
     blurb: 'A clockwork pup with big paws for stubble. Fetches geese nearly as big as itself.',
     baseSpeed: 0.3, reliability: 0.95,
-    costCoins: 15_000, costFeathers: 1_000, costGrowth: 1.15,
-    levelCostCoins: 60_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    costCoins: 225_000, costFeathers: 15_000, costGrowth: 1.17,
+    levelCostCoins: 900_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
   foreman: {
@@ -292,7 +292,7 @@ export const FIELD_BOTS: readonly BotId[] = ['staker', 'flagger', 'layout', 'fie
 
 /** Owned counts that double a bot type's output. */
 export const BOT_MILESTONES: readonly number[] = [10, 25, 50, 100, 200, 300, 400, 500, 750, 1000];
-export const MILESTONE_MULTIPLIER = 2;
+export const MILESTONE_MULTIPLIER = 1.5;
 
 /** Reliability gained per tune-up level (capped at RELIABILITY_CAP). */
 export const RELIABILITY_PER_LEVEL = 0.005;
@@ -304,7 +304,7 @@ export const LEDGER = {
   /** Gus logs this many birds per second on his own. */
   keeperRate: 0.5,
   /** Coin bonus from reputation: 1 + k × sqrt(birds logged). */
-  reputationK: 0.012,
+  reputationK: 0.006,
 } as const;
 
 /** Hunter's Rhythm: quick manual taps in a row build a streak that pays a bonus. */
@@ -387,6 +387,8 @@ export const VOLLEY = {
 export const PROBLEM_RATE = 0.35;
 
 export const FOREMAN = {
+  /** Seconds before a stuck bot frees itself (after the Foreman plans are earned). */
+  selfFixSeconds: 120,
   /** Player-tunable retry settings and their ranges. */
   retriesDefault: 3,
   retriesMin: 1,
@@ -416,9 +418,9 @@ export const ACRES = {
   /** You start with one restored acre. */
   start: 1,
   costCoins: 250,
-  costGrowth: 1.6,
+  costGrowth: 1.8,
   /** Flock arrivals multiply by this for every acre beyond the first (it compounds). */
-  flockRateGrowth: 1.2,
+  flockRateGrowth: 1.12,
   /** One more flock can circle for every this many acres beyond the first. */
   acresPerCircling: 2,
   maxExtraCircling: 6,

@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { FLYWAYS, type FlywayId } from '../../data/flyways';
 import { PERKS, PRESTIGE } from '../../data/legacy';
+import { SPECIES } from '../../data/species';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
@@ -38,6 +39,7 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
         >
           {se.starsNow >= 1 ? `Close the Season (+${se.starsNow} ★)` : `Close the Season at ${formatNumber(PRESTIGE.divisor, notation)} season coins`}
         </button>
+        <ClosePreviewCard hud={hud} />
       </section>
 
       <section class="legacy-head">
@@ -90,6 +92,34 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
   );
 }
 
+/** What you'd get for closing now: stars, a bigger bonus, perks and new birds. */
+function ClosePreviewCard({ hud }: { hud: HudSnapshot }) {
+  const se = hud.season;
+  const p = se.preview;
+  const nextName = FLYWAYS[se.nextFlyway].name;
+  return (
+    <div class="close-preview">
+      <h4>{se.starsNow >= 1 ? 'Close now and you get' : 'When you close the season'}</h4>
+      <ul>
+        <li>
+          <strong>★ {p.starsAfter}</strong> to spend{se.starsNow >= 1 ? ` (+${se.starsNow} new)` : ''}
+        </li>
+        <li>
+          Coins & feathers <strong>+{Math.round(p.bonusAfter * 100)}%</strong> for good
+          {p.bonusAfter > p.bonusNow ? ` (now +${Math.round(p.bonusNow * 100)}%)` : ''}
+        </li>
+        {p.perks.length > 0 && <li>Perks you could buy: {p.perks.slice(0, 3).map((id) => PERKS[id].name).join(', ')}</li>}
+        {se.nextFlyway !== se.flyway && (
+          <li>
+            A new marsh on the <strong>{nextName}</strong>
+            {p.newBirds.length > 0 ? `, with ${p.newBirds.length === 1 ? 'a bird' : `${p.newBirds.length} birds`} you haven't found: ${p.newBirds.slice(0, 4).map((b) => SPECIES[b].name).join(', ')}${p.newBirds.length > 4 ? '…' : ''}` : ''}
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; controls: GameControls; onClose: () => void }) {
   const se = hud.season;
   const [dest, setDest] = useState<FlywayId>(se.nextFlyway);
@@ -104,6 +134,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
         </p>
         <div class="season-summary">
           <div class="season-summary__gain">★ +{se.starsNow} Flyway Stars</div>
+          <ClosePreviewCard hud={hud} />
           <div class="season-summary__cols">
             <div>
               <h4>Starts over</h4>
@@ -119,6 +150,8 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
               <ul>
                 <li>Flyway Stars & perks</li>
                 <li>+5% coins & feathers per star</li>
+                <li>Your lodge and bot plans</li>
+                <li>Carved decoys & the Big Volley</li>
                 <li>Field Guide & patches</li>
                 <li>Your workflow board</li>
               </ul>

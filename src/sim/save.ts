@@ -1,3 +1,5 @@
+import { LODGE_LEVELS } from '../data/progression';
+import { PRESTIGE } from '../data/legacy';
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER } from '../data/economy';
 import { normalizeAssignments } from './jobs';
@@ -97,6 +99,20 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v14: decoy collection, Big Volley, dog name & breed, season calendar stats (defaults fill in).
   13: (s) => ({ ...s, version: 14 }),
+  // v15: the slower, weeks-long economy. Keep everything built and found;
+  // trim banked coins and feathers to fit the new, higher prices.
+  14: (s) => {
+    const lodge = typeof s.lodge === 'number' ? s.lodge : 1;
+    const next = LODGE_LEVELS[lodge];
+    const capCoins = next ? next.coins * 0.1 : PRESTIGE.divisor * 0.02;
+    const capFeathers = next ? next.feathers * 0.1 : (LODGE_LEVELS[LODGE_LEVELS.length - 1]?.feathers ?? 0) * 0.1;
+    const cur = (s.currencies ?? {}) as Json;
+    const trim = (v: unknown, cap: number) => {
+      const n = Number(v);
+      return String(Number.isFinite(n) ? Math.min(n, cap) : 0);
+    };
+    return { ...s, currencies: { ...cur, coins: trim(cur.coins, capCoins), feathers: trim(cur.feathers, capFeathers) }, version: 15 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

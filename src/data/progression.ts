@@ -74,7 +74,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 3, name: 'Marsh Lodge',
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
-    birds: 1_000, species: 4, coins: 3_000, feathers: 300, opens: [],
+    birds: 5_000, species: 5, coins: 15_000, feathers: 1_500, opens: [],
     points: [
       'Ledger Bot plans, so Gus gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
@@ -84,7 +84,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 7_000, species: 7, coins: 30_000, feathers: 2_000, opens: ['field', 'workflows'],
+    birds: 120_000, species: 9, coins: 1_200_000, feathers: 80_000, opens: ['field', 'workflows'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch to it from the marsh.',
       'Workflows: tie the jobs together with rope for big crew bonuses.',
@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 40_000, species: 10, coins: 400_000, feathers: 12_000, opens: ['legacy'],
+    birds: 1_200_000, species: 14, coins: 110_000_000, feathers: 3_500_000, opens: ['legacy'],
     points: [
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',
       'Tinker Bot plans.',
@@ -120,12 +120,12 @@ export interface PlanDef {
 /** Earn a bot's plans by doing its job yourself; then carve it with coins. */
 export const PLANS: Record<BotId, PlanDef> = {
   caller: { lodge: 2, counter: 'handCalls', count: 60 },
-  blind: { lodge: 2, counter: 'handShots', count: 60 },
-  retriever: { lodge: 2, counter: 'handFetches', count: 150 },
+  blind: { lodge: 2, counter: 'handShots', count: 140 },
+  retriever: { lodge: 2, counter: 'handFetches', count: 350 },
   setter: { lodge: 2, counter: 'handDecoys', count: 30 },
   ledger: { lodge: 3, counter: 'logged', count: 600 },
-  scout: { lodge: 4, counter: 'flocksCalled', count: 1_500 },
-  foreman: { lodge: 4, counter: 'handFixes', count: 12 },
+  scout: { lodge: 3, counter: 'flocksCalled', count: 2_500 },
+  foreman: { lodge: 3, counter: 'handFixes', count: 12 },
   tinker: { lodge: 5, counter: 'bots', count: 120 },
   staker: { lodge: 4, counter: 'handStakes', count: 25 },
   flagger: { lodge: 4, counter: 'handFlags', count: 40 },
@@ -192,128 +192,128 @@ export interface RungDef {
   fx: RungEffect;
 }
 
-const T2 = { lodge: 3, owned: 10, coins: 5_000, feathers: 300 } as const;
+const T2 = { lodge: 3, owned: 10, coins: 25_000, feathers: 1_500 } as const;
 /** Spread rigs need no crew. */
 const RIG = { owned: 0 } as const;
-const T3 = { lodge: 4, owned: 25, coins: 80_000, feathers: 3_000 } as const;
-const T4 = { lodge: 5, owned: 50, coins: 400_000, feathers: 15_000 } as const;
+const T3 = { lodge: 4, owned: 25, coins: 1_200_000, feathers: 45_000 } as const;
+const T4 = { lodge: 5, owned: 50, coins: 60_000_000, feathers: 2_000_000 } as const;
 /** Field rungs: the field opens at lodge 4, so its ladder is shorter and pricier. */
-const F2 = { ground: 'field', tier: 2, lodge: 4, owned: 10, coins: 120_000, feathers: 6_000 } as const;
-const F3 = { ground: 'field', tier: 3, lodge: 5, owned: 25, coins: 900_000, feathers: 30_000 } as const;
+const F2 = { ground: 'field', tier: 2, lodge: 4, owned: 10, coins: 1_800_000, feathers: 90_000 } as const;
+const F3 = { ground: 'field', tier: 3, lodge: 5, owned: 25, coins: 120_000_000, feathers: 4_000_000 } as const;
 
 export const RUNGS: Record<RungId, RungDef> = {
   spinningWing: {
-    id: 'spinningWing', rig: true, job: 'decoys', bot: 'setter', tier: 2, ...T2, ...RIG, counter: 'birds', count: 1_500,
+    id: 'spinningWing', rig: true, job: 'decoys', bot: 'setter', tier: 2, ...T2, ...RIG, counter: 'birds', count: 6000,
     name: 'Spinning-wing Decoys', blurb: 'A few decoys with wings that flicker in the sun. Flocks see the spread from miles off.',
     effect: '+15% flocks', fx: { mult: 2, draw: 1.15 },
   },
   decoySkiff: {
-    id: 'decoySkiff', rig: true, job: 'decoys', bot: 'setter', tier: 3, ...T3, ...RIG, counter: 'birds', count: 8_000,
+    id: 'decoySkiff', rig: true, job: 'decoys', bot: 'setter', tier: 3, ...T3, ...RIG, counter: 'birds', count: 64_000,
     name: 'Decoy Skiff', blurb: 'A little flat-bottomed boat that tows a diver spread out to open water.',
     effect: '+4 decoys · scaup & buffleheads', fx: { mult: 2, spread: 4 },
   },
   floatingRig: {
-    id: 'floatingRig', rig: true, job: 'decoys', bot: 'setter', tier: 4, ...T4, ...RIG, counter: 'birds', count: 40_000,
+    id: 'floatingRig', rig: true, job: 'decoys', bot: 'setter', tier: 4, ...T4, ...RIG, counter: 'birds', count: 400_000,
     name: 'Floating Rig', blurb: 'A great long line of hand-carved sea ducks, bobbing on the swell.',
     effect: '+25% flocks · draws the King Eider', fx: { mult: 3, draw: 1.25 },
   },
   duetCallers: {
-    id: 'duetCallers', job: 'call', bot: 'caller', tier: 2, ...T2, counter: 'flocksCalled', count: 800,
+    id: 'duetCallers', job: 'call', bot: 'caller', tier: 2, ...T2, owned: 14, counter: 'flocksCalled', count: 4500,
     name: 'Duet Callers', blurb: 'Callers paired up hen-and-drake. Two voices sound like a whole flock on the water.',
     effect: 'Callers ×2 · one more flock over the decoys', fx: { mult: 2, committed: 1 },
   },
   longCall: {
-    id: 'longCall', job: 'call', bot: 'caller', tier: 3, ...T3, counter: 'flocksCalled', count: 4_000,
+    id: 'longCall', job: 'call', bot: 'caller', tier: 3, ...T3, owned: 35, counter: 'flocksCalled', count: 44_800,
     name: 'Long Call', blurb: 'Hand-turned cedar calls that carry across the whole marsh.',
     effect: 'Callers ×2 · flocks circle 50% longer · hooded mergansers', fx: { mult: 2, patience: 1.5 },
   },
   lureMaster: {
-    id: 'lureMaster', job: 'call', bot: 'caller', tier: 4, ...T4, counter: 'flocksCalled', count: 20_000,
+    id: 'lureMaster', job: 'call', bot: 'caller', tier: 4, ...T4, owned: 70, counter: 'flocksCalled', count: 280_000,
     name: 'Lure Master', blurb: "A caller so sweet, birds that have no business here come for a look.",
     effect: 'Callers ×3 · rare birds ×1.5 · harlequins', fx: { mult: 3, rare: 1.5 },
   },
   steadyBlind: {
-    id: 'steadyBlind', job: 'shoot', bot: 'blind', tier: 2, ...T2, counter: 'shots', count: 800,
+    id: 'steadyBlind', job: 'shoot', bot: 'blind', tier: 2, ...T2, owned: 18, counter: 'shots', count: 5800,
     name: 'Steady Blind', blurb: 'A proper shooting rail and a bench that does not wobble.',
     effect: 'Blind Bots ×2 · +8% of each flock per shot', fx: { mult: 2, shot: 0.08 },
   },
   twinBlinds: {
-    id: 'twinBlinds', job: 'shoot', bot: 'blind', tier: 3, ...T3, counter: 'shots', count: 4_000,
+    id: 'twinBlinds', job: 'shoot', bot: 'blind', tier: 3, ...T3, owned: 45, counter: 'shots', count: 57_600,
     name: 'Twin Blinds', blurb: 'A second blind across the spread, so no flock slips past.',
     effect: 'Blind Bots ×2 · called flocks stay 50% longer', fx: { mult: 2, committedPatience: 1.5 },
   },
   marksman: {
-    id: 'marksman', job: 'shoot', bot: 'blind', tier: 4, ...T4, counter: 'shots', count: 20_000,
+    id: 'marksman', job: 'shoot', bot: 'blind', tier: 4, ...T4, owned: 90, counter: 'shots', count: 360_000,
     name: 'Marksman', blurb: 'Brass sights, oiled walnut and a very calm bot.',
     effect: 'Blind Bots ×3 · +10% of each flock per shot', fx: { mult: 3, shot: 0.1 },
   },
   kennelPack: {
-    id: 'kennelPack', job: 'retrieve', bot: 'retriever', tier: 2, ...T2, counter: 'birds', count: 1_500,
+    id: 'kennelPack', job: 'retrieve', bot: 'retriever', tier: 2, ...T2, owned: 22, counter: 'birds', count: 13_200,
     name: 'Kennel Pack', blurb: 'A warm kennel by the shore. The pups run as a pack now.',
     effect: 'Retrievers ×2', fx: { mult: 2 },
   },
   retrieverSkiff: {
-    id: 'retrieverSkiff', job: 'retrieve', bot: 'retriever', tier: 3, ...T3, counter: 'birds', count: 8_000,
+    id: 'retrieverSkiff', job: 'retrieve', bot: 'retriever', tier: 3, ...T3, owned: 55, counter: 'birds', count: 140_800,
     name: 'Retriever Skiff', blurb: 'A low boat the pups ride out on, so nobody swims the long way.',
     effect: 'Retrievers ×3', fx: { mult: 3 },
   },
   retrieverBoat: {
-    id: 'retrieverBoat', job: 'retrieve', bot: 'retriever', tier: 4, ...T4, counter: 'birds', count: 40_000,
+    id: 'retrieverBoat', job: 'retrieve', bot: 'retriever', tier: 4, ...T4, owned: 110, counter: 'birds', count: 880_000,
     name: 'Retriever Boat', blurb: 'A putt-putt motor and a captain in a tiny cap.',
     effect: 'Retrievers ×3', fx: { mult: 3 },
   },
   frontDesk: {
-    id: 'frontDesk', job: 'log', bot: 'ledger', tier: 3, ...T3, counter: 'logged', count: 5_000,
+    id: 'frontDesk', job: 'log', bot: 'ledger', tier: 3, ...T3, owned: 65, counter: 'logged', count: 104_000,
     name: 'Front Desk', blurb: 'A brass bell, a guest book and a Ledger Bot in a waistcoat.',
     effect: 'Ledger Bots ×2 · +10% coins', fx: { mult: 2, coins: 1.1 },
   },
   guestWing: {
-    id: 'guestWing', job: 'log', bot: 'ledger', tier: 4, ...T4, counter: 'logged', count: 25_000,
+    id: 'guestWing', job: 'log', bot: 'ledger', tier: 4, ...T4, owned: 130, counter: 'logged', count: 650_000,
     name: 'Guest Wing', blurb: 'Twelve new rooms with quilts and a view of the water.',
     effect: 'Ledger Bots ×3 · +25% coins', fx: { mult: 3, coins: 1.25 },
   },
   lookoutTower: {
-    id: 'lookoutTower', job: 'scout', bot: 'scout', tier: 4, ...T4, owned: 25, counter: 'flocksCalled', count: 15_000,
+    id: 'lookoutTower', job: 'scout', bot: 'scout', tier: 4, ...T4, owned: 60, counter: 'flocksCalled', count: 390_000,
     name: 'Lookout Tower', blurb: 'A cedar tower over the reeds. The scouts can see clear to the river.',
     effect: 'Scouts ×3 · +10% flocks', fx: { mult: 3, draw: 1.1 },
   },
   silhouetteSpread: {
-    id: 'silhouetteSpread', rig: true, job: 'fDecoys', bot: 'staker', ...F2, ...RIG, counter: 'geese', count: 800,
+    id: 'silhouetteSpread', rig: true, job: 'fDecoys', bot: 'staker', ...F2, ...RIG, counter: 'geese', count: 6400,
     name: 'Silhouette Spread', blurb: 'Dozens of flat, painted silhouettes fan out behind the full-bodies. From the air it looks like a whole field of geese.',
     effect: '+6 decoys · Ross\'s geese', fx: { mult: 2, spread: 6 },
   },
   fullBodyFleet: {
-    id: 'fullBodyFleet', rig: true, job: 'fDecoys', bot: 'staker', ...F3, ...RIG, counter: 'geese', count: 5_000,
+    id: 'fullBodyFleet', rig: true, job: 'fDecoys', bot: 'staker', ...F3, ...RIG, counter: 'geese', count: 50_000,
     name: 'Full-body Fleet', blurb: 'A trailer of hand-flocked full-bodies, feeders and sentries and sleepers.',
     effect: '+25% goose flocks · blue geese', fx: { mult: 3, draw: 1.25 },
   },
   kiteFlag: {
-    id: 'kiteFlag', job: 'flag', bot: 'flagger', ...F2, counter: 'geese', count: 800,
+    id: 'kiteFlag', job: 'flag', bot: 'flagger', ...F2, owned: 14, counter: 'geese', count: 9000,
     name: 'Kite Flags', blurb: 'Goose-shaped kites that hover and bob over the spread like birds settling in.',
     effect: 'Flaggers ×2 · geese circle 40% longer · white-fronts', fx: { mult: 2, patience: 1.4 },
   },
   honkerChorus: {
-    id: 'honkerChorus', job: 'flag', bot: 'flagger', ...F3, counter: 'geese', count: 5_000,
+    id: 'honkerChorus', job: 'flag', bot: 'flagger', ...F3, owned: 35, counter: 'geese', count: 70_000,
     name: 'Honker Chorus', blurb: 'A whole line of flaggers calling in harmony: clucks, moans and the double honk.',
     effect: 'Flaggers ×3 · rare geese ×1.5 · the Emperor Goose', fx: { mult: 3, rare: 1.5 },
   },
   stubbleBlinds: {
-    id: 'stubbleBlinds', job: 'fShoot', bot: 'layout', ...F2, counter: 'geese', count: 800,
+    id: 'stubbleBlinds', job: 'fShoot', bot: 'layout', ...F2, owned: 18, counter: 'geese', count: 11_500,
     name: 'Stubbled Blinds', blurb: 'Layout blinds brushed in with real corn stubble. Even a crane can\'t pick them out.',
     effect: 'Layout Bots ×2 · +6% of each flock per shot · cranes', fx: { mult: 2, shot: 0.06 },
   },
   pitBlind: {
-    id: 'pitBlind', job: 'fShoot', bot: 'layout', ...F3, counter: 'geese', count: 5_000,
+    id: 'pitBlind', job: 'fShoot', bot: 'layout', ...F3, owned: 45, counter: 'geese', count: 90_000,
     name: 'Pit Blind', blurb: 'A dug-in pit with a sliding lid, a heater and a bench for the whole crew.',
     effect: 'Layout Bots ×3 · geese stay 50% longer over the spread', fx: { mult: 3, committedPatience: 1.5 },
   },
   fieldKennel: {
-    id: 'fieldKennel', job: 'fRetrieve', bot: 'fieldDog', ...F2, counter: 'geese', count: 800,
+    id: 'fieldKennel', job: 'fRetrieve', bot: 'fieldDog', ...F2, owned: 22, counter: 'geese', count: 14_100,
     name: 'Field Kennel', blurb: 'A warm doghouse at the field edge with straw and a water bowl.',
     effect: 'Field Pups ×2', fx: { mult: 2 },
   },
   muleCart: {
-    id: 'muleCart', job: 'fRetrieve', bot: 'fieldDog', ...F3, counter: 'geese', count: 5_000,
+    id: 'muleCart', job: 'fRetrieve', bot: 'fieldDog', ...F3, owned: 55, counter: 'geese', count: 110_000,
     name: 'Mule Cart', blurb: 'A patient clockwork mule pulls a cart along the rows. The pups just load it up.',
     effect: 'Field Pups ×3', fx: { mult: 3 },
   },

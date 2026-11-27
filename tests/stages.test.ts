@@ -1,7 +1,9 @@
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
 import { FEATURE_ORDER } from '../src/data/features';
-import { LODGE_LEVELS, PLANS } from '../src/data/progression';
+import { LODGE_LEVELS, PLANS, RUNGS } from '../src/data/progression';
+import { SPECIES_ORDER } from '../src/data/species';
+import { PRESTIGE } from '../src/data/legacy';
 import { checkUnlocks } from '../src/sim/achievements';
 import { buyBot } from '../src/sim/economy';
 import type { SimEvent } from '../src/sim/events';
@@ -13,8 +15,7 @@ import { createInitialState, type GameState } from '../src/sim/state';
 function readyFor(s: GameState, level: number): void {
   const l = LODGE_LEVELS[level - 1]!;
   s.stats.lifetimeBirds = Math.max(s.stats.lifetimeBirds, l.birds);
-  const ids = ['mallard', 'teal', 'gadwall', 'shoveler', 'woodDuck', 'wigeon', 'ringNeck', 'pintail', 'blackDuck', 'redhead'] as const;
-  for (const id of ids.slice(0, l.species)) s.guide[id] = { count: 1, firstAt: 0 };
+  for (const id of SPECIES_ORDER.slice(0, l.species)) s.guide[id] = { count: 1, firstAt: 0 };
   s.currencies.coins = s.currencies.coins.add(l.coins);
   s.currencies.feathers = s.currencies.feathers.add(l.feathers);
 }
@@ -65,7 +66,7 @@ describe('the lodge', () => {
     }
     s.plans.caller = true;
     s.rungs.duetCallers = true;
-    s.season.coins = new Decimal(4e6);
+    s.season.coins = new Decimal(4 * PRESTIGE.divisor);
     closeSeason(s, 'central');
     expect(s.lodge).toBe(5);
     expect(s.plans.caller).toBe(true);
@@ -110,14 +111,14 @@ describe('bot plans and the ladder', () => {
     s.plans.caller = true;
     s.lodge = 3;
     expect(rungReady(s, 'duetCallers')).toBe(false);
-    s.bots.caller.owned = 10;
-    s.stats.flocksCalled = 800;
+    s.bots.caller.owned = RUNGS.duetCallers.owned;
+    s.stats.flocksCalled = RUNGS.duetCallers.count;
     expect(rungReady(s, 'duetCallers')).toBe(true);
     expect(rungReady(s, 'longCall')).toBe(false); // the rung below comes first
     expect(buyRung(s, 'duetCallers')).toBe(true);
     s.lodge = 4;
-    s.bots.caller.owned = 25;
-    s.stats.flocksCalled = 4_000;
+    s.bots.caller.owned = RUNGS.longCall.owned;
+    s.stats.flocksCalled = RUNGS.longCall.count;
     expect(buyRung(s, 'longCall')).toBe(true);
   });
 });

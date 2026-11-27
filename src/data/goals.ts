@@ -93,7 +93,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'lodge3',
     title: 'Build the Marsh Lodge',
-    gus: "Bring in 500 birds and find four kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
+    gus: "Bring in 5,000 birds and find five kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
     done: (s) => s.lodge >= 3,
   },
   {
@@ -116,9 +116,9 @@ export const GOALS: readonly GoalDef[] = [
   },
   {
     id: 'species7',
-    title: 'Find 7 kinds of duck',
+    title: 'Find 9 kinds of duck',
     gus: 'Rice brings pintail, flooded timber brings black ducks, wild celery brings wigeon. Fill those Field Guide pages.',
-    done: (s) => speciesCount(s) >= 7,
+    done: (s) => speciesCount(s) >= 9,
   },
   {
     id: 'club',
@@ -141,7 +141,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'grand',
     title: 'Build the Grand Lodge',
-    gus: "Stone chimney, three wings, a flag on the roof. Ten kinds of duck in the book and we can build her.",
+    gus: "Stone chimney, three wings, a flag on the roof. Fourteen kinds of birds in the book and we can build her.",
     done: (s) => s.lodge >= 5,
   },
   {
@@ -153,7 +153,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'season',
     title: 'Close your first season',
-    gus: "Earn a million coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
+    gus: "Earn 4 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
     done: (s) => s.stats.seasonsClosed > 0,
   },
   {

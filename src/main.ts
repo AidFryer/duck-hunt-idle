@@ -53,6 +53,7 @@ import { feedback } from './ui/feedback';
 import { snapshot } from './ui/hudState';
 import { Store } from './ui/store';
 import { justUpdated, setupPwa } from './app/pwa';
+import { BACKUP_NUDGE_MS, lastFileBackup } from './app/fileBackup';
 import { setupViewport } from './app/viewport';
 import { audio, type Sfx } from './audio/AudioEngine';
 import { clockAt, duckActivityAt } from './sim/clock';
@@ -165,6 +166,7 @@ setInterval(() => {
 let seenProblem = false;
 let lastEscalationToast = -1e9;
 const weatherSeen = new Set<string>();
+let backupNudged = false;
 /** Lots going on: a running tally replaces the per-bird popups. */
 const busy = () => busyMarsh(state);
 
@@ -439,6 +441,11 @@ setInterval(() => {
   }
   const p = prefs.get();
   const ios = installState.get().ios && !installState.get().installed;
+  // A gentle reminder to keep a backup file, at most once a session.
+  if (!backupNudged && state.lodge >= 2 && state.stats.lifetimeBirds > 500 && Date.now() - lastFileBackup() > BACKUP_NUDGE_MS && performance.now() > 120_000) {
+    backupNudged = true;
+    feedback.toast('Gus says: keep a backup of your lodge. Settings → Back up to Files / iCloud.', 'info', 7000);
+  }
   if (ios && !p.installTip && state.lodge >= 2) {
     updatePrefs({ ...p, installTip: true });
     feedback.toast('Tip: in Safari, tap Share, then "Add to Home Screen" to play full-screen, like an app.', 'info', 7000);

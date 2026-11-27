@@ -35,7 +35,7 @@ import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
 import type { GameState, Problem } from '../sim/state';
 import { CROPS, cropsFor, plotCount, type CropId } from '../data/crops';
 import { canPlant, cropPrice } from '../sim/crops';
-import { COUNTER_LABEL, PLANS, RUNGS, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
+import { COUNTER_LABEL, PLANS, RUNGS, SPECIES_DRAW, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
 import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesNeeds } from '../sim/progression';
 
 export interface Req {
@@ -239,6 +239,8 @@ export interface HudSnapshot {
     progress: number;
     flyway: FlywayId;
     nextFlyway: FlywayId;
+    /** What closing the season right now would bring. */
+    preview: ClosePreview;
   };
   legacy: {
     stars: number;
@@ -302,6 +304,7 @@ function statusText(state: GameState, p: Problem): string {
     case 'escalated':
       return `Foreman gave up after ${p.attempts} tries. Needs you`;
     case 'fixed':
+      if (p.fixedBy === 'self') return 'Worked itself loose';
       return p.fixedBy === 'foreman' ? (p.attempts > 1 ? `Fixed by the foreman on try ${p.attempts}` : 'Fixed by the foreman') : 'Fixed by you';
   }
 }
@@ -380,6 +383,36 @@ function crewNote(state: GameState): string | null {
     return `${JOBS[job].name} is backing up (${q.text}). ${who}`;
   }
   return null;
+}
+
+export interface ClosePreview {
+  starsAfter: number;
+  bonusNow: number;
+  bonusAfter: number;
+  /** Perks you could buy right after closing. */
+  perks: PerkId[];
+  /** Birds the next flyway brings that you haven't found yet. */
+  newBirds: SpeciesId[];
+}
+
+function closePreview(state: GameState, starsNow: number): ClosePreview {
+  const starsAfter = state.legacy.stars + starsNow;
+  const owned = (id: PerkId) => !!state.legacy.perks[id];
+  const perks = PERK_ORDER.filter((id) => !owned(id) && PERKS[id].cost <= starsAfter && PERKS[id].requires.every(owned));
+  const fly = nextFlyway(state);
+  const newBirds = SPECIES_ORDER.filter((sp) => {
+    if ((state.guide[sp]?.count ?? 0) > 0) return false;
+    const need = SPECIES_DRAW[sp];
+    const fw = need?.find((d) => 'flyway' in d);
+    return !!fw && 'flyway' in fw && fw.flyway.includes(fly) && !fw.flyway.includes(state.flyway);
+  });
+  return {
+    starsAfter,
+    bonusNow: PRESTIGE.bonusPerStar * state.legacy.earned,
+    bonusAfter: PRESTIGE.bonusPerStar * (state.legacy.earned + starsNow),
+    perks,
+    newBirds,
+  };
 }
 
 export function snapshot(state: GameState): HudSnapshot {
@@ -600,6 +633,7 @@ export function snapshot(state: GameState): HudSnapshot {
         progress: Math.max(0, Math.min(1, state.season.coins.sub(prev).div(span).toNumber())),
         flyway: state.flyway,
         nextFlyway: nextFlyway(state),
+        preview: closePreview(state, starsNow),
       };
     })(),
     legacy: {

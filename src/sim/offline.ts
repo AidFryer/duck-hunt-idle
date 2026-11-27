@@ -33,7 +33,8 @@ export interface OfflineSummary {
  */
 export function* runOffline(state: GameState, awaySeconds: number, chunkSteps = 3000): Generator<number, OfflineSummary> {
   const cap = offlineCapSeconds(state);
-  const simulated = Math.max(0, Math.min(awaySeconds, cap));
+  const counted = Math.max(0, Math.min(awaySeconds, cap));
+  const simulated = counted * OFFLINE.efficiency;
   const dt = OFFLINE.stepSeconds;
   const total = Math.floor(simulated / dt);
   const coins0 = state.currencies.coins;
@@ -63,7 +64,7 @@ export function* runOffline(state: GameState, awaySeconds: number, chunkSteps = 
   return {
     away: awaySeconds,
     simulated,
-    capped: awaySeconds > cap,
+    capped: counted < awaySeconds,
     capHours: cap / 3600,
     birds: state.stats.lifetimeBirds - birds0,
     coins: state.currencies.coins.sub(coins0),

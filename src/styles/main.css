@@ -4470,3 +4470,21 @@ select {
 .ws-row__buy:not([aria-disabled="true"]), .carving .btn:not([aria-disabled="true"]) { animation: none; }
 .volley.is-ready { animation: none; }
 .volley.is-ready .volley__ring { box-shadow: 0 0 0 4px rgba(242, 196, 109, 0.4), 0 4px 14px rgba(20, 12, 6, 0.4); }
+
+/* Backup file to iCloud / Files */
+.file-backup { display: grid; gap: 4px; margin-bottom: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.5); box-shadow: 0 1px 2px rgba(40, 26, 14, 0.1); }
+.file-backup > span { font-size: 12.5px; color: var(--ui-textSoft); }
+.file-backup .btn-row { margin-top: 4px; }
+.file-load { position: relative; overflow: hidden; cursor: pointer; }
+.file-load input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Season close preview */
+.close-preview { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.55); box-shadow: 0 1px 2px rgba(40, 26, 14, 0.1); }
+.close-preview h4 { margin: 0 0 4px; font-size: 14px; }
+.close-preview ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: 13px; color: var(--ui-textSoft); }
+.close-preview strong { color: var(--ui-text); }
+.ceremony__birds { display: grid; gap: 6px; margin: 4px 0 8px; }
+.ceremony__birds > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.ceremony__birds figure { margin: 0; display: grid; justify-items: center; width: 74px; }
+.ceremony__birds img { width: 64px; }
+.ceremony__birds figcaption { font-size: 11px; text-align: center; color: var(--ui-textSoft); }

@@ -130,7 +130,7 @@ describe('offline progress', () => {
     expect(r.birds).toBeGreaterThan(50);
     expect(r.coins.gt(0)).toBe(true);
     expect(s.currencies.coins.gt(coins0)).toBe(true);
-    expect(r.days).toBeGreaterThanOrEqual(11);
+    expect(r.days).toBeGreaterThanOrEqual(Math.floor((7200 * OFFLINE.efficiency) / 600) - 1);
     expect(s.stats.longestAway).toBe(7200);
   });
 
@@ -138,12 +138,12 @@ describe('offline progress', () => {
     const s = opened(createInitialState(2));
     const r = runOfflineSync(s, 100 * 3600);
     expect(r.capped).toBe(true);
-    expect(r.simulated).toBe(OFFLINE.baseHours * 3600);
+    expect(r.simulated).toBeCloseTo(OFFLINE.baseHours * 3600 * OFFLINE.efficiency);
   });
 
   it('yields progress in chunks', () => {
     const s = opened(createInitialState(2));
-    const it = runOffline(s, 3000, 1000);
+    const it = runOffline(s, 12_000, 1000);
     const progress: number[] = [];
     let r = it.next();
     while (!r.done) {

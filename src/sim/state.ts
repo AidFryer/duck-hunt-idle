@@ -7,7 +7,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -56,7 +56,7 @@ export interface Problem {
   /** When the foreman's next retry lands (elapsed seconds), or -1. */
   nextAt: number;
   status: 'open' | 'retrying' | 'escalated' | 'fixed';
-  fixedBy?: 'you' | 'foreman';
+  fixedBy?: 'you' | 'foreman' | 'self';
   closedAt?: number;
 }
 

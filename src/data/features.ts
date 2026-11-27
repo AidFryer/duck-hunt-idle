@@ -111,7 +111,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     intro: {
       gus: "The season won't last forever. When it's time, we close it out and start fresh, a little wiser.",
       points: [
-        'At 1,000,000 coins in a season you can Close the Season for Flyway Stars.',
+        'At 4 billion coins in a season you can Close the Season for Flyway Stars.',
         'Closing resets coins, bots and upgrades, but each star adds +5% coins and feathers for good.',
         'Spend stars on Legacy perks, like starting crews and rarer birds.',
         'A new season can move to a new flyway with its own birds and twist.',

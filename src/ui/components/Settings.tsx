@@ -2,6 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Prefs } from '../../app/prefs';
 import type { GameControls } from '../controls';
 import { BUILD_STAMP, installState, promptInstall } from '../../app/pwa';
+import { lastFileBackup, readBackupFile, saveBackupFile } from '../../app/fileBackup';
 import { LODGE_LEVELS } from '../../data/progression';
 import { useStore } from '../store';
 import { AVATARS, NAME_MAX } from '../../data/avatars';
@@ -47,6 +48,18 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
     }
   };
   const canShare = typeof navigator.share === 'function';
+  const [lastBackup, setLastBackup] = useState(lastFileBackup);
+  const doFileBackup = async () => {
+    const how = await saveBackupFile(controls.exportSave(), profile.name);
+    if (how === 'cancelled') return;
+    setLastBackup(lastFileBackup());
+    setMsg({ text: how === 'shared' ? 'Backup file made. Pick "Save to Files" and choose iCloud Drive to keep it safe.' : 'Backup file downloaded. Keep it somewhere safe, like iCloud Drive.', tone: 'good' });
+  };
+  const doFileLoad = async (file: File | undefined) => {
+    if (!file) return;
+    const r = controls.importSave(await readBackupFile(file));
+    setMsg(r.ok ? { text: 'Backup loaded. Welcome back!', tone: 'good' } : { text: r.error, tone: 'bad' });
+  };
   const [backups, setBackups] = useState(() => controls.listBackups());
   const restore = (at: number) => {
     const r = controls.restoreBackup(at);
@@ -224,9 +237,23 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
           </p>
           {install.ios && (
             <p class="card__hint">
-              On iPhone, Safari and the home-screen app keep separate saves. Use a save code to move one to the other.
+              On iPhone, Safari and the home-screen app keep separate saves. Use a backup file or save code to move one to the other.
             </p>
           )}
+          <div class="file-backup">
+            <strong>Back up to iCloud</strong>
+            <span>
+              {lastBackup ? `Last backup file: ${whenText(lastBackup)}.` : 'No backup file yet.'} A backup file works on any phone or
+              computer, even if this app is removed.
+            </span>
+            <div class="btn-row">
+              <button class="btn btn--primary" onClick={() => void doFileBackup()}>Back up to Files / iCloud</button>
+              <label class="btn file-load">
+                Load a backup file
+                <input type="file" accept=".txt,text/plain" onChange={(e) => void doFileLoad((e.currentTarget as HTMLInputElement).files?.[0])} />
+              </label>
+            </div>
+          </div>
           <div class="btn-row">
             <button class="btn" onClick={doExport}>Copy save code</button>
             {canShare && <button class="btn" onClick={() => void doShare()}>Send save code</button>}

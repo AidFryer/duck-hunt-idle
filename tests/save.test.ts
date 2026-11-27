@@ -63,3 +63,23 @@ describe('save / load', () => {
     expect(() => deserialize(JSON.stringify({ v: SAVE_VERSION + 1, s: {} }))).toThrow(/newer/);
   });
 });
+
+describe('v14 → v15: the slower economy', () => {
+  it('keeps what was built but trims banked coins and feathers', async () => {
+    const { fromPlain } = await import('../src/sim/save');
+    const { LODGE_LEVELS } = await import('../src/data/progression');
+    const s = fromPlain({
+      version: 14,
+      lodge: 3,
+      currencies: { coins: '5e9', feathers: '2e8' },
+      stats: { lifetimeBirds: 90_000 },
+      bots: { caller: { owned: 40, level: 3 } },
+      environment: { seed: 1, weather: 'clear', wind: 0.3 },
+    });
+    expect(s.lodge).toBe(3);
+    expect(s.bots.caller.owned).toBe(40);
+    expect(s.stats.lifetimeBirds).toBe(90_000);
+    expect(s.currencies.coins.toNumber()).toBeCloseTo(LODGE_LEVELS[3]!.coins * 0.1);
+    expect(s.currencies.feathers.toNumber()).toBeCloseTo(LODGE_LEVELS[3]!.feathers * 0.1);
+  });
+});

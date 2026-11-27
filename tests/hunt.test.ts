@@ -1,4 +1,5 @@
 import Decimal from 'break_infinity.js';
+import { MILESTONE_MULTIPLIER } from '../src/data/economy';
 import { describe, expect, it } from 'vitest';
 import { TICK_SECONDS } from '../src/config';
 import { BOTS, HUNT, SPECIES } from '../src/data/economy';
@@ -99,11 +100,12 @@ describe('manual hunt pipeline', () => {
 });
 
 describe('bots', () => {
-  it('cost follows base × 1.15^owned', () => {
+  it('cost follows base × growth^owned', () => {
     const d = BOTS.caller;
+    const g = d.costGrowth;
     expect(botPrice('caller', 0).coins.toNumber()).toBeCloseTo(d.costCoins);
-    expect(botPrice('caller', 3).coins.toNumber()).toBe(Math.ceil(d.costCoins * 1.15 ** 3));
-    const sum = d.costCoins * (1 + 1.15 + 1.15 ** 2);
+    expect(botPrice('caller', 3).coins.toNumber()).toBe(Math.ceil(d.costCoins * g ** 3));
+    const sum = d.costCoins * (1 + g + g ** 2);
     expect(botPrice('caller', 0, 3).coins.toNumber()).toBe(Math.ceil(sum - 1e-9));
   });
 
@@ -120,24 +122,25 @@ describe('bots', () => {
   it('max affordable respects the scarcer currency', () => {
     const s = opened(createInitialState(1));
     s.currencies.coins = new Decimal(1e9);
-    s.currencies.feathers = new Decimal(BOTS.blind.costFeathers * 2.2);
+    s.currencies.feathers = new Decimal(BOTS.blind.costFeathers * (1 + BOTS.blind.costGrowth) + 1);
     expect(maxAffordableBots(s, 'blind')).toBe(2);
   });
 
-  it('milestones double output at 10/25/50/100/200 … 1000', () => {
+  it('milestones boost output at 10/25/50/100/200 … 1000', () => {
+    const k = MILESTONE_MULTIPLIER;
     expect(milestoneMultiplier(9)).toBe(1);
-    expect(milestoneMultiplier(10)).toBe(2);
-    expect(milestoneMultiplier(25)).toBe(4);
-    expect(milestoneMultiplier(200)).toBe(32);
+    expect(milestoneMultiplier(10)).toBeCloseTo(k);
+    expect(milestoneMultiplier(25)).toBeCloseTo(k ** 2);
+    expect(milestoneMultiplier(200)).toBeCloseTo(k ** 5);
     expect(nextMilestone(10)).toBe(25);
     expect(nextMilestone(200)).toBe(300);
-    expect(milestoneMultiplier(1000)).toBe(1024);
+    expect(milestoneMultiplier(1000)).toBeCloseTo(k ** 10);
     expect(nextMilestone(1000)).toBeNull();
     const s = rich();
     const ev: SimEvent[] = [];
     buyBot(s, 'caller', 10, ev);
     expect(ev.some((e) => e.type === 'botMilestone')).toBe(true);
-    expect(jobRate(s, 'call')).toBeCloseTo(10 * BOTS.caller.baseSpeed * 2);
+    expect(jobRate(s, 'call')).toBeCloseTo(10 * BOTS.caller.baseSpeed * MILESTONE_MULTIPLIER);
   });
 
   it('tune-ups raise speed', () => {

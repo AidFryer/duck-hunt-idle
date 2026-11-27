@@ -1,3 +1,4 @@
+import { PRESTIGE } from '../src/data/legacy';
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
 import { WORKFLOW } from '../src/data/workflows';
@@ -88,12 +89,12 @@ describe('workflows', () => {
 });
 
 describe('prestige', () => {
-  it('stars follow floor(sqrt(coins / 1e6))', () => {
-    expect(starsFor(new Decimal(999_999))).toBe(0);
-    expect(starsFor(new Decimal(1e6))).toBe(1);
-    expect(starsFor(new Decimal(4e6))).toBe(2);
-    expect(starsFor(new Decimal(8.9e6))).toBe(2);
-    expect(coinsForNextStar(new Decimal(1e6)).toNumber()).toBe(4e6);
+  it('stars follow floor(sqrt(coins / divisor))', () => {
+    expect(starsFor(new Decimal(PRESTIGE.divisor - 1))).toBe(0);
+    expect(starsFor(new Decimal(PRESTIGE.divisor))).toBe(1);
+    expect(starsFor(new Decimal(4 * PRESTIGE.divisor))).toBe(2);
+    expect(starsFor(new Decimal(8.9 * PRESTIGE.divisor))).toBe(2);
+    expect(coinsForNextStar(new Decimal(PRESTIGE.divisor)).toNumber()).toBe(4 * PRESTIGE.divisor);
   });
 
   it('closing a season banks stars and resets the marsh, keeping the guide', () => {
@@ -102,7 +103,7 @@ describe('prestige', () => {
     s.upgrades.coffee = 2;
     s.guide.mallard = { count: 50, firstAt: 0 };
     s.achievements.firstBird = 1;
-    s.season.coins = new Decimal(9e6);
+    s.season.coins = new Decimal(9 * PRESTIGE.divisor);
     const ev: SimEvent[] = [];
     expect(closeSeason(s, nextFlyway(s), ev)).toBe(3);
     expect(s.legacy.stars).toBe(3);
@@ -141,7 +142,7 @@ describe('prestige', () => {
     expect(botPriceMult(s, 'foreman')).toBe(0.5);
     expect(botPrice('foreman', 0, 1, botPriceMult(s, 'foreman')).coins.toNumber()).toBe(Math.ceil(BOTS.foreman.costCoins / 2));
     expect(offlineCapSeconds(s)).toBe(10 * 3600);
-    s.season.coins = new Decimal(1e6);
+    s.season.coins = new Decimal(PRESTIGE.divisor);
     closeSeason(s, 'central');
     expect(s.bots.caller.owned).toBe(2);
     expect(s.assign.caller.call).toBe(2);

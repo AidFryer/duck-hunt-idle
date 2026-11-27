@@ -229,7 +229,7 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
     if (r.coins1k === null && sc.gte(1e3)) r.coins1k = t;
     if (r.coins10k === null && sc.gte(1e4)) r.coins10k = t;
     if (r.coins100k === null && sc.gte(1e5)) r.coins100k = t;
-    if (r.firstStar === null && (sc.gte(1e6) || s.stats.seasonsClosed > 0)) r.firstStar = t;
+    if (r.firstStar === null && (starsFor(sc) >= 1 || s.stats.seasonsClosed > 0)) r.firstStar = t;
     if (i % Math.round(300 / dt) === 0) {
       r.timeline.push({ t, coins: sc.toNumber(), bots: totalBots(s), birds: s.stats.lifetimeBirds });
       if (t >= opts.seconds - 300 - 1) coinsFiveMinAgo = s.stats.lifetimeCoins;

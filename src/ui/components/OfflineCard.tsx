@@ -39,6 +39,7 @@ export function OfflineCard({ notation }: { notation: Notation }) {
             </p>
           </div>
         </div>
+        <p class="card__hint">The crew works at an easy pace without you. The best hunting happens while you play.</p>
         <p class="away-card__gus">
           {s.birds > 0
             ? `"The crew kept at it while you were gone. Here's what's in the ledger."`

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { BOT_MILESTONES, BOTS, FIELD_BOTS, WORKSHOP_ORDER, type BotId } from '../../data/economy';
+import { BOT_MILESTONES, BOTS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId } from '../../data/economy';
 import { PLANS } from '../../data/progression';
 import { botPrice } from '../../sim/economy';
 import { formatNumber, formatRate, type Notation } from '../../util/format';
@@ -175,7 +175,7 @@ function BotRow({ id, hud, controls, notation, mode, open, onToggle }: { id: Bot
               {b.stuck > 0 ? ` · ${b.stuck} stuck` : ''}
             </span>
             {ms && (
-              <span class="ws-row__ms" title={`At ${ms} owned, output doubles`}>
+              <span class="ws-row__ms" title={`At ${ms} owned, output grows ×${MILESTONE_MULTIPLIER}`}>
                 <span style={{ width: `${msPct}%` }} />
               </span>
             )}
@@ -197,7 +197,7 @@ function BotRow({ id, hud, controls, notation, mode, open, onToggle }: { id: Bot
           <dl class="stats">
             {id !== 'foreman' && <div><dt>Speed</dt><dd>{formatRate(b.unitSpeed)} each</dd></div>}
             <div><dt>Reliability</dt><dd>{(b.reliability * 100).toFixed(1)}%</dd></div>
-            {ms && <div><dt>Next team-up</dt><dd>{b.owned}/{ms} → ×{b.multiplier * 2}</dd></div>}
+            {ms && <div><dt>Next team-up</dt><dd>{b.owned}/{ms} → ×{formatNumber(b.multiplier * MILESTONE_MULTIPLIER, notation)}</dd></div>}
             {b.bench > 0 && <div><dt>Resting</dt><dd>{b.bench}</dd></div>}
           </dl>
           {b.owned > 0 && (

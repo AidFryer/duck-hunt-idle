@@ -26,7 +26,7 @@ export function raiseProblem(state: GameState, bot: BotId, job: JobId, events: E
   return true;
 }
 
-function close(state: GameState, p: Problem, by: 'you' | 'foreman', events: EventSink): void {
+function close(state: GameState, p: Problem, by: 'you' | 'foreman' | 'self', events: EventSink): void {
   const i = state.problems.open.indexOf(p);
   if (i >= 0) state.problems.open.splice(i, 1);
   p.status = 'fixed';
@@ -35,7 +35,7 @@ function close(state: GameState, p: Problem, by: 'you' | 'foreman', events: Even
   state.problems.closed.push(p);
   while (state.problems.closed.length > FOREMAN.logSize) state.problems.closed.shift();
   if (by === 'you') state.problems.fixedByYou += 1;
-  else state.problems.fixedByForeman += 1;
+  else if (by === 'foreman') state.problems.fixedByForeman += 1;
   events.push({ type: 'problemFixed', problemId: p.id, bot: p.bot, by });
 }
 
@@ -91,6 +91,14 @@ export function setForemanSettings(state: GameState, retries: number, backoff: n
 /** Foremen pick up open problems and retry them with exponential backoff. */
 export function stepForemen(state: GameState, events: EventSink, rate?: number): void {
   if (state.problems.open.length === 0) return;
+  // Once you've learned the trade (Foreman plans earned), a stuck bot left
+  // alone long enough works itself loose, so snags never pile up.
+  if (state.plans.foreman) {
+    for (const p of [...state.problems.open]) {
+      if (state.elapsed - p.at >= FOREMAN.selfFixSeconds) close(state, p, 'self', events);
+    }
+    if (state.problems.open.length === 0) return;
+  }
   const cap = foremanCapacity(state, rate);
   const now = state.elapsed;
   let busy = state.problems.open.filter((p) => p.status === 'retrying').length;

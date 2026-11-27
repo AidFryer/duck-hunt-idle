@@ -34,7 +34,7 @@ export type SimEvent =
   | { type: 'scouted'; source: ActionSource }
   | { type: 'problem'; problemId: number; bot: BotId; job: JobId; kind: ProblemKind }
   | { type: 'problemRetry'; problemId: number; bot: BotId; attempt: number; ok: boolean }
-  | { type: 'problemFixed'; problemId: number; bot: BotId; by: 'you' | 'foreman' }
+  | { type: 'problemFixed'; problemId: number; bot: BotId; by: 'you' | 'foreman' | 'self' }
   | { type: 'problemEscalated'; problemId: number; bot: BotId }
   | { type: 'botMoved'; bot: BotId; from: Slot; to: Slot }
   | { type: 'botBought'; bot: BotId; count: number; owned: number }
