@@ -139,7 +139,7 @@ export function Moments({ onOpen, greetName = '' }: { onOpen: (feature: string) 
             <li>Come back tomorrow for another.</li>
           </ul>
           <div class="btn-row">
-            <button class="btn btn--primary" onClick={popMoment}>Thanks, Gus</button>
+            <button class="btn btn--primary" onClick={popMoment}>Thanks, Ray</button>
           </div>
         </div>
       </div>

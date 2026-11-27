@@ -125,7 +125,7 @@ export interface JobSnapshot {
   spark: number[];
   fails: number[];
   tokens: JobToken[];
-  /** Done by hand / Gus when no bots are here. */
+  /** Done by hand / Ray when no bots are here. */
   manual: string | null;
 }
 
@@ -485,7 +485,7 @@ export function snapshot(state: GameState): HudSnapshot {
       spark: [...m.done],
       fails: [...m.fail],
       tokens,
-      manual: j === 'log' ? `Gus logs ${LEDGER.keeperRate}/s` : j === 'foreman' || j === 'tinker' || j === 'scout' ? null : 'You, by hand',
+      manual: j === 'log' ? `Ray logs ${LEDGER.keeperRate}/s` : j === 'foreman' || j === 'tinker' || j === 'scout' ? null : 'You, by hand',
     };
   }
 

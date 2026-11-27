@@ -42,7 +42,7 @@ export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
 export interface LodgeLevel {
   level: number;
   name: string;
-  /** What Gus says when it's built. */
+  /** What Ray says when it's built. */
   gus: string;
   /** Requirements to start building (earned this season or ever: birds/species are lifetime). */
   birds: number;
@@ -76,7 +76,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
     birds: 5_000, species: 5, coins: 15_000, feathers: 1_500, opens: [],
     points: [
-      'Ledger Bot plans, so Gus gets help at the porch.',
+      'Ledger Bot plans, so Ray gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
       'Flooded Timber: a second hunting ground in drowned oaks, home to wood ducks and black ducks. A Timber Guide can work it for you.',
       'A second food plot, plus wild celery, the boat house, lantern posts and more.',
@@ -85,7 +85,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 120_000, species: 9, coins: 1_200_000, feathers: 80_000, opens: ['field'],
+    birds: 200_000, species: 12, coins: 3_000_000, feathers: 200_000, opens: ['field'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch grounds from the button at the top of the screen.',
       'Scout and Foreman plans.',
@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 1_200_000, species: 14, coins: 110_000_000, feathers: 3_500_000, opens: ['legacy'],
+    birds: 2_500_000, species: 20, coins: 350_000_000, feathers: 10_000_000, opens: ['legacy'],
     points: [
       'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks. Hire a Bay Boatman to run it.',
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',

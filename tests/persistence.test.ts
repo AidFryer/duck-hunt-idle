@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { BACKUP_SLOTS, backupNow, listBackups, loadGame, saveGame } from '../src/app/persistence';
 import { SAVE_KEY } from '../src/config';
 import { createInitialState } from '../src/sim/state';
+import { deserialize, serialize } from '../src/sim/save';
 
 function memoryStorage(): Storage {
   const m = new Map<string, string>();
@@ -62,5 +63,20 @@ describe('saves and backups', () => {
     const r = loadGame();
     expect(r.kind).toBe('loaded');
     if (r.kind === 'loaded') expect(r.state.stats.lifetimeBirds).toBe(77);
+  });
+
+  it('starts everyone fresh from an old save, keeping it as a backup', () => {
+    const old = JSON.parse(serialize(played(500)));
+    old.v = 18;
+    old.s.version = 18;
+    localStorage.setItem(SAVE_KEY, JSON.stringify(old));
+    expect(loadGame().kind).toBe('restart');
+    expect(localStorage.getItem(SAVE_KEY)).toBeNull();
+    const kept = listBackups()[0]!;
+    expect(kept.birds).toBe(500);
+    // The old lodge is never picked up automatically...
+    expect(loadGame().kind).toBe('none');
+    // ...but it still restores by hand.
+    expect(deserialize(kept.raw).stats.lifetimeBirds).toBe(500);
   });
 });

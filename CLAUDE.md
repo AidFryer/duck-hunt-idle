@@ -13,7 +13,7 @@ and `npm run build` before committing.
   (`border-left: 4px …`, `inset 3px 0 0 …`), no thick bottom or top accent bars.
   Show state with a soft background tint, a full thin outline or a gentle glow.
 - **Rounded, soft cards** (`border-radius` 10–14px, light drop shadow).
-- **Plain words.** Labels and tips read like Gus talking, not like a spreadsheet.
+- **Plain words.** Labels and tips read like Ray talking, not like a spreadsheet.
 - **Phone first.** Everything must fit a narrow phone screen with no sideways
   scrolling; lists stay compact and easy to scan.
 - **One popup per moment.** Combine related numbers (coins and feathers from a

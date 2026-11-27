@@ -1827,7 +1827,7 @@ const FOLK: Record<Exclude<PersonKind, 'gus'>, { coat: number; hat: number; pant
   angler: { coat: 0x6b4a2f, hat: 0xd8be82, pants: 0x3a4a38 },
 };
 
-/** A little standing person (24×36, feet at the bottom). Gus sits in his rocker. */
+/** A little standing person (24×36, feet at the bottom). Ray sits in his rocker. */
 export function paintPerson(kind: PersonKind): Canvas {
   const t = createPaintTarget(24, 36);
   const { ctx } = t;
@@ -1845,7 +1845,7 @@ export function paintPerson(kind: PersonKind): Canvas {
     ctx.stroke();
     ctx.fillStyle = css(palette.wood);
     ctx.fillRect(5, 23, 13, 2);
-    // Gus: red flannel, grey beard, brown hat
+    // Ray: red flannel, grey beard, brown hat
     ctx.fillStyle = css(0x3a3632);
     ctx.fillRect(11, 25, 3, 8);
     ctx.fillRect(15, 25, 3, 8);

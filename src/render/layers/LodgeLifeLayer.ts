@@ -16,7 +16,7 @@ interface Walker {
 }
 
 /**
- * Cozy life around the lodge: Gus rocking on the porch with his coffee,
+ * Cozy life around the lodge: Ray rocking on the porch with his coffee,
  * guests strolling the bank (more as the lodge grows), and an angler on
  * the dock at the bigger lodges. Guests head inside after dark.
  */
@@ -54,7 +54,7 @@ export class LodgeLifeLayer implements Layer {
     const ls = a.lodgeScale;
     this.k = ls * 0.95;
     this.y = a.lodge.y + 2 * ls;
-    // Gus in his rocker on the porch, under the lantern.
+    // Ray in his rocker on the porch, under the lantern.
     this.gus.position.set(a.porch.x - 12 * ls, a.porch.y - 1 * ls);
     this.gus.scale.set(this.k);
     // Guests stroll the bank in front of the lodge.
@@ -78,7 +78,7 @@ export class LodgeLifeLayer implements Layer {
     const dt = f.dt;
     this.time += dt;
     const lit = lerpColor(f.sky.light, 0xffffff, 0.05);
-    // Gus rocks gently.
+    // Ray rocks gently.
     this.gus.rotation = Math.sin(this.time * 1.6) * 0.06 * (0.4 + f.motion * 0.6);
     this.gus.tint = lit;
     // Guests: one per lodge level above the shack; inside after dark.

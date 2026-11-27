@@ -105,7 +105,7 @@ export const CARVINGS: Record<CarvingId, CarvingDef> = {
   },
   goldenDrake: {
     id: 'goldenDrake', name: 'Golden Drake', lodge: 5, coins: 4_000_000_000, feathers: 80_000_000,
-    blurb: 'Gilded by Gus himself. It catches the sunrise like nothing else.',
+    blurb: 'Gilded by Ray himself. It catches the sunrise like nothing else.',
     effect: 'Golden flocks 50% more often · +15% coins', fx: { golden: 1.5, coins: 1.15 },
     look: { body: 0xe8b84a, head: 0xd9a62a, accent: 0xfff1c4 },
   },

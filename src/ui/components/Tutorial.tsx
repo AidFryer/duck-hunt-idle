@@ -21,7 +21,7 @@ const TEXT: Record<TutorialStep, string> = {
   done: "That's the whole hunt. I log every bird at the lodge myself, and guests pay coins for 'em. Tap quick, one after another, and you'll find your rhythm: extra coins. Save up to build a proper cabin, and we'll start carving bots that learn from you.",
 };
 
-/** A short, skippable first-run walkthrough voiced by Gus. */
+/** A short, skippable first-run walkthrough voiced by Ray. */
 export function Tutorial({ step, onNext, onSkip, name = '', onName }: { step: TutorialStep; onNext: () => void; onSkip: () => void; name?: string; onName?: (n: string) => void }) {
   const waiting = step !== 'welcome' && step !== 'done';
   const [draft, setDraft] = useState(name);

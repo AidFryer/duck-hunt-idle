@@ -2,7 +2,7 @@
 
 export const PRESTIGE = {
   /** stars = floor(sqrt(seasonCoins / divisor)) */
-  divisor: 4e9,
+  divisor: 8e9,
   /** Permanent production bonus per star ever earned. */
   bonusPerStar: 0.05,
 } as const;

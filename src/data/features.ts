@@ -1,6 +1,6 @@
 /**
  * Feature stages: tabs open one at a time as the marsh grows, each with a
- * short explanation from Gus. Unlocks are permanent (they survive seasons).
+ * short explanation from Ray. Unlocks are permanent (they survive seasons).
  */
 import type { GameState } from '../sim/state';
 
@@ -110,7 +110,7 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     intro: {
       gus: "The season won't last forever. When it's time, we close it out and start fresh, a little wiser.",
       points: [
-        'At 4 billion coins in a season you can Close the Season for Flyway Stars.',
+        'At 8 billion coins in a season you can Close the Season for Flyway Stars.',
         'Closing resets coins, bots and upgrades, but each star adds +5% coins and feathers for good.',
         'Spend stars on Legacy perks, like starting crews and rarer birds.',
         'A new season can move to a new flyway with its own birds and twist.',

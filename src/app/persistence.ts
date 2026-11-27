@@ -1,6 +1,6 @@
 import { SAVE_KEY } from '../config';
-import { deserialize, serialize } from '../sim/save';
-import type { GameState } from '../sim/state';
+import { deserialize, saveVersionOf, serialize } from '../sim/save';
+import { FRESH_START_VERSION, type GameState } from '../sim/state';
 
 /** How often the game autosaves (ms). */
 export const AUTOSAVE_MS = 15_000;
@@ -8,6 +8,8 @@ export const AUTOSAVE_MS = 15_000;
 export type LoadResult =
   | { kind: 'loaded'; state: GameState }
   | { kind: 'none' }
+  /** An old save from before the fresh start: it was kept as a backup and the game begins anew. */
+  | { kind: 'restart' }
   | { kind: 'error'; message: string; raw: string };
 
 /** Read the save from localStorage. Never throws. Falls back to the newest backup that loads. */
@@ -19,6 +21,21 @@ export function loadGame(): LoadResult {
     return { kind: 'none' };
   }
   let error: LoadResult | null = null;
+  const version = raw ? saveVersionOf(raw) : 0;
+  if (raw && version > 0 && version < FRESH_START_VERSION) {
+    // Everyone starts over with this update. Keep the old lodge as a backup first.
+    try {
+      backupNow(deserialize(raw), 'before the fresh start', Date.now(), raw);
+    } catch {
+      backupBrokenSave(raw);
+    }
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch {
+      /* ignore */
+    }
+    return { kind: 'restart' };
+  }
   if (raw) {
     try {
       return { kind: 'loaded', state: deserialize(raw) };
@@ -27,6 +44,9 @@ export function loadGame(): LoadResult {
     }
   }
   for (const b of listBackups()) {
+    // Never fall back into a lodge from before the fresh start.
+    const bv = saveVersionOf(b.raw);
+    if (bv > 0 && bv < FRESH_START_VERSION) continue;
     try {
       const state = deserialize(b.raw);
       if (raw && error) backupBrokenSave(raw); // keep the damaged one too
@@ -67,10 +87,10 @@ export function listBackups(): Backup[] {
 }
 
 /** Store a copy of `state`. Skips empty starts, which aren't worth keeping. */
-export function backupNow(state: GameState, why: string, now = Date.now()): void {
+export function backupNow(state: GameState, why: string, now = Date.now(), raw?: string): void {
   if (state.stats.lifetimeBirds <= 0) return;
   try {
-    const entry: Backup = { at: now, why, name: state.profile.name, lodge: state.lodge, birds: state.stats.lifetimeBirds, raw: serialize(state) };
+    const entry: Backup = { at: now, why, name: state.profile.name, lodge: state.lodge, birds: state.stats.lifetimeBirds, raw: raw ?? serialize(state) };
     const list = [entry, ...listBackups()];
     // Keep the newest few, but never drop the furthest-along one.
     const best = list.reduce((a, b) => (b.birds > a.birds ? b : a));

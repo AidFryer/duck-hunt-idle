@@ -8,7 +8,12 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
+/**
+ * Saves older than this are from before the everyone-starts-over update.
+ * They load only when restored by hand; a normal start begins fresh.
+ */
+export const FRESH_START_VERSION = 19;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -146,7 +151,7 @@ export interface GameState {
     bag: number;
     /** Retrieved birds waiting to be logged at the lodge (logging pays coins). */
     ledger: SpeciesId[];
-    /** Gus's own logging progress (0–1). */
+    /** Ray's own logging progress (0–1). */
     keeperProgress: number;
     /** Hunter's Rhythm streak level (0 = none). */
     streak: number;

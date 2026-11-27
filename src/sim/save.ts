@@ -133,6 +133,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v18: Flooded Timber and Coastal Bay (new grounds, bags and bots fill in with defaults).
   17: (s) => ({ ...s, version: 18 }),
+  // v19: no shape change; marks the fresh start (see FRESH_START_VERSION).
+  18: (s) => ({ ...s, version: 19 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [
@@ -199,6 +201,16 @@ function deepMerge(base: Json, over: Json): Json {
 
 export function serialize(state: GameState): string {
   return JSON.stringify({ v: SAVE_VERSION, s: toPlain(state) });
+}
+
+/** The save version written in a save, without loading it (0 if unreadable). */
+export function saveVersionOf(text: string): number {
+  try {
+    const parsed = JSON.parse(text) as { v?: number; s?: { version?: number } };
+    return Number(parsed?.v ?? parsed?.s?.version ?? 0) || 0;
+  } catch {
+    return 0;
+  }
 }
 
 export function deserialize(text: string): GameState {

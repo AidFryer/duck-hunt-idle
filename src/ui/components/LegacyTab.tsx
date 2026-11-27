@@ -130,7 +130,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
         <h3>Close Season {se.number}?</h3>
         <p class="away-card__gus">
           "Good season. We'll hang up the waders, count the stars and start fresh. What we learned stays with us."
-          <span>— Gus Marlow</span>
+          <span>— Ray Collins</span>
         </p>
         <div class="season-summary">
           <div class="season-summary__gain">★ +{se.starsNow} Flyway Stars</div>

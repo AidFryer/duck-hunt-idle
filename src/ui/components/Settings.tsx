@@ -88,7 +88,7 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
               id="opt-name"
               type="text"
               maxLength={NAME_MAX}
-              placeholder="What should Gus call you?"
+              placeholder="What should Ray call you?"
               value={name}
               onInput={(e) => setName((e.currentTarget as HTMLInputElement).value)}
               onBlur={() => controls.setProfile(name, profile.avatar)}

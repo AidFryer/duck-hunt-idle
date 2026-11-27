@@ -4,14 +4,14 @@ import { workflowEval } from '../sim/workflow';
 const completeChain = (s: GameState) => workflowEval(s).complete;
 
 /**
- * The always-visible "next goal" track, voiced by Gus the lodge keeper.
+ * The always-visible "next goal" track, voiced by Ray the lodge keeper.
  * Goals are checked in order; the first unfinished one is shown.
  */
 export interface GoalDef {
   id: string;
   /** Short goal line on the goal card. */
   title: string;
-  /** What Gus says while this goal is active. */
+  /** What Ray says while this goal is active. */
   gus: string;
   done: (s: GameState) => boolean;
   /** Only shown after the first season is closed. */
@@ -21,7 +21,7 @@ export interface GoalDef {
 export const LAB_NAME = 'Biscuit';
 /** The player's name for the retriever, or the default. */
 export const dogNameOf = (p: { dogName?: string }): string => p.dogName?.trim() || LAB_NAME;
-export const KEEPER_NAME = 'Gus Marlow';
+export const KEEPER_NAME = 'Ray Collins';
 
 export const GOALS: readonly GoalDef[] = [
   {
@@ -153,7 +153,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'season',
     title: 'Close your first season',
-    gus: "Earn 4 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
+    gus: "Earn 8 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
     done: (s) => s.stats.seasonsClosed > 0,
   },
   {

@@ -219,7 +219,7 @@ export const OFFLINE = {
   stepSeconds: 0.5,
   /**
    * While you're away the crew works at this fraction of its usual pace
-   * (Gus naps too). Active sessions are where most progress happens.
+   * (Ray naps too). Active sessions are where most progress happens.
    */
   efficiency: 0.25,
 } as const;

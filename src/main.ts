@@ -88,6 +88,12 @@ function applyBreed(): void {
 const loaded = loadGame();
 let state: GameState = loaded.kind === 'loaded' ? loaded.state : freshState();
 if (loaded.kind === 'error') backupBrokenSave(loaded.raw);
+if (loaded.kind === 'restart') {
+  // A brand-new start: the welcome and name prompts come back too.
+  const p = { ...prefs.get(), tutorialDone: false, ground: 'marsh' as const };
+  prefs.set(p);
+  savePrefs(p);
+}
 askToKeepStorage();
 applyBreed();
 
@@ -151,7 +157,7 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', save);
 
 // --- Feedback for sim events -------------------------------------------------
-// Logging happens often (Gus + Ledger Bots), so coin pop-ups are batched.
+// Logging happens often (Ray + Ledger Bots), so coin pop-ups are batched.
 // Coins and feathers from pickups gather for a moment and pop up together.
 let pendingCoins = 0;
 let pendingFeathers = 0;
@@ -462,7 +468,7 @@ setInterval(() => {
   // A gentle reminder to keep a backup file, at most once a session.
   if (!backupNudged && state.lodge >= 2 && state.stats.lifetimeBirds > 500 && Date.now() - lastFileBackup() > BACKUP_NUDGE_MS && performance.now() > 120_000) {
     backupNudged = true;
-    feedback.toast('Gus says: keep a backup of your lodge. Settings → Back up to Files / iCloud.', 'info', 7000);
+    feedback.toast('Ray says: keep a backup of your lodge. Settings → Back up to Files / iCloud.', 'info', 7000);
   }
   if (ios && !p.installTip && state.lodge >= 2) {
     updatePrefs({ ...p, installTip: true });
@@ -705,7 +711,29 @@ async function startScene(host: HTMLElement): Promise<void> {
   }
   // After any offline catch-up has started, so the gift lands on top.
   setTimeout(checkDailyBonus, 1500);
-  if (loaded.kind === 'error') feedback.toast("Your old save couldn't be read, so a fresh marsh was started. A backup was kept.", 'info', 6000);
+  // Shown once, even if the page reloads right after the fresh start.
+  const NOTICE = 'duck-hunt-idle.freshStartNotice';
+  try {
+    if (loaded.kind === 'restart') localStorage.setItem(NOTICE, '1');
+  } catch {
+    /* ignore */
+  }
+  let notice = loaded.kind === 'restart';
+  try {
+    notice ||= localStorage.getItem(NOTICE) === '1';
+  } catch {
+    /* ignore */
+  }
+  if (notice) {
+    setTimeout(() => {
+      feedback.toast('Everyone starts fresh with this update. Your old lodge is kept as a backup in Settings.', 'info', 8000);
+      try {
+        localStorage.removeItem(NOTICE);
+      } catch {
+        /* ignore */
+      }
+    }, 2500);
+  } else if (loaded.kind === 'error') feedback.toast("Your old save couldn't be read, so a fresh marsh was started. A backup was kept.", 'info', 6000);
   else if (justUpdated()) setTimeout(() => feedback.toast('The game updated. Your save came along.', 'good', 3500), 2500);
 }
 

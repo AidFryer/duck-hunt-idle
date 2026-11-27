@@ -24,7 +24,7 @@ import { rand, type FlockState, type GameState, type GroundState } from './state
 
 /**
  * The hunt pipeline: Scout → Set Decoys → Call → Shoot → Retrieve → Log.
- * Each action is a pure state transition used by taps, Gus, and bots.
+ * Each action is a pure state transition used by taps, Ray, and bots.
  */
 
 export type ActionJob = HuntStage | 'scout' | FieldJob | OutpostJob;
@@ -289,7 +289,7 @@ function recordJobMany(state: GameState, job: JobId, n: number): void {
   }
 }
 
-/** Advance arrivals, patience, decoy drift, Gus, bots and foremen by dt seconds. */
+/** Advance arrivals, patience, decoy drift, Ray, bots and foremen by dt seconds. */
 export function stepHunt(state: GameState, dt: number, activity: number, events: EventSink): void {
   const h = state.hunt;
   advanceMetrics(state);
@@ -305,7 +305,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   if (swim > 0) doMany(state, 'retrieve', swim, 'retriever', events);
   stepCrops(state, dt);
 
-  // Gus keeps the ledger himself at a gentle pace.
+  // Ray keeps the ledger himself at a gentle pace.
   h.keeperProgress = Math.min(1, h.keeperProgress + LEDGER.keeperRate * dt);
   if (h.keeperProgress >= 1 && doAction(state, 'log', 'keeper', events)) h.keeperProgress -= 1;
 
