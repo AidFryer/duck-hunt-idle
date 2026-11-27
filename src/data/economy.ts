@@ -368,6 +368,21 @@ export const JOB_PROBLEMS: Record<JobId, readonly ProblemKind[]> = {
   tinker: [],
 };
 
+/**
+ * The Big Volley: once the marsh is busy enough that tapping single flocks
+ * stops mattering, a charging button fires the whole crew at once.
+ */
+export const VOLLEY = {
+  /** Birds per second (smoothed) that unlocks the volley and the quiet tally. */
+  unlockRate: 40,
+  /** Seconds to charge from empty. */
+  chargeSeconds: 180,
+  /** A volley pays this many seconds of the current pace, all at once. */
+  payoutSeconds: 45,
+  /** Smoothing for the pace (seconds). */
+  paceSeconds: 30,
+};
+
 /** Scales every bot's chance of getting stuck, so problems stay an occasional chore. */
 export const PROBLEM_RATE = 0.35;
 

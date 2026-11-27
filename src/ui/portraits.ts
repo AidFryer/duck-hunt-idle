@@ -1,5 +1,6 @@
 import type { BotId } from '../data/economy';
-import { paintDecoyBot, paintDogBody, paintPerson, paintSpeciesPortrait } from '../render/assets/painters';
+import { paintCarving, paintDecoyBot, paintDogBody, paintPerson, paintSpeciesPortrait } from '../render/assets/painters';
+import { CARVINGS, type CarvingId } from '../data/carvings';
 import { AVATARS } from '../data/avatars';
 import { SPECIES, type SpeciesId } from '../data/species';
 
@@ -44,4 +45,26 @@ export function speciesPortrait(id: SpeciesId): string {
     speciesCache.set(id, url);
   }
   return url;
+}
+
+const carvingCache = new Map<CarvingId, string>();
+
+/** A carved decoy for the shelf. */
+export function carvingPortrait(id: CarvingId): string {
+  let url = carvingCache.get(id);
+  if (!url) {
+    url = paintCarving(CARVINGS[id].look).toDataURL();
+    carvingCache.set(id, url);
+  }
+  return url;
+}
+
+/** The player's retriever, in its chosen coat (repainted when the breed changes). */
+export function dogPortrait(): string {
+  return paintDogBody('lab').toDataURL();
+}
+
+/** Forget cached pictures that show the real dog (after a breed change). */
+export function clearDogPortraits(): void {
+  avatarCache.delete('biscuit');
 }

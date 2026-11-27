@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 40_000, species: 10, coins: 300_000, feathers: 12_000, opens: ['legacy'],
+    birds: 40_000, species: 10, coins: 400_000, feathers: 12_000, opens: ['legacy'],
     points: [
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',
       'Tinker Bot plans.',

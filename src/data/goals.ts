@@ -19,6 +19,8 @@ export interface GoalDef {
 }
 
 export const LAB_NAME = 'Biscuit';
+/** The player's name for the retriever, or the default. */
+export const dogNameOf = (p: { dogName?: string }): string => p.dogName?.trim() || LAB_NAME;
 export const KEEPER_NAME = 'Gus Marlow';
 
 export const GOALS: readonly GoalDef[] = [

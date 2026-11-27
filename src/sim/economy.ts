@@ -1,3 +1,6 @@
+import { carvingFx } from './carvings';
+import { stageFor } from '../data/calendar';
+import { PATCH_COIN_BONUS } from '../data/achievements';
 import Decimal from 'break_infinity.js';
 import {
   ACRES, BOT_MILESTONES, BOTS, DECOYS, FIELD, HUNT, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
@@ -203,10 +206,11 @@ export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
 
 /** Extra birds per flock from food plots and weather. */
 export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number {
-  if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + WEATHER[state.environment.weather].flockSize;
+  const stage = stageFor(state.clock.day).flockSize - 1;
+  if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + WEATHER[state.environment.weather].flockSize + stage;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
   const flyway = FLYWAYS[state.flyway].flockSizeBonus ?? 0;
-  return cropFlockSize(state) + WEATHER[state.environment.weather].flockSize + cold + flyway;
+  return cropFlockSize(state) + WEATHER[state.environment.weather].flockSize + cold + flyway + stage;
 }
 
 /** Flocks per second right now, before the activity curve. */
@@ -217,7 +221,7 @@ export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
   const u = state.upgrades;
   if (isField(g)) {
     const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));
-    return P.baseFlockRate * spread * field * WEATHER[state.environment.weather].flockRate * rungFx(state, 'field').draw;
+    return P.baseFlockRate * spread * field * WEATHER[state.environment.weather].flockRate * rungFx(state, 'field').draw * carvingFx(state).fieldRate * stageFor(state.clock.day).flockRate;
   }
   const acreBonus = Math.pow(ACRES.flockRateGrowth, state.acres - ACRES.start);
   const marsh =
@@ -229,7 +233,7 @@ export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
     rungFx(state).draw;
   const wf = workflowEval(state);
   const fog = state.environment.weather === 'fog' ? wf.fogFlockRate : 1;
-  return HUNT.baseFlockRate * spread * acreBonus * marsh * WEATHER[state.environment.weather].flockRate * wf.flockRate * fog;
+  return HUNT.baseFlockRate * spread * acreBonus * marsh * WEATHER[state.environment.weather].flockRate * wf.flockRate * fog * carvingFx(state).flockRate * stageFor(state.clock.day).flockRate;
 }
 
 /** Lodge reputation: more birds logged, better-paying guests. */
@@ -238,14 +242,21 @@ export function reputationMultiplier(state: GameState): number {
   return 1 + LEDGER.reputationK * dock * Math.sqrt(state.stats.lifetimeLogged);
 }
 
+/** Each patch on the jacket: a little more per bird. */
+export function patchMultiplier(state: GameState): number {
+  return 1 + PATCH_COIN_BONUS * Object.keys(state.achievements).length;
+}
+
 /** Coins (when logged) and feathers (when retrieved) for one bird. */
 export function birdValue(state: GameState, species: SpeciesId): { coins: number; feathers: number } {
   const s = SPECIES[species];
   const rooms = 1 + UPGRADE_EFFECTS.lodgeRoomsCoins * (state.upgrades.lodgeRooms ?? 0);
   const stars = starMultiplier(state);
   const smoke = 1 + UPGRADE_EFFECTS.smokehouseFeathers * (state.upgrades.smokehouse ?? 0);
+  const carv = carvingFx(state);
+  const extra = carv.coins * stageFor(state.clock.day).coins * patchMultiplier(state);
   return {
-    coins: Math.round(s.coins * reputationMultiplier(state) * rooms * stars * rungFx(state).coins * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * 100) / 100,
+    coins: Math.round(s.coins * reputationMultiplier(state) * rooms * stars * rungFx(state).coins * extra * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * 100) / 100,
   };
 }

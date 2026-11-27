@@ -1,6 +1,6 @@
 import { Graphics } from 'pixi.js';
 import { GROUND_JOBS, type GroundId } from '../../data/economy';
-import { LAB_NAME } from '../../data/goals';
+import { dogNameOf } from '../../data/goals';
 import { incomingPatience, maxCommitted } from '../../sim/economy';
 import { ground } from '../../sim/hunt';
 import type { GameState } from '../../sim/state';
@@ -101,7 +101,7 @@ export function chooseHint(state: GameState, g: GroundId, ducks: DuckLayer, word
     pick = callFlock;
     job = jobs.call;
   } else if (h.downed.length > 0 && ducks.firstFreeFloater()) {
-    pick = { kind: 'floater', label: label(field ? 'Tap the goose to pick it up' : `Tap the bird for ${LAB_NAME}`) };
+    pick = { kind: 'floater', label: label(field ? 'Tap the goose to pick it up' : `Tap the bird for ${dogNameOf(state.profile)}`) };
     job = jobs.retrieve;
   } else if (canCall) {
     pick = callFlock;

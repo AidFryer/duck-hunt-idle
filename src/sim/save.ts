@@ -95,6 +95,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     void _gone;
     return { ...rest, bots, decoyBags: { marsh: setters, field: stakers }, version: 13 };
   },
+  // v14: decoy collection, Big Volley, dog name & breed, season calendar stats (defaults fill in).
+  13: (s) => ({ ...s, version: 14 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

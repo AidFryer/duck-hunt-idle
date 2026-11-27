@@ -1,3 +1,4 @@
+import { CARVINGS, CARVING_ORDER } from '../../data/carvings';
 import { Texture } from 'pixi.js';
 import { PAINT_SCALE } from './canvas';
 import * as P from './painters';
@@ -42,7 +43,11 @@ const recipes: Record<string, Recipe> = {
   'duck.swim.drake': { paint: () => P.paintDuckSwim({ drake: true }), resolution: PAINT_SCALE },
   'duck.swim.hen': { paint: () => P.paintDuckSwim({ drake: false }), resolution: PAINT_SCALE },
   'decoy.drake': { paint: () => P.paintDuckSwim({ drake: true }, true), resolution: PAINT_SCALE },
+  'trim.scarf': { paint: () => P.paintTrimScarf(), resolution: PAINT_SCALE },
+  'trim.cap': { paint: () => P.paintTrimCap(), resolution: PAINT_SCALE },
+  'trim.medal': { paint: () => P.paintTrimMedal(), resolution: PAINT_SCALE },
   'decoy.hen': { paint: () => P.paintDuckSwim({ drake: false }, true), resolution: PAINT_SCALE },
+  ...Object.fromEntries(CARVING_ORDER.map((id) => [`carving.${id}`, { paint: () => P.paintCarving(CARVINGS[id].look), resolution: PAINT_SCALE }])),
   feather: { paint: P.paintFeather, resolution: PAINT_SCALE },
   soundArc: { paint: P.paintSoundArc, resolution: PAINT_SCALE },
   gear: { paint: P.paintGear, resolution: PAINT_SCALE },

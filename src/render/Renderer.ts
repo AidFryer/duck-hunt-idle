@@ -210,7 +210,8 @@ export class Renderer {
     for (const e of this.runner.drain()) {
       // Each event animates in its own ground's scene, if that's on screen.
       const forField = ('ground' in e && e.ground === 'field') || ('bot' in e && FIELD_BOTS.includes(e.bot));
-      const sc = forField ? this.field : this.scene;
+      // The volley plays wherever you're looking.
+      const sc = e.type === 'volley' ? this.view : forField ? this.field : this.scene;
       const at = sc && sc === this.view ? sc.handle(e) : null;
       this.onEvent?.(e, at);
     }

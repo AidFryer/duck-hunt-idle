@@ -197,6 +197,19 @@ export class DuckLayer implements Layer {
     this.setTargets(f);
   }
 
+  /** The Big Volley: every hunt flock on screen comes down at once. */
+  volley(): number {
+    let n = 0;
+    for (const f of [...this.flocks]) {
+      if (f.kind !== 'hunt' || f.ducks.length === 0) continue;
+      n += f.ducks.length;
+      this.shoot(f.id, f.ducks.length);
+    }
+    // A few extra birds splash down so it always looks like a big moment.
+    for (let i = 0; i < Math.max(0, 6 - n); i++) this.addFloater(this.randomWaterPoint(), true);
+    return n;
+  }
+
   /** A shot: `downed` birds tumble to the water, the rest flare off. */
   shoot(id: number, downed: number): void {
     const f = this.findHunt(id);

@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS } from '../data/achievements';
+import { ACHIEVEMENTS, patchReward } from '../data/achievements';
 import type { EventSink } from './events';
 import type { GameState } from './state';
 import { EARNED_FEATURES, FEATURE_ORDER, featureReady } from '../data/features';
@@ -26,6 +26,8 @@ export function checkAchievements(state: GameState, events: EventSink): number {
     if (state.achievements[a.id] !== undefined) continue;
     if (a.done(state)) {
       state.achievements[a.id] = state.elapsed;
+      const reward = patchReward(a);
+      state.currencies.feathers = state.currencies.feathers.add(reward);
       events.push({ type: 'achievement', id: a.id });
       n++;
     }

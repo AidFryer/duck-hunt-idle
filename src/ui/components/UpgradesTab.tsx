@@ -3,10 +3,9 @@ import { CROPS } from '../../data/crops';
 import { UPGRADES } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
-import type { HudSnapshot, RungSnapshot } from '../hudState';
+import type { HudSnapshot } from '../hudState';
 import { pulse } from './BotsTab';
 import { Cost } from './Cost';
-import { ReqBar } from './Lodge';
 
 type Up = HudSnapshot['upgrades'][number];
 
@@ -22,7 +21,6 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
   const soon = marsh.filter((u) => !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
   return (
     <div class="tab-body upgrades-tab">
-      <SpreadCard ground="marsh" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.setter} />
       <FoodPlots hud={hud} controls={controls} notation={notation} />
 
       <h4 class="group-head">Marsh & lodge</h4>
@@ -61,7 +59,6 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
       {hud.field.open && (
         <>
           <h4 class="group-head">Goose field</h4>
-          <SpreadCard ground="field" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.staker} />
           <ul class="up-list">
             {field.filter((u) => u.revealed).sort(byWhen).map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
           </ul>
@@ -93,51 +90,6 @@ function UpRow({ u, controls, notation, offline }: { u: Up; controls: GameContro
         </button>
       )}
     </li>
-  );
-}
-
-/** The decoy spread: always out; buy bags of decoys and build bigger rigs. */
-function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: 'marsh' | 'field'; hud: HudSnapshot; controls: GameControls; notation: Notation; rigs: RungSnapshot[] }) {
-  const sp = hud.spreads[ground];
-  const next = rigs.find((r) => !r.built);
-  const per = ground === 'field' ? 4 : 2;
-  return (
-    <section class="spread-card" aria-label={ground === 'field' ? 'Goose decoy spread' : 'Decoy spread'}>
-      <div class="spread-card__head">
-        <div>
-          <h4>{ground === 'field' ? 'Goose spread' : 'Decoy spread'}</h4>
-          <p>
-            {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)}
-          </p>
-        </div>
-        <button class="btn btn--primary btn--buy btn--small" aria-disabled={!sp.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyDecoys(ground))}>
-          <span>+{per} decoys</span>
-          <Cost price={sp.price} notation={notation} />
-        </button>
-      </div>
-      {rigs.length > 0 && (
-        <ol class="ladder__rungs spread-card__rigs">
-          {rigs.map((r) => (
-            <li class={`rung ${r.built ? 'is-built' : r === next ? 'is-next' : 'is-later'}`}>
-              <span class="rung__tick" aria-hidden="true">{r.built ? '✓' : ''}</span>
-              <span class="rung__name">{r.name}</span>
-              <span class="rung__effect">{r.effect}</span>
-              {r === next && (
-                <div class="rung__next">
-                  <div class="reqs">
-                    {r.reqs.map((q) => <ReqBar r={q} notation={notation} />)}
-                  </div>
-                  <button class="btn btn--primary btn--buy" aria-disabled={!r.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyRung(r.id))}>
-                    <span>{r.ready ? 'Build it' : 'Not ready yet'}</span>
-                    <Cost price={r.price} notation={notation} />
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-    </section>
   );
 }
 

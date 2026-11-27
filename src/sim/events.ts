@@ -1,3 +1,5 @@
+import type { CarvingId } from '../data/carvings';
+import type { StageId } from '../data/calendar';
 import type { CropId } from '../data/crops';
 import type { RungId } from '../data/progression';
 import type { BotId, JobId, ProblemKind, Slot, SpeciesId } from '../data/economy';
@@ -17,6 +19,10 @@ export type SimEvent =
   | { type: 'decoySet'; decoys: number; source: ActionSource; ground?: 'field' }
   | { type: 'decoyDrift'; decoys: number; ground?: 'field' }
   | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field'; golden?: boolean }
+  | { type: 'volleyUnlocked' }
+  | { type: 'stageChanged'; stage: StageId }
+  | { type: 'volley'; birds: number; coins: number; feathers: number }
+  | { type: 'carvingBought'; carving: CarvingId }
   | { type: 'goldenShot'; coins: number; feathers: number; ground?: 'field' }
   | { type: 'flockPassed'; size: number; ground?: 'field' }
   | { type: 'flockLeft'; flockId: number; ground?: 'field' }

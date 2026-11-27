@@ -1,3 +1,5 @@
+import type { BreedId } from '../data/crew';
+import type { CarvingId } from '../data/carvings';
 import type { CropId } from '../data/crops';
 import type { RungId } from '../data/progression';
 import Decimal from 'break_infinity.js';
@@ -5,7 +7,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -140,7 +142,20 @@ export interface GameState {
   /** Sim seconds until the next golden flock. */
   goldenTimer: number;
   /** The player's name and picture. */
-  profile: { name: string; avatar: string };
+  profile: { name: string; avatar: string; dogName: string; breed: BreedId };
+  /** Carved decoys on the lodge shelf (permanent). */
+  carvings: Partial<Record<CarvingId, true>>;
+  /** The Big Volley: unlocked for good once the marsh gets busy. */
+  volley: {
+    unlocked: boolean;
+    /** 0–1. */
+    charge: number;
+    fired: number;
+    /** Smoothed pace per second, used for the payout and the quiet tally. */
+    birdsRate: number;
+    coinsRate: number;
+    feathersRate: number;
+  };
   /** Bags of decoys bought for each spread. */
   decoyBags: { marsh: number; field: number };
   /** Food plots on the far bank (how many are usable depends on the lodge). */
@@ -235,6 +250,8 @@ export interface GameState {
     nightBirds: number;
     /** Longest offline gap (seconds) the player came back from. */
     longestAway: number;
+    /** Birds brought in during each part of the season calendar. */
+    birdsByStage: Partial<Record<string, number>>;
     seasonsClosed: number;
   };
   meta: {
@@ -299,7 +316,9 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     },
     field: { decoys: 0, decoyDrift: 0, flockCountdown: 3, incoming: [], committed: [], downed: [] },
     goldenTimer: 200,
-    profile: { name: '', avatar: 'hunter' },
+    profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
+    carvings: {},
+    volley: { unlocked: false, charge: 0, fired: 0, birdsRate: 0, coinsRate: 0, feathersRate: 0 },
     plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
     decoyBags: { marsh: 0, field: 0 },
     bots: createBotStates(),
@@ -340,6 +359,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       birdsByWeather: {},
       nightBirds: 0,
       longestAway: 0,
+      birdsByStage: {},
       seasonsClosed: 0,
     },
     meta: { createdAt: now, lastSaved: now, lastDailyBonus: '' },

@@ -21,6 +21,8 @@ export interface Prefs {
   haptics: boolean;
   /** The "add to home screen" tip has been shown. */
   installTip: boolean;
+  /** The bottom panel is pulled up tall (more room for lists, smaller marsh). */
+  tallPanel: boolean;
 }
 
 const KEY = 'duck-hunt-idle.prefs';
@@ -40,6 +42,7 @@ export function loadPrefs(): Prefs {
     ground: 'marsh',
     haptics: true,
     installTip: false,
+    tallPanel: false,
   };
   try {
     const raw = localStorage.getItem(KEY);

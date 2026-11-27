@@ -300,6 +300,16 @@ class DecoyBot {
     this.gear.anchor.set(0.5);
     this.gear.scale.set(0.7);
     this.gear.position.set(-6, -13);
+    // Finery that arrives with a bigger lodge (hidden until then).
+    this.trims = (['scarf', 'cap', 'medal'] as const).map((k) => {
+      const t = new Sprite(tex.get(`trim.${k}`));
+      t.anchor.set(0.5);
+      t.visible = false;
+      return t;
+    });
+    this.trims[0]!.position.set(1, -24);
+    this.trims[1]!.position.set(3, -36);
+    this.trims[2]!.position.set(4, -16);
     if (kind === 'setter') {
       // Wading: no legs, the body sits on the waterline.
       this.body.anchor.set(0.5, 27 / 36);
@@ -307,8 +317,15 @@ class DecoyBot {
       this.gear.visible = false;
       this.root.addChild(this.body);
     } else {
-      this.root.addChild(this.legs[0]!, this.legs[1]!, this.body, this.gear);
+      this.root.addChild(this.legs[0]!, this.legs[1]!, this.body, this.gear, ...this.trims);
     }
+  }
+
+  readonly trims: Sprite[];
+
+  /** Scarf at the Marsh Lodge, cap at the Sporting Club, medal at the Grand Lodge. */
+  setLodge(level: number): void {
+    this.trims.forEach((t, i) => (t.visible = level >= 3 + i));
   }
 
   /** World-space height of the bot (for bubble placement). */
@@ -548,6 +565,7 @@ export class CrewLayer implements Layer {
     for (const p of state.problems.open) this.stuckCount[p.bot] += 1;
     for (const k of KINDS) {
       this.bots[k].forEach((b, i) => {
+        if (state.lodge !== this.lodge) b.setLodge(state.lodge);
         b.root.visible = i < Math.min(this.owned[k], VISIBLE[k]);
         b.stuck = b.root.visible && i < this.stuckCount[k];
       });
@@ -556,7 +574,10 @@ export class CrewLayer implements Layer {
       r.root.visible = i < Math.min(this.owned.retriever, VISIBLE.retriever);
       r.stuck = r.root.visible && i < this.stuckCount.retriever;
     });
+    this.lodge = state.lodge;
   }
+
+  private lodge = -1;
 
   /** A bot was bought: pop it in with a hop and sparkle. */
   botBought(bot: BotId, ownedNow: number, count: number): void {

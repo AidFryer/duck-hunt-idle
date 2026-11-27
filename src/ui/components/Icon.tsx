@@ -52,6 +52,18 @@ const paths: Record<IconName, preact.JSX.Element> = {
     </>
   ),
   moon: <path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z" />,
+  trophy: (
+    <>
+      <path d="M8 4h8v5a4 4 0 0 1-8 0V4z" />
+      <path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4" />
+    </>
+  ),
+  leaf: (
+    <>
+      <path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z" />
+      <path d="M5 19l8-8" />
+    </>
+  ),
   coin: (
     <>
       <circle cx="12" cy="12" r="8" />

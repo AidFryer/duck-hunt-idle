@@ -1,3 +1,4 @@
+import type { StageId } from '../data/calendar';
 import type { SpeciesId } from '../data/species';
 import type { FlywayId } from '../data/flyways';
 import type { OfflineSummary } from '../sim/offline';
@@ -12,7 +13,10 @@ export type Moment = { kind: 'species'; id: SpeciesId; coins: number; feathers: 
   | { kind: 'daily'; coins: number; feathers: number }
   | { kind: 'lodge'; level: number }
   | { kind: 'plan'; bot: BotId }
-  | { kind: 'rung'; id: RungId };
+  | { kind: 'rung'; id: RungId }
+  | { kind: 'volley' }
+  | { kind: 'patches'; ids: string[] }
+  | { kind: 'stage'; id: StageId };
 
 export const moments = new Store<Moment[]>([]);
 

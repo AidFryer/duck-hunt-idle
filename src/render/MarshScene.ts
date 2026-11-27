@@ -1,3 +1,5 @@
+import { stageFor } from '../data/calendar';
+import { CARVINGS, CARVING_ORDER } from '../data/carvings';
 import { Container } from 'pixi.js';
 import { TextureLibrary } from './assets/TextureLibrary';
 import { BlindLayer } from './layers/BlindLayer';
@@ -41,6 +43,12 @@ export interface TapTarget {
  * Composes every layer of the marsh in back-to-front order and owns the
  * shared layout. Reads nothing from the DOM; the Renderer feeds it frames.
  */
+/** Blend two colors (0 = a, 1 = b). */
+function mixColor(a: number, b: number, k: number): number {
+  const ch = (sh: number) => Math.round(((a >> sh) & 0xff) * (1 - k) + ((b >> sh) & 0xff) * k);
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+
 export class MarshScene {
   readonly root = new Container();
   readonly tex = new TextureLibrary();
@@ -62,6 +70,9 @@ export class MarshScene {
   private readonly plots: PlotsLayer;
   private readonly timber: TimberLayer;
   private readonly land: LandLayer;
+  /** Grass and reeds that change color with the season calendar. */
+  private readonly seasonal: { tint: number }[];
+  private stage = '';
   /** Current flyway; changing it re-lays out the scene. */
   flyway: FlywayId = 'mississippi';
   private readonly layers: Layer[];
@@ -95,6 +106,7 @@ export class MarshScene {
       { at: 0.55, speed: 16, alpha: 0.2, height: 0.6 },
     ]);
     const fgReeds = new ReedLayer(tex, 77, foregroundClumps, 0.62);
+    this.seasonal = [land.view, midReeds.view, fgReeds.view];
     this.weather = new WeatherLayer(tex, this.fx);
     this.plots = new PlotsLayer();
     this.timber = new TimberLayer();
@@ -223,7 +235,21 @@ export class MarshScene {
       case 'dailyBonus':
       case 'planEarned':
       case 'goldenShot':
+      case 'volleyUnlocked':
+      case 'stageChanged':
         return null;
+      case 'volley': {
+        this.ducks.volley();
+        for (let i = 0; i < 4; i++) this.crew.shoot('blind');
+        const a = this.layout.anchors.decoyCenter;
+        this.fx.confetti(a.x, a.y - 60 * this.layout.scale, this.layout.scale, 30);
+        return a;
+      }
+      case 'carvingBought': {
+        const a = this.layout.anchors.decoyCenter;
+        this.fx.sparkle(a.x, a.y, this.layout.scale, 14);
+        return a;
+      }
       case 'decoysBought': {
         if (e.ground === 'field') return null;
         const a = this.layout.anchors.decoyCenter;
@@ -263,12 +289,19 @@ export class MarshScene {
   /** Bring visuals in line with the sim (on load and every frame, cheaply). */
   sync(state: GameState): void {
     this.blind.reconcile(state.hunt.decoys);
+    this.blind.setCarvings(CARVING_ORDER.filter((id) => state.carvings[id] && !CARVINGS[id].look.goose));
     this.ducks.reconcile(state);
     if (state.flyway !== this.flyway) {
       this.flyway = state.flyway;
       this.resize(this.layout.w, this.layout.h);
     }
     this.crew.sync(state);
+    const st = stageFor(state.clock.day);
+    if (st.id !== this.stage) {
+      this.stage = st.id;
+      const t = mixColor(0xffffff, st.tint, st.tintAmount);
+      for (const v of this.seasonal) v.tint = t;
+    }
     this.shore.setLevel(state.lodge);
     this.life.setLevel(state.lodge);
     this.props.sync(state);

@@ -1,3 +1,4 @@
+import type { CarvingId } from '../../data/carvings';
 import { Container, Sprite } from 'pixi.js';
 import { lerpColor, shadeColor } from '../../util/color';
 import { seededRandom } from '../../util/math';
@@ -38,7 +39,27 @@ export class BlindLayer implements Layer {
   private readonly decoyLayer = new Container();
   private l!: SceneLayout;
 
-  constructor(tex: TextureLibrary, private readonly fx: EffectsLayer) {
+  private carvingKey = '';
+
+  /** Carved decoys from the collection take a few spots in the spread. */
+  setCarvings(ids: readonly CarvingId[]): void {
+    const key = ids.join(',');
+    if (key === this.carvingKey) return;
+    this.carvingKey = key;
+    this.decoys.forEach((d, i) => {
+      // Every third slot, from the front of the spread, until the carvings run out.
+      const k = i % 3 === 1 ? (i - 1) / 3 : -1;
+      const id = k >= 0 ? ids[k] : undefined;
+      const t = this.tex.get(id ? `carving.${id}` : i % 3 === 2 ? 'decoy.hen' : 'decoy.drake');
+      d.s.texture = t;
+      d.refl.texture = t;
+      if (id) d.s.anchor.set(0.45, 31 / 36);
+      else d.s.anchor.set(0.45, 30 / 34);
+      d.refl.anchor.copyFrom(d.s.anchor);
+    });
+  }
+
+  constructor(private readonly tex: TextureLibrary, private readonly fx: EffectsLayer) {
     this.blind = new Sprite(tex.get('blind'));
     this.blind.anchor.set(0.5, BLIND_SIZE.waterline / BLIND_SIZE.h);
     this.blindRefl = new Sprite(tex.get('blind'));

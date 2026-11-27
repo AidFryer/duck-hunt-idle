@@ -1,3 +1,5 @@
+import { markPace, stepVolley } from './volley';
+import { carvingFx } from './carvings';
 import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
@@ -271,6 +273,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   const h = state.hunt;
   advanceMetrics(state);
   decayStreak(state);
+  markPace(state);
 
   stepGround(state, 'marsh', dt, activity, events);
   if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
@@ -288,6 +291,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 
   stepForemen(state, events, table.total.foreman ?? 0);
   stepTinkers(state, dt, events, table.total.tinker ?? 0);
+  stepVolley(state, dt, events);
 
   // Achievements: checked about once a second.
   if (Math.floor(state.elapsed) !== Math.floor(state.elapsed - dt)) {
@@ -300,7 +304,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
 /** Now and then, a golden flock (only while ducks are flying). */
 function stepGolden(state: GameState, dt: number, activity: number, events: EventSink): void {
   if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
-  state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1);
+  state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden;
   if (state.goldenTimer > 0) return;
   state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
   const g: GroundId = fieldOpen(state) && rand(state) < GOLDEN.fieldShare ? 'field' : 'marsh';
@@ -382,7 +386,9 @@ function stepGround(state: GameState, g: GroundId, dt: number, activity: number,
 /** Problem chance is softened by Tinker Bots on duty. */
 function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[number], job?: JobId): number {
   const base = (1 - botReliability(bot, state.bots[bot].level)) * WEATHER[state.environment.weather].problems * (job ? workflowEval(state).problemMult[job] ?? 1 : 1);
-  return (base * PROBLEM_RATE) / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0));
+  // Snags get rarer while others are already waiting, so they never pile up.
+  const crowd = 1 + state.problems.open.length * 0.5;
+  return (base * PROBLEM_RATE) / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0)) / crowd;
 }
 
 function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: EventSink): void {

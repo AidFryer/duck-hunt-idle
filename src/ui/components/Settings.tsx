@@ -5,6 +5,7 @@ import { BUILD_STAMP, installState, promptInstall } from '../../app/pwa';
 import { LODGE_LEVELS } from '../../data/progression';
 import { useStore } from '../store';
 import { AVATARS, NAME_MAX } from '../../data/avatars';
+import { BREEDS, BREED_ORDER, DOG_NAME_MAX, type BreedId } from '../../data/crew';
 import { avatarPortrait } from '../portraits';
 
 export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
@@ -12,11 +13,13 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
   controls: GameControls;
   onPrefs: (p: Prefs) => void;
   onClose: () => void;
-  profile: { name: string; avatar: string };
+  profile: { name: string; avatar: string; dogName: string; breed: BreedId };
 }) {
   const [name, setName] = useState(profile.name);
-  // A restore or import brings its own name along.
+  const [dogName, setDogName] = useState(profile.dogName);
+  // A restore or import brings its own names along.
   useEffect(() => setName(profile.name), [profile.name]);
+  useEffect(() => setDogName(profile.dogName), [profile.dogName]);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState<{ text: string; tone: 'good' | 'bad' } | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -89,6 +92,36 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
                 onClick={() => controls.setProfile(name, a.id)}
               >
                 <img src={avatarPortrait(a.id)} alt={a.name} />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section class="drawer__section">
+          <h4>Your retriever</h4>
+          <label class="row profile-name" for="opt-dog">
+            <span>Name</span>
+            <input
+              id="opt-dog"
+              type="text"
+              maxLength={DOG_NAME_MAX}
+              placeholder="Biscuit"
+              value={dogName}
+              onInput={(e) => setDogName((e.currentTarget as HTMLInputElement).value)}
+              onBlur={() => controls.setDog(dogName, profile.breed)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+            />
+          </label>
+          <div class="breed-grid" role="radiogroup" aria-label="Breed">
+            {BREED_ORDER.map((b) => (
+              <button
+                role="radio"
+                aria-checked={profile.breed === b}
+                class={`breed-choice ${profile.breed === b ? 'is-on' : ''}`}
+                onClick={() => controls.setDog(dogName, b)}
+              >
+                <span class="breed-choice__swatch" style={{ background: `#${BREEDS[b].coat.toString(16).padStart(6, '0')}`, boxShadow: `inset -8px -6px 0 #${BREEDS[b].shade.toString(16).padStart(6, '0')}` }} />
+                <span>{BREEDS[b].name}</span>
               </button>
             ))}
           </div>

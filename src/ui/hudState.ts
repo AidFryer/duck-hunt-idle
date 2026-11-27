@@ -8,6 +8,11 @@ import { STREAK } from '../data/economy';
 import { currentGoal } from '../data/goals';
 import { FEATURE_ORDER, FEATURES, type FeatureId } from '../data/features';
 import { ACHIEVEMENTS } from '../data/achievements';
+import type { BreedId } from '../data/crew';
+import { CARVING_ORDER, type CarvingId } from '../data/carvings';
+import { CALENDAR, stageDay, stageFor, stageIndex, type StageId } from '../data/calendar';
+import { canAffordCarving, carvingStatus, type CarvingStatus } from '../sim/carvings';
+import { busyMarsh, volleyPayout } from '../sim/volley';
 import { SPECIES, SPECIES_ORDER, type SpeciesId } from '../data/species';
 import { UPGRADE_ORDER, UPGRADES, type UpgradeId } from '../data/upgrades';
 import { WEATHER, type WeatherId } from '../data/weather';
@@ -21,6 +26,7 @@ import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, decoyBagPrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
   milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, maxCommitted, botPriceMult, type Price,
+  patchMultiplier,
 } from '../sim/economy';
 import { canDo, fieldOpen } from '../sim/hunt';
 import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
@@ -185,7 +191,22 @@ export interface HudSnapshot {
   patches: number;
   upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string; lodge: number }[];
   lodge: LodgeSnapshot;
-  profile: { name: string; avatar: string };
+  profile: { name: string; avatar: string; dogName: string; breed: BreedId };
+  /** Coins-per-bird bonus from patches (e.g. 0.36 for +36%). */
+  patchBonus: number;
+  volley: {
+    unlocked: boolean;
+    charge: number;
+    ready: boolean;
+    /** Lots happening: show a running tally instead of per-bird popups. */
+    busy: boolean;
+    birdsRate: number;
+    coinsRate: number;
+    feathersRate: number;
+    payout: { birds: number; coins: number; feathers: number };
+  };
+  calendar: { id: StageId; name: string; blurb: string; day: number; of: number; nextName: string };
+  carvings: { id: CarvingId; status: CarvingStatus; affordable: boolean }[];
   maxCircling: number;
   spreads: Record<'marsh' | 'field', { decoys: number; draw: number; price: Price; affordable: boolean }>;
   plots: {
@@ -529,6 +550,23 @@ export function snapshot(state: GameState): HudSnapshot {
     }),
     lodge: lodgeSnap(state),
     profile: { ...state.profile },
+    patchBonus: patchMultiplier(state) - 1,
+    volley: {
+      unlocked: state.volley.unlocked,
+      charge: state.volley.charge,
+      ready: state.volley.unlocked && state.volley.charge >= 1,
+      busy: busyMarsh(state),
+      birdsRate: state.volley.birdsRate,
+      coinsRate: state.volley.coinsRate,
+      feathersRate: state.volley.feathersRate,
+      payout: volleyPayout(state),
+    },
+    calendar: (() => {
+      const st = stageFor(state.clock.day);
+      const d = stageDay(state.clock.day);
+      return { id: st.id, name: st.name, blurb: st.blurb, day: d.day, of: d.of, nextName: CALENDAR[(stageIndex(state.clock.day) + 1) % CALENDAR.length]!.name };
+    })(),
+    carvings: CARVING_ORDER.map((id) => ({ id, status: carvingStatus(state, id), affordable: canAffordCarving(state, id) })),
     maxCircling: maxIncoming(state),
     spreads: {
       marsh: spreadSnap(state, 'marsh'),

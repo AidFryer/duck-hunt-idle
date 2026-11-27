@@ -20,11 +20,31 @@ class Feedback {
 
   /** Float a short label up from a point in scene coordinates (CSS px). */
   float(text: string, x: number, y: number, kind: FloatKind = 'info', delay = 0): void {
-    const host = this.floatHost;
-    if (!host || this.live > 24) return;
+    const el = this.floatEl(kind);
+    if (!el) return;
+    el.textContent = text;
+    this.launch(el, x, y, delay);
+  }
+
+  /** One popup for a pickup: coins and feathers side by side. */
+  pickup(coins: string | null, feathers: string | null, x: number, y: number): void {
+    if (!coins && !feathers) return;
+    const el = this.floatEl('pickup');
+    if (!el) return;
+    if (coins) el.appendChild(part(`+${coins}`, COIN_SVG, 'pickup__coins'));
+    if (feathers) el.appendChild(part(`+${feathers}`, FEATHER_SVG, 'pickup__feathers'));
+    this.launch(el, x, y, 0);
+  }
+
+  private floatEl(kind: FloatKind | 'pickup'): HTMLElement | null {
+    if (!this.floatHost || this.live > 24) return null;
     const el = document.createElement('div');
     el.className = `floater floater--${kind}`;
-    el.textContent = text;
+    return el;
+  }
+
+  private launch(el: HTMLElement, x: number, y: number, delay: number): void {
+    const host = this.floatHost!;
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
     host.appendChild(el);
@@ -87,6 +107,19 @@ class Feedback {
     gsap.fromTo(el, { y: 16, opacity: 0, scale: 0.94 }, { y: 0, opacity: 1, scale: 1, duration: this.reducedMotion ? 0.01 : 0.35, ease: 'back.out(2)' });
     gsap.to(el, { opacity: 0, y: -8, duration: 0.3, delay: ms / 1000, onComplete: () => el.remove() });
   }
+}
+
+const svg = (body: string) =>
+  `<svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+const COIN_SVG = svg('<circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M9.5 9.5c0-1 1-1.8 2.5-1.8s2.5.7 2.5 1.8-1.2 1.6-2.5 1.9-2.5.9-2.5 2 1 1.8 2.5 1.8 2.5-.8 2.5-1.8"/>');
+const FEATHER_SVG = svg('<path d="M19.5 4.5C12 5 6.5 10 5.5 18.5c6-1 11.5-5.5 14-14z"/><path d="M4 20l9-9M9 14.5h4M11 12h4"/>');
+
+function part(text: string, icon: string, cls: string): HTMLElement {
+  const span = document.createElement('span');
+  span.className = cls;
+  span.innerHTML = icon;
+  span.append(text);
+  return span;
 }
 
 export const feedback = new Feedback();

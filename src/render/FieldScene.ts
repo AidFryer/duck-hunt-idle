@@ -439,6 +439,10 @@ export class FieldScene {
   handle(e: SimEvent): Point | null {
     const a = this.layout.anchors;
     switch (e.type) {
+      case 'volley':
+        this.ducks.volley();
+        this.fx.confetti(a.decoyCenter.x, a.decoyCenter.y - 60 * this.layout.scale, this.layout.scale, 30);
+        return a.decoyCenter;
       case 'decoySet':
       case 'decoyDrift':
         this.spread.reconcile(e.decoys);

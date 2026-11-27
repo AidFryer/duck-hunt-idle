@@ -1,5 +1,5 @@
 import type { GroundId } from '../../data/economy';
-import { LAB_NAME } from '../../data/goals';
+import { dogNameOf } from '../../data/goals';
 import type { HudSnapshot } from '../hudState';
 
 /**
@@ -17,7 +17,7 @@ export function HuntPanel({ hud, ground = 'marsh' }: { hud: HudSnapshot; ground?
         </>
       ) : (
         <>
-          <strong>Tap the marsh to hunt.</strong> Tap a circling flock to call it in, ducks over the decoys to shoot, and a floating bird to send {LAB_NAME}. Grow your decoy spread in Upgrades.
+          <strong>Tap the marsh to hunt.</strong> Tap a circling flock to call it in, ducks over the decoys to shoot, and a floating bird to send {dogNameOf(hud.profile)}. Grow your decoy spread in the Workshop.
         </>
       )}
     </p>

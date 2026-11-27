@@ -1,3 +1,4 @@
+import { CALENDAR } from '../../data/calendar';
 import { useEffect } from 'preact/hooks';
 import { ACHIEVEMENTS } from '../../data/achievements';
 import { RARITY_STARS, SPECIES } from '../../data/species';
@@ -19,7 +20,7 @@ export function Moments({ onOpen, greetName = '' }: { onOpen: (feature: string) 
   const m = queue[0];
   useEffect(() => {
     if (!m || m.kind === 'feature' || m.kind === 'daily' || m.kind === 'lodge') return;
-    const t = setTimeout(popMoment, m.kind === 'species' ? 2200 : 3000);
+    const t = setTimeout(popMoment, m.kind === 'species' ? 2200 : m.kind === 'volley' ? 6500 : m.kind === 'patches' ? 4000 : 3000);
     return () => clearTimeout(t);
   }, [m]);
   if (!m) return null;
@@ -77,6 +78,37 @@ export function Moments({ onOpen, greetName = '' }: { onOpen: (feature: string) 
         <span class="moment__desc">
           {PLANS[m.bot].counter.startsWith('hand') ? "You've done this job enough to teach it." : 'The lodge has earned these plans.'} Carve one in the Workshop.
         </span>
+      </button>
+    );
+  }
+  if (m.kind === 'volley') {
+    return (
+      <button class="moment moment--plan moment--volley" onClick={popMoment} key="volley" aria-live="polite">
+        <span class="moment__tag">The marsh is busy now</span>
+        <strong>The Big Volley</strong>
+        <span class="moment__desc">
+          The crew handles single flocks for you. When the brass button in the corner fills up, tap it: everyone fires at once for a big burst of birds.
+        </span>
+      </button>
+    );
+  }
+  if (m.kind === 'patches') {
+    const first = ACHIEVEMENTS.find((a) => a.id === m.ids[0]);
+    return (
+      <button class="moment moment--plan" onClick={popMoment} key={`pp-${m.ids.join()}`} aria-live="polite">
+        <span class="moment__tag">{m.ids.length} new patches</span>
+        <strong>{first?.name ?? 'Patches'}{m.ids.length > 1 ? ` and ${m.ids.length - 1} more` : ''}</strong>
+        <span class="moment__desc">Sewn onto your jacket. See them on the Trophy Wall.</span>
+      </button>
+    );
+  }
+  if (m.kind === 'stage') {
+    const st = CALENDAR.find((c) => c.id === m.id)!;
+    return (
+      <button class={`moment moment--plan moment--stage moment--stage-${m.id}`} onClick={popMoment} key={`st-${m.id}`} aria-live="polite">
+        <span class="moment__tag">The season moves on</span>
+        <strong>{st.name}</strong>
+        <span class="moment__desc">{st.blurb}</span>
       </button>
     );
   }

@@ -1565,12 +1565,22 @@ export function paintAlertBubble(): Canvas {
 
 export type DogKind = 'lab' | 'robo';
 
+/** The real dog's coat (set from the player's chosen breed before painting). */
+export const dogCoat = { coat: 0xd9b26f, shade: 0xb88a4a, light: 0xead2a0, leg: 0xc9a060, patches: false };
+export function setDogCoat(c: { coat: number; shade: number; light: number; patches?: boolean }): void {
+  dogCoat.coat = c.coat;
+  dogCoat.shade = c.shade;
+  dogCoat.light = c.light;
+  dogCoat.leg = c.shade;
+  dogCoat.patches = !!c.patches;
+}
+
 /** Dog body without legs, facing right. Design 56×30; leg sockets noted in DOG_RIG. */
 export function paintDogBody(kind: DogKind): Canvas {
   const t = createPaintTarget(56, 30);
   const { ctx } = t;
-  const coat = kind === 'lab' ? 0xd9b26f : palette.woodLight;
-  const dark = kind === 'lab' ? 0xb88a4a : palette.wood;
+  const coat = kind === 'lab' ? dogCoat.coat : palette.woodLight;
+  const dark = kind === 'lab' ? dogCoat.shade : palette.wood;
   // Body
   ctx.fillStyle = linearV(ctx, 8, 26, [
     [0, coat],
@@ -1609,6 +1619,20 @@ export function paintDogBody(kind: DogKind): Canvas {
   ctx.beginPath();
   ctx.arc(47.5, 5.8, 1, 0, Math.PI * 2);
   ctx.fill();
+  if (kind === 'lab' && dogCoat.patches) {
+    // Springer patches: white body with liver saddle and head
+    ctx.fillStyle = css(dogCoat.shade);
+    ctx.beginPath();
+    ctx.ellipse(20, 13, 8, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(45, 6.5, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(palette.ink);
+    ctx.beginPath();
+    ctx.arc(47.5, 5.8, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
   if (kind === 'lab') {
     // Red collar
     ctx.strokeStyle = css(palette.rust);
@@ -1649,7 +1673,7 @@ export function paintDogBody(kind: DogKind): Canvas {
 export function paintDogLeg(kind: DogKind): Canvas {
   const t = createPaintTarget(6, 12);
   const { ctx } = t;
-  ctx.fillStyle = css(kind === 'lab' ? 0xc9a060 : palette.woodDark);
+  ctx.fillStyle = css(kind === 'lab' ? (dogCoat.patches ? dogCoat.coat : dogCoat.leg) : palette.woodDark);
   ctx.beginPath();
   ctx.roundRect(1.4, 0, 3.2, 11, 1.6);
   ctx.fill();
@@ -1667,7 +1691,7 @@ export function paintDogTail(kind: DogKind): Canvas {
   const t = createPaintTarget(14, 8);
   const { ctx } = t;
   if (kind === 'lab') {
-    ctx.fillStyle = css(0xc9a060);
+    ctx.fillStyle = css(dogCoat.leg);
     ctx.beginPath();
     ctx.moveTo(14, 3);
     ctx.quadraticCurveTo(6, 1, 0, 3.6);
@@ -1691,8 +1715,8 @@ export function paintDogTail(kind: DogKind): Canvas {
 export function paintDogSwim(kind: DogKind): Canvas {
   const t = createPaintTarget(40, 16);
   const { ctx } = t;
-  const coat = kind === 'lab' ? 0xd9b26f : palette.woodLight;
-  const dark = kind === 'lab' ? 0xb88a4a : palette.wood;
+  const coat = kind === 'lab' ? (dogCoat.patches ? dogCoat.shade : dogCoat.coat) : palette.woodLight;
+  const dark = kind === 'lab' ? dogCoat.shade : palette.wood;
   ctx.fillStyle = css(dark);
   ctx.beginPath();
   ctx.ellipse(14, 14, 13, 2.6, 0, Math.PI, Math.PI * 2);
@@ -1846,5 +1870,121 @@ export function paintPerson(kind: PersonKind): Canvas {
     ctx.lineTo(23.5, 4);
     ctx.stroke();
   }
+  return t.canvas;
+}
+
+/** A carved decoy for the lodge shelf. Design 56×36, keel at the bottom. */
+export function paintCarving(look: { body: number; head: number; accent: number; goose?: boolean }): Canvas {
+  const t = createPaintTarget(56, 36);
+  const { ctx } = t;
+  // Keel shadow
+  ctx.fillStyle = css(palette.ink, 0.18);
+  ctx.beginPath();
+  ctx.ellipse(26, 33, 20, 2.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Body
+  ctx.fillStyle = linearV(ctx, 14, 32, [
+    [0, look.body],
+    [1, shadeHex(look.body, 0.75)],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(4, 22);
+  ctx.quadraticCurveTo(6, 13, 22, 14);
+  ctx.quadraticCurveTo(36, 14, 42, 20);
+  ctx.quadraticCurveTo(44, 29, 30, 31);
+  ctx.quadraticCurveTo(12, 32, 4, 22);
+  ctx.fill();
+  // Painted wing panel
+  ctx.fillStyle = css(look.accent, 0.85);
+  ctx.beginPath();
+  ctx.ellipse(22, 21, 9, 3, -0.08, 0, Math.PI * 2);
+  ctx.fill();
+  // Neck & head
+  ctx.fillStyle = css(look.head);
+  if (look.goose) {
+    ctx.beginPath();
+    ctx.roundRect(36, 4, 5.5, 16, 2.6);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(41, 5, 5.5, 3.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = css(look.accent);
+    ctx.beginPath();
+    ctx.ellipse(39.5, 7, 2.4, 1.4, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(40, 12, 6.5, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Bill
+  ctx.fillStyle = css(look.goose ? palette.ink : 0xd9a62a);
+  ctx.beginPath();
+  if (look.goose) ctx.roundRect(45, 4, 6, 2.6, 1.2);
+  else ctx.roundRect(45, 11, 8, 3, 1.4);
+  ctx.fill();
+  // Eye and a little wood-grain shine
+  ctx.fillStyle = css(palette.ink);
+  ctx.beginPath();
+  ctx.arc(look.goose ? 42.5 : 42, look.goose ? 4.2 : 10.5, 1, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(10, 18);
+  ctx.quadraticCurveTo(20, 15, 32, 16.5);
+  ctx.stroke();
+  return t.canvas;
+}
+
+/** Crew finery that comes with a bigger lodge. Scarf: design 12×7. */
+export function paintTrimScarf(): Canvas {
+  const t = createPaintTarget(12, 7);
+  const { ctx } = t;
+  ctx.fillStyle = css(palette.rust);
+  ctx.beginPath();
+  ctx.roundRect(0.5, 0.5, 11, 3.4, 1.6);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.roundRect(1.4, 2.4, 3, 4.4, 1.2);
+  ctx.fill();
+  ctx.fillStyle = css(0xf4e9d4, 0.8);
+  for (const x of [3.5, 6.5, 9.5]) ctx.fillRect(x, 0.8, 0.9, 2.8);
+  return t.canvas;
+}
+
+/** A little tweed cap. Design 14×7, brim to the right. */
+export function paintTrimCap(): Canvas {
+  const t = createPaintTarget(14, 7);
+  const { ctx } = t;
+  ctx.fillStyle = css(0x6f5a3e);
+  ctx.beginPath();
+  ctx.ellipse(6.5, 5, 6, 4.2, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(0x5a4630);
+  ctx.beginPath();
+  ctx.roundRect(6, 4.2, 7.5, 2.2, 1.1);
+  ctx.fill();
+  ctx.fillStyle = css(palette.brass);
+  ctx.beginPath();
+  ctx.arc(6.5, 1.3, 0.9, 0, Math.PI * 2);
+  ctx.fill();
+  return t.canvas;
+}
+
+/** A brass medal on a ribbon. Design 6×9. */
+export function paintTrimMedal(): Canvas {
+  const t = createPaintTarget(6, 9);
+  const { ctx } = t;
+  ctx.fillStyle = css(0x3a5e8c);
+  ctx.fillRect(1.6, 0, 2.8, 4);
+  ctx.fillStyle = css(0xe8b84a);
+  ctx.beginPath();
+  ctx.arc(3, 6, 2.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = css(0xfff1c4, 0.8);
+  ctx.beginPath();
+  ctx.arc(2.4, 5.4, 0.8, 0, Math.PI * 2);
+  ctx.fill();
   return t.canvas;
 }

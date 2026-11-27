@@ -4,6 +4,9 @@
  * buys what the pipeline's bottleneck needs, builds the workflow chain and
  * closes the season when it's worth a star. Pure: drives the sim directly.
  */
+import { CARVINGS, CARVING_ORDER } from '../data/carvings';
+import { buyCarving, carvingStatus } from './carvings';
+import { fireVolley } from './volley';
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
@@ -135,6 +138,11 @@ function options(s: GameState): Option[] {
     if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;
     opts.push({ price: upgradePrice(u, lvl), buy: () => buyUpgrade(s, u), first: bringsNewBirds(s, u) });
   }
+  // Carved decoys for the shelf.
+  for (const id of CARVING_ORDER) {
+    if (carvingStatus(s, id) !== 'ready') continue;
+    opts.push({ price: { coins: new Decimal(CARVINGS[id].coins), feathers: new Decimal(CARVINGS[id].feathers) }, buy: () => buyCarving(s, id, []) });
+  }
   // Tune-ups for the most-owned types, when they are cheap relative to the crew.
   for (const id of BOT_ORDER) {
     const b = s.bots[id];
@@ -188,6 +196,7 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
   for (let i = 0; i < steps; i++) {
     step(s, dt, events);
     events.length = 0;
+    if (s.volley.charge >= 1) fireVolley(s, events);
     const t = s.elapsed - start;
 
     // Hands on the buttons.

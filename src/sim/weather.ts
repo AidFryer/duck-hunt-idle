@@ -4,12 +4,14 @@ import { windAt } from './environment';
 import type { EventSink } from './events';
 import { rand, type GameState } from './state';
 import { FLYWAYS } from '../data/flyways';
+import { stageFor } from '../data/calendar';
 
 /** Pick the next weather (never the same as the current one twice in a row). */
 function pickWeather(state: GameState, not: WeatherId): WeatherId {
   const pool = WEATHER_ORDER.filter((w) => w !== not);
   const fw = FLYWAYS[state.flyway].weather;
-  const weight = (w: WeatherId) => WEATHER[w].weight * (fw[w] ?? 1);
+  const sw = stageFor(state.clock.day).weather;
+  const weight = (w: WeatherId) => WEATHER[w].weight * (fw[w] ?? 1) * (sw[w] ?? 1);
   const total = pool.reduce((s, w) => s + weight(w), 0);
   let t = rand(state) * total;
   for (const w of pool) {

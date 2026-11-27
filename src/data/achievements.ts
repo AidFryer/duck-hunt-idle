@@ -14,6 +14,15 @@ export interface AchievementDef {
   /** Patch fabric and thread colors. */
   colors: [number, number];
   done: (s: GameState) => boolean;
+  /** Feathers on unlock (defaults by patch shape). */
+  reward?: number;
+}
+
+/** Every patch on the jacket adds this much to coins per bird. */
+export const PATCH_COIN_BONUS = 0.01;
+const SHAPE_REWARD: Record<PatchShape, number> = { round: 25, banner: 80, diamond: 150, shield: 500 };
+export function patchReward(a: AchievementDef): number {
+  return a.reward ?? SHAPE_REWARD[a.shape];
 }
 
 const owned = (s: GameState) => Object.values(s.bots).reduce((a, b) => a + b.owned, 0);
@@ -39,6 +48,31 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'coins10k', name: 'Paying Guests', desc: 'Earn 10,000 coins in total.', shape: 'round', icon: 'coin', colors: [0xc9a04e, 0x2d2520], done: (s) => s.stats.lifetimeCoins.gte(1e4) },
   { id: 'coins1m', name: 'Lodge Tycoon', desc: 'Earn 1,000,000 coins in total.', shape: 'shield', icon: 'coin', colors: [0x2d2520, 0xf2c46d], done: (s) => s.stats.lifetimeCoins.gte(1e6) },
   { id: 'upgrades', name: 'Restoration', desc: 'Buy 10 marsh upgrade levels.', shape: 'banner', icon: 'feather', colors: [0x6f7a4e, 0xf4e9d4], done: (s) => Object.values(s.upgrades).reduce((a, b) => a + b, 0) >= 10 },
+  { id: 'birds10k', name: 'Flight Deck', desc: 'Bring in 10,000 birds.', shape: 'shield', icon: 'duck', colors: [0x2f6b4a, 0xf4e9d4], done: (s) => s.stats.lifetimeBirds >= 1e4, reward: 1_000 },
+  { id: 'birds100k', name: 'Big Water', desc: 'Bring in 100,000 birds.', shape: 'shield', icon: 'duck', colors: [0x1b2438, 0x7fa0c0], done: (s) => s.stats.lifetimeBirds >= 1e5, reward: 6_650 },
+  { id: 'birds1m', name: 'Sky Full of Wings', desc: 'Bring in 1,000,000 birds.', shape: 'shield', icon: 'duck', colors: [0x6b4a2f, 0xf2c46d], done: (s) => s.stats.lifetimeBirds >= 1e6, reward: 50_000 },
+  { id: 'birds10m', name: 'Legendary Marsh', desc: 'Bring in 10,000,000 birds.', shape: 'shield', icon: 'star', colors: [0x2d2520, 0xe8b84a], done: (s) => s.stats.lifetimeBirds >= 1e7, reward: 333_350 },
+  { id: 'bag500', name: 'Strap Full', desc: 'Bring in 500 birds in a single day.', shape: 'banner', icon: 'sun', colors: [0x8a5a3b, 0xf2c46d], done: (s) => s.stats.bestBag >= 500, reward: 150 },
+  { id: 'bag5k', name: 'Banner Day', desc: 'Bring in 5,000 birds in a single day.', shape: 'banner', icon: 'sun', colors: [0x2f6b4a, 0xf2c46d], done: (s) => s.stats.bestBag >= 5000, reward: 850 },
+  { id: 'bag50k', name: 'Flight of the Century', desc: 'Bring in 50,000 birds in a single day.', shape: 'banner', icon: 'sun', colors: [0x1b2438, 0xe8b84a], done: (s) => s.stats.bestBag >= 5e4, reward: 8_350 },
+  { id: 'bag200k', name: 'Wall of Wings', desc: 'Bring in 200,000 birds in a single day.', shape: 'banner', icon: 'star', colors: [0x8a3e1f, 0xfff1c4], done: (s) => s.stats.bestBag >= 2e5, reward: 40_000 },
+  { id: 'golden50', name: 'Gilded', desc: 'Shoot 50 golden flocks yourself.', shape: 'diamond', icon: 'sun', colors: [0x2d2520, 0xe8b84a], done: (s) => s.stats.goldenShot >= 50, reward: 1_650 },
+  { id: 'volley1', name: 'Big Volley', desc: 'Fire your first Big Volley.', shape: 'diamond', icon: 'star', colors: [0xb5562b, 0xfff1c4], done: (s) => s.volley.fired >= 1, reward: 1_650 },
+  { id: 'volley50', name: 'Thunder on the Marsh', desc: 'Fire 50 Big Volleys.', shape: 'shield', icon: 'star', colors: [0x1b2438, 0xf2c46d], done: (s) => s.volley.fired >= 50, reward: 20_000 },
+  { id: 'carving1', name: 'First Carving', desc: 'Put a carved decoy on the lodge shelf.', shape: 'round', icon: 'feather', colors: [0x8a5a3b, 0xe8a33d], done: (s) => Object.keys(s.carvings).length >= 1, reward: 100 },
+  { id: 'carving5', name: 'Decoy Shelf', desc: 'Collect 5 carved decoys.', shape: 'diamond', icon: 'feather', colors: [0x5a3a26, 0xf4e9d4], done: (s) => Object.keys(s.carvings).length >= 5, reward: 2_650 },
+  { id: 'carvingAll', name: 'Master Carver', desc: 'Collect every carved decoy.', shape: 'shield', icon: 'feather', colors: [0x2d2520, 0xe8b84a], done: (s) => Object.keys(s.carvings).length >= 10, reward: 166_650 },
+  { id: 'lifeList', name: 'Life List', desc: 'Find every bird in the Field Guide.', shape: 'shield', icon: 'book', colors: [0x2f6b4a, 0xe8b84a], done: (s) => discovered(s) >= SPECIES_ORDER.length, reward: 66_650 },
+  { id: 'species16', name: 'Field Naturalist', desc: 'Add 16 species to the Field Guide.', shape: 'diamond', icon: 'book', colors: [0x4e6e7e, 0xf2c46d], done: (s) => discovered(s) >= 16, reward: 650 },
+  { id: 'geese1k', name: 'Goose Talker', desc: 'Bring in 1,000 geese and cranes.', shape: 'diamond', icon: 'duck', colors: [0x86745e, 0xf4f2ec], done: (s) => s.stats.geese >= 1000, reward: 1_000 },
+  { id: 'crane', name: 'Sandhill Sunrise', desc: 'Bring in a sandhill crane.', shape: 'banner', icon: 'sun', colors: [0x8a8a8a, 0xb5562b], done: (s) => (s.guide.sandhillCrane?.count ?? 0) > 0, reward: 500 },
+  { id: 'freeze', name: 'Iced In', desc: 'Bring in 1,000 birds during a Hard Freeze.', shape: 'diamond', icon: 'snow', colors: [0xc8d4dc, 0x1b2438], done: (s) => (s.stats.birdsByStage.freeze ?? 0) >= 1000, reward: 1_350 },
+  { id: 'calendar', name: 'Whole Season', desc: 'Hunt through every part of the season calendar.', shape: 'banner', icon: 'sun', colors: [0xa0703f, 0xf4e9d4], done: (s) => ['opening', 'peak', 'late', 'freeze'].every((k) => (s.stats.birdsByStage[k] ?? 0) > 0), reward: 500 },
+  { id: 'goodDog', name: 'Good Dog', desc: 'Give your retriever a name.', shape: 'round', icon: 'duck', colors: [0xd9b26a, 0x2d2520], done: (s) => s.profile.dogName.trim().length > 0, reward: 50 },
+  { id: 'grandLodge', name: 'Grand Opening', desc: 'Build the Grand Lodge.', shape: 'shield', icon: 'star', colors: [0x6b4a2f, 0xe8b84a], done: (s) => s.lodge >= 5, reward: 6_650 },
+  { id: 'bots1000', name: 'Clockwork Kingdom', desc: 'Own 1,000 bots.', shape: 'shield', icon: 'gear', colors: [0x2d2520, 0xc9a04e], done: (s) => owned(s) >= 1000, reward: 13_350 },
+  { id: 'coins1b', name: 'Lodge Baron', desc: 'Earn 1 billion coins in total.', shape: 'shield', icon: 'coin', colors: [0x1b2438, 0xe8b84a], done: (s) => s.stats.lifetimeCoins.gte(1e9), reward: 16_650 },
+  { id: 'season', name: 'Flyway Veteran', desc: 'Close a season and move on.', shape: 'banner', icon: 'star', colors: [0x2f6b4a, 0xf4e9d4], done: (s) => s.stats.seasonsClosed >= 1, reward: 650 },
   { id: 'away', name: 'Gone Fishin\'', desc: 'Come back after an hour away.', shape: 'round', icon: 'moon', colors: [0x8a5a3b, 0xa9c1cf], done: (s) => s.stats.longestAway >= 3600 },
 ];
 

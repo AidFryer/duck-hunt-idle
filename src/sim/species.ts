@@ -8,6 +8,8 @@ import { FLYWAYS } from '../data/flyways';
 import { workflowEval } from './workflow';
 import { rungFx, speciesAvailable } from './progression';
 import { cropSpeciesMult } from './crops';
+import { carvingFx } from './carvings';
+import { stageFor } from '../data/calendar';
 
 function inHours(hour: number, windows: readonly [number, number][]): boolean {
   return windows.some(([a, b]) => hour >= a && hour < b);
@@ -19,6 +21,8 @@ export function speciesWeights(state: GameState, hour: number, g: GroundId = 'ma
   const w = state.environment.weather;
   const wf = workflowEval(state);
   const fx = rungFx(state, g);
+  const carv = carvingFx(state).species;
+  const stage = stageFor(state.clock.day);
   for (const id of SPECIES_ORDER) {
     const d = SPECIES[id];
     // Birds only visit their own ground, once it has what they need.
@@ -30,11 +34,12 @@ export function speciesWeights(state: GameState, hour: number, g: GroundId = 'ma
     if (inHours(hour, d.hours)) v *= SPECIES_PREFERENCE.inHours;
     if (d.weather.includes(w)) v *= SPECIES_PREFERENCE.inWeather;
     if (d.rarity === 'rare' || d.rarity === 'legendary') {
-      v *= WEATHER[w].rare * wf.rareMult * fx.rare * (state.legacy.perks.birdersLuck ? 1.5 : 1);
+      v *= WEATHER[w].rare * wf.rareMult * fx.rare * stage.rare * (state.legacy.perks.birdersLuck ? 1.5 : 1);
     }
     if (id === 'kingEider' && state.legacy.perks.legendHunter) v *= 3;
     v *= FLYWAYS[state.flyway].species[id] ?? 1;
     v *= cropSpeciesMult(state, id);
+    v *= (carv[id] ?? 1) * (stage.species[id] ?? 1);
     for (const [u, mods] of Object.entries(UPGRADE_SPECIES)) {
       const k = mods?.[id];
       if (k) v *= 1 + k * (state.upgrades[u as UpgradeId] ?? 0);

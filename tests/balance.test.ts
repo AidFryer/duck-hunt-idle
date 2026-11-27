@@ -23,7 +23,7 @@ describe('balance: hours of play', () => {
     expect(min(r.lodge[4])).toBeLessThan(150);
     expect(min(r.lodge[5])).toBeGreaterThan(110);
     expect(min(r.lodge[5])).toBeLessThan(220);
-    expect(min(r.firstStar)).toBeGreaterThan(110);
+    expect(min(r.firstStar)).toBeGreaterThan(100); // patches, carvings and the volley help a little
     expect(min(r.firstStar)).toBeLessThan(220);
     expect(r.species).toBeGreaterThanOrEqual(9);
   }, 120_000);

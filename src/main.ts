@@ -9,7 +9,7 @@ import { askToKeepStorage, backupBrokenSave, backupNow, AUTOSAVE_MS, listBackups
 import { loadPrefs, savePrefs, type Prefs } from './app/prefs';
 import { GAME_TITLE } from './config';
 import { BOTS, JOBS, PROBLEMS } from './data/economy';
-import { LAB_NAME } from './data/goals';
+import { dogNameOf } from './data/goals';
 import { applyCssTokens } from './data/palette';
 import { Renderer } from './render/Renderer';
 import type { Point } from './render/types';
@@ -24,6 +24,12 @@ import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression
 import { buzz, setHaptics } from './app/haptics';
 import { installState } from './app/pwa';
 import { NAME_MAX } from './data/avatars';
+import { BREEDS, DOG_NAME_MAX } from './data/crew';
+import { setDogCoat } from './render/assets/painters';
+import { clearDogPortraits } from './ui/portraits';
+import { buyCarving } from './sim/carvings';
+import { busyMarsh, fireVolley } from './sim/volley';
+import { CARVINGS } from './data/carvings';
 import { plantCrop } from './sim/crops';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
@@ -39,7 +45,6 @@ import { PERKS } from './data/legacy';
 import { OFFLINE, UPGRADES } from './data/upgrades';
 import { SPECIES } from './data/species';
 import { WEATHER } from './data/weather';
-import { ACHIEVEMENTS } from './data/achievements';
 import { offlineView, pushMoment, seasonView } from './ui/moments';
 import { createInitialState, type GameState } from './sim/state';
 import { App } from './ui/App';
@@ -71,10 +76,17 @@ function freshState(): GameState {
   return createInitialState(Math.floor(Math.random() * 1e9), Date.now());
 }
 
+/** Paint the retriever in the player's chosen breed. */
+function applyBreed(): void {
+  setDogCoat(BREEDS[state.profile.breed] ?? BREEDS.yellowLab);
+  clearDogPortraits();
+}
+
 const loaded = loadGame();
 let state: GameState = loaded.kind === 'loaded' ? loaded.state : freshState();
 if (loaded.kind === 'error') backupBrokenSave(loaded.raw);
 askToKeepStorage();
+applyBreed();
 
 // --- Simulation (pure TS, fixed 10 Hz) --------------------------------------
 let runner = new SimRunner(state, () => performance.now());
@@ -137,13 +149,35 @@ window.addEventListener('pagehide', save);
 
 // --- Feedback for sim events -------------------------------------------------
 // Logging happens often (Gus + Ledger Bots), so coin pop-ups are batched.
+// Coins and feathers from pickups gather for a moment and pop up together.
 let pendingCoins = 0;
+let pendingFeathers = 0;
 let pendingAt: Point | null = null;
 setInterval(() => {
-  if (pendingCoins > 0 && pendingAt) feedback.float(`+${formatNumber(pendingCoins, prefs.get().notation)}`, pendingAt.x, pendingAt.y, 'coins');
+  const n = prefs.get().notation;
+  if (pendingAt && (pendingCoins > 0 || pendingFeathers > 0)) {
+    feedback.pickup(pendingCoins > 0 ? formatNumber(pendingCoins, n) : null, pendingFeathers > 0 ? formatNumber(pendingFeathers, n) : null, pendingAt.x, pendingAt.y);
+  }
   pendingCoins = 0;
+  pendingFeathers = 0;
+  pendingAt = null;
 }, 700);
 let seenProblem = false;
+let lastEscalationToast = -1e9;
+/** Lots going on: a running tally replaces the per-bird popups. */
+const busy = () => busyMarsh(state);
+
+// Patches earned together become one card.
+let patchQueue: string[] = [];
+function queuePatch(id: string): void {
+  patchQueue.push(id);
+  if (patchQueue.length > 1) return;
+  setTimeout(() => {
+    const ids = patchQueue;
+    patchQueue = [];
+    pushMoment(ids.length === 1 ? { kind: 'patch', id: ids[0]! } : { kind: 'patches', ids });
+  }, 400);
+}
 
 const EVENT_SOUND: Partial<Record<SimEvent['type'], Sfx>> = {
   decoySet: 'decoy',
@@ -184,16 +218,35 @@ function onEvent(e: SimEvent, at: Point | null): void {
   if (e.type === 'newSpecies' && (SPECIES[e.species].rarity === 'legendary' || SPECIES[e.species].rarity === 'rare')) shake(0.6);
   switch (e.type) {
     case 'retrieved':
-      if (at && e.count === 1) feedback.float(`+${formatNumber(e.feathers, n)} feather${e.feathers === 1 ? '' : 's'}`, at.x, at.y, 'feathers');
+      if (busy()) break;
+      pendingFeathers += e.feathers;
+      if (at) pendingAt = at;
       break;
     case 'newSpecies':
       if (e.species !== 'mallard') pushMoment({ kind: 'species', id: e.species, coins: e.coins, feathers: e.feathers });
       break;
-    case 'achievement': {
-      const a = ACHIEVEMENTS.find((x) => x.id === e.id);
-      if (a) pushMoment({ kind: 'patch', id: e.id });
+    case 'achievement':
+      queuePatch(e.id);
+      break;
+    case 'volleyUnlocked':
+      buzz('big');
+      pushMoment({ kind: 'volley' });
+      break;
+    case 'volley': {
+      buzz('big');
+      shake(0.9);
+      audio.play('season');
+      const p = at ?? lastTapAt;
+      if (p) feedback.pickup(formatNumber(e.coins, n), formatNumber(e.feathers, n), p.x, p.y - 40);
+      feedback.toast(`Big Volley! ${formatNumber(e.birds, n)} birds in one go.`, 'celebrate', 3200);
       break;
     }
+    case 'stageChanged':
+      pushMoment({ kind: 'stage', id: e.stage });
+      break;
+    case 'carvingBought':
+      feedback.toast(`${CARVINGS[e.carving].name} is on the shelf. ${CARVINGS[e.carving].effect}.`, 'good', 3600);
+      break;
     case 'weatherChanged':
       feedback.toast(`${WEATHER[e.to].name}: ${WEATHER[e.to].blurb}`, e.to === 'clear' ? 'info' : 'good', 4000);
       break;
@@ -225,24 +278,27 @@ function onEvent(e: SimEvent, at: Point | null): void {
       feedback.toast(`${UPGRADE_NAMES[e.upgrade]} upgraded to level ${e.level}.`, 'good');
       break;
     case 'logged':
+      if (busy()) break;
       pendingCoins += e.coins;
       if (at) pendingAt = at;
       break;
     case 'problem':
-      if (at) feedback.float(PROBLEMS[e.kind].title, at.x, at.y, 'alert');
+      if (at && !busy()) feedback.float(PROBLEMS[e.kind].title, at.x, at.y, 'alert');
       if (!seenProblem && state.problems.total <= 1) {
         seenProblem = true;
         feedback.toast(`A ${BOTS[e.bot].name} hit a snag: ${PROBLEMS[e.kind].title.toLowerCase()}. Tap the "!" over it to fix it.`, 'info', 6000);
       }
       break;
     case 'problemFixed':
-      if (at) feedback.float(e.by === 'foreman' ? 'Foreman fixed it' : 'Fixed!', at.x, at.y, 'info');
+      if (at && (e.by !== 'foreman' || !busy())) feedback.float(e.by === 'foreman' ? 'Foreman fixed it' : 'Fixed!', at.x, at.y, 'info');
       break;
     case 'problemEscalated':
+      if (busy() || performance.now() - lastEscalationToast < 180_000) break;
+      lastEscalationToast = performance.now();
       feedback.toast(`The foreman couldn't free a ${BOTS[e.bot].name}. It needs you. Tap its "!" or open the Problem Log.`, 'info', 5000);
       break;
     case 'flockLeft':
-      if (at) feedback.float('Flew on', at.x, at.y, 'info');
+      if (at && !busy()) feedback.float('Flew on', at.x, at.y, 'info');
       break;
     case 'botBought':
       if (at) feedback.float(e.count > 1 ? `+${e.count} ${BOTS[e.bot].name}s` : `New ${BOTS[e.bot].name}!`, at.x, at.y - 20, 'info');
@@ -268,7 +324,7 @@ function onEvent(e: SimEvent, at: Point | null): void {
       if (e.bag > 0) feedback.toast(e.best ? `Day ${e.day} is done: ${e.bag} birds, your best day yet!` : `Day ${e.day} is done: ${e.bag} birds brought in.`, e.best ? 'celebrate' : 'info', 4200);
       break;
     case 'flockFlared':
-      if (at) feedback.float('Flared off', at.x, at.y, 'info');
+      if (at && !busy()) feedback.float('Flared off', at.x, at.y, 'info');
       break;
     case 'shot':
       if (e.source === 'manual') buzz('tap');
@@ -303,6 +359,7 @@ function onEvent(e: SimEvent, at: Point | null): void {
 // --- Controls (the only way the UI changes the sim) --------------------------
 function replaceState(next: GameState): void {
   state = next;
+  applyBreed();
   runner = new SimRunner(state, () => performance.now());
   runner.timeScale = 1;
   if (renderer) renderer.setRunner(runner);
@@ -401,7 +458,7 @@ const controls: GameControls = {
     const ok = doAction(state, job, 'manual', runner.sink);
     if (!ok && stage === 'retrieve' && g === 'marsh' && performance.now() - lastNudge > 10_000) {
       lastNudge = performance.now();
-      feedback.toast(`Nothing on the water for ${LAB_NAME} yet.`);
+      feedback.toast(`Nothing on the water for ${dogNameOf(state.profile)} yet.`);
     }
     hud.set(snapshot(state));
     return ok;
@@ -443,9 +500,30 @@ const controls: GameControls = {
     return ok;
   },
   setProfile(name, avatar) {
-    state.profile = { name: name.trim().slice(0, NAME_MAX), avatar };
+    state.profile = { ...state.profile, name: name.trim().slice(0, NAME_MAX), avatar };
     hud.set(snapshot(state));
     save();
+  },
+  setDog(name, breed) {
+    const changed = breed !== state.profile.breed;
+    state.profile = { ...state.profile, dogName: name.trim().slice(0, DOG_NAME_MAX), breed };
+    if (changed) {
+      applyBreed();
+      // Repaint the scene so the dog wears its new coat.
+      renderer?.setRunner(runner);
+    }
+    hud.set(snapshot(state));
+    save();
+  },
+  buyCarving(id) {
+    const ok = buyCarving(state, id, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  fireVolley() {
+    const ok = fireVolley(state, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
   },
   buildLodge() {
     const ok = buildLodge(state, runner.sink);

@@ -1,3 +1,5 @@
+import type { BreedId } from '../data/crew';
+import type { CarvingId } from '../data/carvings';
 import type { DayPhaseId } from '../data/dayCycle';
 import type { BotId, GroundId, HuntStage, Slot } from '../data/economy';
 import type { Notation } from '../util/format';
@@ -19,6 +21,12 @@ export interface GameControls {
   buyUpgrade(id: UpgradeId): boolean;
   buildLodge(): boolean;
   setProfile(name: string, avatar: string): void;
+  /** Name the retriever and pick its breed. */
+  setDog(name: string, breed: BreedId): void;
+  /** Buy a carved decoy for the collection. */
+  buyCarving(id: CarvingId): boolean;
+  /** Fire the Big Volley when it's charged. */
+  fireVolley(): boolean;
   plantCrop(plot: number, crop: CropId): boolean;
   buyDecoys(g: GroundId): boolean;
   buyRung(id: RungId): boolean;

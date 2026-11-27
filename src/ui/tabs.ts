@@ -17,7 +17,7 @@ export interface TabDef {
 }
 
 export type TabId = 'marsh' | 'bots' | 'workflows' | 'upgrades' | 'legacy';
-export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 'star' | 'sun' | 'moon' | 'coin' | 'feather' | 'duck' | 'wind' | 'gear' | 'fog' | 'drop' | 'snow' | 'cloud' | 'lock';
+export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 'star' | 'sun' | 'moon' | 'coin' | 'feather' | 'duck' | 'wind' | 'gear' | 'fog' | 'drop' | 'snow' | 'cloud' | 'lock' | 'trophy' | 'leaf';
 
 export const TABS: readonly TabDef[] = [
   { id: 'marsh', label: 'Marsh', icon: 'marsh', comingSoon: '', phase: 1 },

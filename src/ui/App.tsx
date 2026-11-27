@@ -1,3 +1,5 @@
+import { TrophyWall } from './components/TrophyWall';
+import { Tally, VolleyButton } from './components/Volley';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { Prefs } from '../app/prefs';
 import { BOT_ORDER } from '../data/economy';
@@ -39,6 +41,8 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [settings, setSettings] = useState(false);
   const [problems, setProblems] = useState(false);
   const [guide, setGuide] = useState(false);
+  const [trophies, setTrophies] = useState(false);
+  const [stageInfo, setStageInfo] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
   const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
   const tStep = tutorialStep(hud, welcomed);
@@ -65,20 +69,43 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const ground = hud.field.open ? prefs.ground : 'marsh';
 
   return (
-    <div class={`layout ${tab === 'marsh' ? 'layout--marsh' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
-      <section class="scene" aria-label="The marsh">
+    <div class={`layout ${tab === 'marsh' ? 'layout--marsh' : ''} ${prefs.tallPanel ? 'is-tall' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
+      <section class={`scene ${hud.volley.unlocked ? "has-volley" : ""}`} aria-label="The marsh">
         <div class="scene-host" ref={sceneRef} />
         <div class="floaters" ref={floatRef} aria-hidden="true" />
         <TopBar hud={hud} notation={n} onSettings={() => setSettings(true)} onProblems={() => setProblems(true)} />
         <div class="toasts" ref={toastRef} aria-live="polite" />
         <Moments greetName={hud.profile.name} onOpen={(f) => (f === 'guide' ? setGuide(true) : setTab((TABS.find((t) => TAB_FEATURE[t.id] === f)?.id ?? 'marsh') as TabId))} />
         <RhythmMeter hud={hud} />
-        {hud.unlocks.guide && (
-          <button class="guide-btn" onClick={() => setGuide(true)} aria-label={`Field Guide: ${hud.speciesFound} of ${hud.guide.length} birds found`} title="Field Guide">
-            <Icon name="book" size={20} />
-            <span>{hud.speciesFound}/{hud.guide.length}</span>
-          </button>
-        )}
+        <div class="side-rail">
+          {hud.unlocks.guide && (
+            <button class="rail-btn" onClick={() => setGuide(true)} aria-label={`Field Guide: ${hud.speciesFound} of ${hud.guide.length} birds found`} title="Field Guide">
+              <Icon name="book" size={20} />
+              <span class="bump" key={`g${hud.speciesFound}`}>{hud.speciesFound}/{hud.guide.length}</span>
+            </button>
+          )}
+          {hud.patches > 0 && (
+            <button class="rail-btn" onClick={() => setTrophies(true)} aria-label={`Trophy Wall: ${hud.patches} patches`} title="Trophy Wall">
+              <Icon name="trophy" size={20} />
+              <span class="bump" key={`t${hud.patches}`}>{hud.patches}</span>
+            </button>
+          )}
+          {hud.lodge.level >= 2 && (
+            <button class={`rail-btn rail-btn--stage rail-btn--${hud.calendar.id}`} onClick={() => setStageInfo(!stageInfo)} aria-expanded={stageInfo} aria-label={`Season calendar: ${hud.calendar.name}`} title="Season calendar">
+              <Icon name="leaf" size={18} />
+              <span>{hud.calendar.day}/{hud.calendar.of}</span>
+            </button>
+          )}
+          {stageInfo && hud.lodge.level >= 2 && (
+            <button class={`stage-card stage-card--${hud.calendar.id}`} onClick={() => setStageInfo(false)}>
+              <strong>{hud.calendar.name}</strong>
+              <span>{hud.calendar.blurb}</span>
+              <em>Day {hud.calendar.day} of {hud.calendar.of} · then {hud.calendar.nextName}</em>
+            </button>
+          )}
+        </div>
+        <Tally hud={hud} notation={n} />
+        <VolleyButton hud={hud} controls={controls} notation={n} />
         {hud.field.open && (
           <button class="ground-switch" onClick={() => controls.setGround(ground === 'field' ? 'marsh' : 'field')}>
             {ground === 'field' ? '‹ Back to the marsh' : 'To the goose field ›'}
@@ -87,6 +114,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
       </section>
 
       <aside class="panel">
+        <PanelGrip tall={prefs.tallPanel} onChange={(tall) => tall !== prefs.tallPanel && onPrefs({ ...prefs, tallPanel: tall })} />
         <nav class="tabs" role="tablist" aria-label="Lodge sections">
           {TABS.map((t) => {
             const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
@@ -148,7 +176,39 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           </div>
         </div>
       )}
+      {trophies && (
+        <div class="drawer-backdrop" onClick={(e) => e.target === e.currentTarget && setTrophies(false)}>
+          <div class="drawer guide-drawer" role="dialog" aria-label="Trophy Wall" aria-modal="true">
+            <header class="drawer__head">
+              <h3>Trophy Wall</h3>
+              <button class="icon-btn icon-btn--dark" onClick={() => setTrophies(false)} aria-label="Close the Trophy Wall">✕</button>
+            </header>
+            <TrophyWall hud={hud} notation={n} />
+          </div>
+        </div>
+      )}
       {settings && <Settings prefs={prefs} controls={controls} onPrefs={onPrefs} onClose={() => setSettings(false)} profile={hud.profile} />}
     </div>
+  );
+}
+
+/** The handle on top of the panel: tap, or drag up/down, to make the panel taller or shorter. */
+function PanelGrip({ tall, onChange }: { tall: boolean; onChange: (tall: boolean) => void }) {
+  const start = useRef<number | null>(null);
+  return (
+    <button
+      class="panel-grip"
+      aria-label={tall ? 'Make the panel shorter' : 'Make the panel taller'}
+      aria-pressed={tall}
+      onPointerDown={(e) => (start.current = e.clientY)}
+      onPointerUp={(e) => {
+        const dy = start.current === null ? 0 : e.clientY - start.current;
+        start.current = null;
+        onChange(dy < -12 ? true : dy > 12 ? false : !tall);
+      }}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onChange(!tall)}
+    >
+      <span class="panel-grip__bar" />
+    </button>
   );
 }
