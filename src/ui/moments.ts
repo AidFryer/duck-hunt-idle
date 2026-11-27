@@ -20,8 +20,17 @@ export type Moment = { kind: 'species'; id: SpeciesId; coins: number; feathers: 
 
 export const moments = new Store<Moment[]>([]);
 
+/** Big cards that should never wait behind (or be dropped for) small ones. */
+const IMPORTANT: ReadonlySet<Moment['kind']> = new Set(['lodge', 'feature', 'daily', 'volley']);
+
 export function pushMoment(m: Moment): void {
   const q = moments.get();
+  if (IMPORTANT.has(m.kind)) {
+    // Right after the card on screen, ahead of any small ones waiting.
+    const at = q.length === 0 ? 0 : 1 + q.slice(1).filter((x) => IMPORTANT.has(x.kind)).length;
+    moments.set([...q.slice(0, at), m, ...q.slice(at)]);
+    return;
+  }
   if (q.length >= 6) return;
   moments.set([...q, m]);
 }

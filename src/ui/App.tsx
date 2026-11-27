@@ -108,7 +108,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             </button>
           )}
           {stageInfo && hud.lodge.level >= 2 && (
-            <button class={`stage-card stage-card--${hud.calendar.id}`} onClick={() => setStageInfo(false)}>
+            <button class={`calendar-pop calendar-pop--${hud.calendar.id}`} onClick={() => setStageInfo(false)}>
               <strong>{hud.calendar.name}</strong>
               <span>{hud.calendar.blurb}</span>
               <em>Day {hud.calendar.day} of {hud.calendar.of} · then {hud.calendar.nextName}</em>
@@ -147,7 +147,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
         </nav>
         <div class="panel__content" role="tabpanel" key={tab}>
           {!activeOpen && activeFeature && <LockedTab tab={active} feature={activeFeature} hud={hud} />}
-          {activeOpen && activeFeature && <TabHelp feature={activeFeature} />}
+          {activeOpen && activeFeature && hud.lodge.level < 4 && <TabHelp feature={activeFeature} />}
           {tab === 'marsh' && (
             <MarshTab
               hud={hud}

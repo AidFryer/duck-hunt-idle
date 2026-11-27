@@ -45,6 +45,8 @@ class Feedback {
 
   private launch(el: HTMLElement, x: number, y: number, delay: number): void {
     const host = this.floatHost!;
+    // Keep popups clear of the side buttons on the left and the screen edge.
+    x = Math.min(Math.max(x, 110), host.clientWidth - 70);
     el.style.left = `${x}px`;
     el.style.top = `${y}px`;
     host.appendChild(el);

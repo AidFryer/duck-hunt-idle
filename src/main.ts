@@ -42,7 +42,7 @@ import { addNode, connect, cut, removeNode } from './sim/workflow';
 import { buyPerk, closeSeason } from './sim/prestige';
 import { FLYWAYS } from './data/flyways';
 import { PERKS } from './data/legacy';
-import { OFFLINE, UPGRADES } from './data/upgrades';
+import { OFFLINE } from './data/upgrades';
 import { SPECIES } from './data/species';
 import { WEATHER } from './data/weather';
 import { offlineView, pushMoment, seasonView } from './ui/moments';
@@ -164,6 +164,7 @@ setInterval(() => {
 }, 700);
 let seenProblem = false;
 let lastEscalationToast = -1e9;
+const weatherSeen = new Set<string>();
 /** Lots going on: a running tally replaces the per-bird popups. */
 const busy = () => busyMarsh(state);
 
@@ -248,7 +249,11 @@ function onEvent(e: SimEvent, at: Point | null): void {
       feedback.toast(`${CARVINGS[e.carving].name} is on the shelf. ${CARVINGS[e.carving].effect}.`, 'good', 3600);
       break;
     case 'weatherChanged':
-      feedback.toast(`${WEATHER[e.to].name}: ${WEATHER[e.to].blurb}`, e.to === 'clear' ? 'info' : 'good', 4000);
+      // Explain each kind of weather once; after that the clock shows it.
+      if (!weatherSeen.has(e.to)) {
+        weatherSeen.add(e.to);
+        feedback.toast(`${WEATHER[e.to].name}: ${WEATHER[e.to].blurb}`, e.to === 'clear' ? 'info' : 'good', 4000);
+      }
       break;
     case 'featureUnlocked':
       pushMoment({ kind: 'feature', id: e.feature });
@@ -271,35 +276,28 @@ function onEvent(e: SimEvent, at: Point | null): void {
     case 'perkBought':
       feedback.toast(`Legacy perk: ${PERKS[e.perk].name}.`, 'celebrate');
       break;
-    case 'flockReturned':
-      feedback.toast('A flock circled back for another look.', 'info', 2500);
-      break;
-    case 'upgradeBought':
-      feedback.toast(`${UPGRADE_NAMES[e.upgrade]} upgraded to level ${e.level}.`, 'good');
-      break;
+
     case 'logged':
       if (busy()) break;
       pendingCoins += e.coins;
       if (at) pendingAt = at;
       break;
     case 'problem':
-      if (at && !busy()) feedback.float(PROBLEMS[e.kind].title, at.x, at.y, 'alert');
+      // The "!" bubble over the bot says enough; no floating words.
       if (!seenProblem && state.problems.total <= 1) {
         seenProblem = true;
         feedback.toast(`A ${BOTS[e.bot].name} hit a snag: ${PROBLEMS[e.kind].title.toLowerCase()}. Tap the "!" over it to fix it.`, 'info', 6000);
       }
       break;
     case 'problemFixed':
-      if (at && (e.by !== 'foreman' || !busy())) feedback.float(e.by === 'foreman' ? 'Foreman fixed it' : 'Fixed!', at.x, at.y, 'info');
+      if (at && e.by !== 'foreman') feedback.float('Fixed!', at.x, at.y, 'info');
       break;
     case 'problemEscalated':
       if (busy() || performance.now() - lastEscalationToast < 180_000) break;
       lastEscalationToast = performance.now();
       feedback.toast(`The foreman couldn't free a ${BOTS[e.bot].name}. It needs you. Tap its "!" or open the Problem Log.`, 'info', 5000);
       break;
-    case 'flockLeft':
-      if (at && !busy()) feedback.float('Flew on', at.x, at.y, 'info');
-      break;
+
     case 'botBought':
       if (at) feedback.float(e.count > 1 ? `+${e.count} ${BOTS[e.bot].name}s` : `New ${BOTS[e.bot].name}!`, at.x, at.y - 20, 'info');
       break;
@@ -323,9 +321,7 @@ function onEvent(e: SimEvent, at: Point | null): void {
     case 'dayEnded':
       if (e.bag > 0) feedback.toast(e.best ? `Day ${e.day} is done: ${e.bag} birds, your best day yet!` : `Day ${e.day} is done: ${e.bag} birds brought in.`, e.best ? 'celebrate' : 'info', 4200);
       break;
-    case 'flockFlared':
-      if (at && !busy()) feedback.float('Flared off', at.x, at.y, 'info');
-      break;
+
     case 'shot':
       if (e.source === 'manual') buzz('tap');
       break;
@@ -448,7 +444,6 @@ setInterval(() => {
     feedback.toast('Tip: in Safari, tap Share, then "Add to Home Screen" to play full-screen, like an app.', 'info', 7000);
   }
 }, 2000);
-const UPGRADE_NAMES = Object.fromEntries(Object.entries(UPGRADES).map(([k, v]) => [k, v.name])) as Record<keyof typeof UPGRADES, string>;
 void SPECIES;
 void FLYWAYS;
 
