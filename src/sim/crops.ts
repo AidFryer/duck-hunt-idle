@@ -1,3 +1,4 @@
+import { legacyFx } from './prestige';
 import Decimal from 'break_infinity.js';
 import { CROP_DRAW_GROWTH, CROP_GROW_SECONDS, CROPS, plotCount, type CropId } from '../data/crops';
 import type { SpeciesId } from '../data/species';
@@ -45,7 +46,8 @@ function growing(state: GameState): { crop: CropId; growth: number }[] {
 
 export function cropFlockRate(state: GameState): number {
   let m = 1;
-  for (const p of growing(state)) m *= 1 + (CROPS[p.crop].flockRate - 1) * p.growth;
+  const k = legacyFx(state).crops;
+  for (const p of growing(state)) m *= 1 + (CROPS[p.crop].flockRate - 1) * p.growth * k;
   return m;
 }
 
@@ -59,7 +61,7 @@ export function cropSpeciesMult(state: GameState, id: SpeciesId): number {
   let m = 1;
   for (const p of growing(state)) {
     const k = CROPS[p.crop].species[id];
-    if (k) m *= 1 + (k - 1) * p.growth;
+    if (k) m *= 1 + (k - 1) * p.growth * legacyFx(state).crops;
   }
   return m;
 }

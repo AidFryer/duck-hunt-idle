@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { FLYWAYS, type FlywayId } from '../../data/flyways';
-import { PERKS, PRESTIGE } from '../../data/legacy';
+import { BRANCH_INFO, PERKS, PRESTIGE } from '../../data/legacy';
 import { SPECIES } from '../../data/species';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
@@ -11,7 +11,6 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
   const [confirming, setConfirming] = useState(false);
   const se = hud.season;
   const lg = hud.legacy;
-  const tiers = [0, 1, 2, 3];
   return (
     <div class="tab-body legacy-tab">
       <section class="season-card">
@@ -47,29 +46,37 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
         <div><strong>{lg.earned}</strong><span>earned in all</span></div>
         <div><strong>+{Math.round(lg.bonus * 100)}%</strong><span>coins & feathers</span></div>
       </section>
+      <RespecRow hud={hud} controls={controls} />
 
-      <section class="perk-tree" aria-label="Lodge Legacy perks">
-        {tiers.map((t) => (
-          <div class="perk-tier">
-            {lg.perks.filter((p) => PERKS[p.id].tier === t).map((p) => {
-              const d = PERKS[p.id];
-              return (
-                <button
-                  class={`perk ${p.owned ? 'is-owned' : ''} ${p.canBuy ? 'is-buyable' : ''} ${!p.prereqsMet ? 'is-locked' : ''}`}
-                  aria-disabled={!p.canBuy}
-                  onClick={(e) => !p.owned && pulse(e.currentTarget as HTMLElement, controls.buyPerk(p.id))}
-                >
-                  <strong>{d.name}</strong>
-                  <span>{d.desc}</span>
-                  <em>
-                    {p.owned ? 'Owned' : !p.prereqsMet ? `Needs ${d.requires.map((r) => PERKS[r].name).join(', ')}` : `★ ${d.cost}`}
-                  </em>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+      <section class="branch branch--lodge" aria-label={BRANCH_INFO.lodge.name}>
+        <h4 class="group-head">{BRANCH_INFO.lodge.name}</h4>
+        <p class="card__hint">{BRANCH_INFO.lodge.blurb}</p>
+        <div class="perk-tree">
+          {[0, 1, 2, 3, 4].map((t) => (
+            <div class="perk-tier">
+              {lg.perks.filter((p) => PERKS[p.id].branch === 'lodge' && PERKS[p.id].tier === t).map((p) => <PerkButton p={p} controls={controls} />)}
+            </div>
+          ))}
+        </div>
       </section>
+
+      {lg.branches.filter((b) => b.id !== 'lodge').map((b) => {
+        const info = BRANCH_INFO[b.id];
+        const perks = lg.perks.filter((p) => PERKS[p.id].branch === b.id).sort((x, y) => PERKS[x.id].tier - PERKS[y.id].tier);
+        return (
+          <section class={`branch branch--${b.id} ${b.open ? '' : 'is-locked'}`} aria-label={info.name}>
+            <div class="branch__head">
+              <h4>{info.name}</h4>
+              <span>{b.open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`}</span>
+            </div>
+            <ol class="branch__chain">
+              {perks.map((p) => (
+                <li>{b.open ? <PerkButton p={p} controls={controls} /> : <div class="perk is-locked"><strong>{PERKS[p.id].name}</strong><span>{PERKS[p.id].desc}</span></div>}</li>
+              ))}
+            </ol>
+          </section>
+        );
+      })}
 
       <section class="card">
         <h3>Flyway map</h3>
@@ -153,7 +160,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
                 <li>Your lodge and bot plans</li>
                 <li>Carved decoys & the Big Volley</li>
                 <li>Field Guide & patches</li>
-                <li>Your workflow board</li>
+                <li>Crew Training & your retriever</li>
               </ul>
             </div>
           </div>
@@ -175,6 +182,62 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
           <button class="btn" onClick={onClose}>Not yet</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+type PerkRow = HudSnapshot['legacy']['perks'][number];
+
+/** One perk: buy it, or rank it up if it has ranks. */
+function PerkButton({ p, controls }: { p: PerkRow; controls: GameControls }) {
+  const d = PERKS[p.id];
+  const ranked = p.maxRank > 1;
+  const maxed = p.rank >= p.maxRank;
+  const label = maxed
+    ? ranked ? `Rank ${p.rank}/${p.maxRank}` : 'Owned'
+    : !p.prereqsMet
+      ? `Needs ${d.requires.map((r) => PERKS[r].name).join(', ')}`
+      : ranked
+        ? `${p.rank > 0 ? `Rank ${p.rank}/${p.maxRank} · ` : ''}★ ${p.nextCost}`
+        : `★ ${p.nextCost}`;
+  return (
+    <button
+      class={`perk ${p.owned ? 'is-owned' : ''} ${maxed ? 'is-maxed' : ''} ${p.canBuy ? 'is-buyable' : ''} ${!p.prereqsMet ? 'is-locked' : ''}`}
+      aria-disabled={!p.canBuy}
+      onClick={(e) => !maxed && pulse(e.currentTarget as HTMLElement, controls.buyPerk(p.id))}
+    >
+      <strong>{d.name}</strong>
+      <span>{d.desc}</span>
+      {ranked && p.rank > 0 && (
+        <span class="perk__ranks" aria-hidden="true">
+          {Array.from({ length: p.maxRank }, (_, i) => <i class={i < p.rank ? 'is-on' : ''} />)}
+        </span>
+      )}
+      <em>{label}</em>
+    </button>
+  );
+}
+
+/** The free once-a-season refund, with a second tap to confirm. */
+function RespecRow({ hud, controls }: { hud: HudSnapshot; controls: GameControls }) {
+  const [sure, setSure] = useState(false);
+  const r = hud.legacy.respec;
+  if (r.stars === 0) return null;
+  return (
+    <div class="respec">
+      <span>{r.can ? 'Want to try a different path? Take back every perk for a full refund, free once a season.' : "You've used this season's free refund. Another comes next season."}</span>
+      {r.can && (
+        <button
+          class={`btn btn--small ${sure ? 'btn--primary' : ''}`}
+          onClick={() => {
+            if (!sure) return setSure(true);
+            controls.respecPerks();
+            setSure(false);
+          }}
+        >
+          {sure ? `Tap again: refund ★ ${r.stars}` : `Refund ★ ${r.stars}`}
+        </button>
+      )}
     </div>
   );
 }

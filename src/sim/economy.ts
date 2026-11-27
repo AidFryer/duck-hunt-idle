@@ -13,7 +13,7 @@ import type { EventSink } from './events';
 import type { GameState } from './state';
 import { UPGRADE_EFFECTS } from '../data/upgrades';
 import { WEATHER } from '../data/weather';
-import { starMultiplier } from './prestige';
+import { legacyFx, starMultiplier } from './prestige';
 import { workflowEval } from './workflow';
 import { rungFx } from './progression';
 import { cropFlockRate, cropFlockSize } from './crops';
@@ -164,7 +164,8 @@ export function spreadSize(state: GameState, g: GroundId = 'marsh'): number {
 /** Price of the next bag of decoys for a spread. */
 export function decoyBagPrice(state: GameState, g: GroundId = 'marsh'): Price {
   const d = DECOYS[g];
-  const k = Math.pow(d.costGrowth, state.decoyBags[g] ?? 0);
+  // Cornfield Deals (Legacy) halves goose decoys.
+  const k = Math.pow(d.costGrowth, state.decoyBags[g] ?? 0) * (g === 'field' ? legacyFx(state).fieldDecoys : 1);
   return { coins: new Decimal(d.costCoins * k).ceil(), feathers: new Decimal(d.costFeathers * k).ceil() };
 }
 
@@ -207,7 +208,7 @@ export function maxCommitted(state: GameState, g: GroundId = 'marsh'): number {
 /** How many flocks can circle at once. */
 export function maxIncoming(state: GameState, g: GroundId = 'marsh'): number {
   const marsh = g !== 'marsh' ? 0 : Math.min(ACRES.maxExtraCircling, Math.floor((state.acres - ACRES.start) / ACRES.acresPerCircling));
-  return GROUND_PARAMS[g].maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0) + marsh;
+  return GROUND_PARAMS[g].maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0) + (legacyFx(state).incoming[g] ?? 0) + marsh;
 }
 
 /** Fraction of a flock taken by one shot. */
@@ -229,7 +230,12 @@ export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number 
 }
 
 /** Flocks per second right now, before the activity curve. */
+/** Flocks per second drawn to a ground (Legacy branches can lift a ground). */
 export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
+  return baseFlockDraw(state, g) * (legacyFx(state).groundFlocks[g] ?? 1);
+}
+
+function baseFlockDraw(state: GameState, g: GroundId): number {
   const P = GROUND_PARAMS[g];
   // A bigger spread draws more flocks.
   const spread = Math.pow(spreadSize(state, g) / P.baseSpreadSize, DECOYS.drawExponent);
@@ -281,9 +287,14 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   // Coin boosts (reputation, rooms, ladder, patches…) lift feathers too, by
   // their square root, so feathers keep pace with coins as the lodge grows.
   const coinBoost = reputationMultiplier(state) * rooms * rungFx(state).coins * extra;
+  // Legacy: Old Money / Fine Feathers, and each flyway branch's ground bonus.
+  const lg = legacyFx(state);
+  const home = s.ground ?? 'marsh';
+  const lgCoins = lg.coins * (lg.groundCoins[home] ?? 1);
+  const lgFeathers = lg.feathers * (lg.groundFeathers[home] ?? 1);
   return {
     // Crew Rhythm lifts coins only.
-    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
+    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * lgCoins * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * lgFeathers * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
   };
 }

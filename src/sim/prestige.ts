@@ -1,7 +1,7 @@
 import Decimal from 'break_infinity.js';
-import { BOT_ORDER, BOTS } from '../data/economy';
+import { BOT_ORDER, BOTS, type GroundId, type JobId } from '../data/economy';
 import { FLYWAYS, type FlywayId } from '../data/flyways';
-import { PERKS, PRESTIGE, type PerkId } from '../data/legacy';
+import { PERK_ORDER, PERKS, PRESTIGE, type BranchId, type PerkId } from '../data/legacy';
 import { UPGRADE_ORDER, type UpgradeId } from '../data/upgrades';
 import type { EventSink } from './events';
 import { createAssignments, createInitialState, createJobMetrics, createJobs, type GameState } from './state';
@@ -23,19 +23,119 @@ export function starMultiplier(state: GameState): number {
   return 1 + PRESTIGE.bonusPerStar * state.legacy.earned;
 }
 
-export const hasPerk = (state: GameState, id: PerkId): boolean => !!state.legacy.perks[id];
+export const hasPerk = (state: GameState, id: PerkId): boolean => (state.legacy.perks[id] ?? 0) > 0;
+
+/** How many ranks of a perk are owned (0 = none). */
+export const perkRank = (state: GameState, id: PerkId): number => state.legacy.perks[id] ?? 0;
+
+/** Highest rank a perk can reach (1 for a one-time perk). */
+export const perkMaxRank = (id: PerkId): number => PERKS[id].maxRank ?? 1;
+
+/** Stars for the next rank, given how many are owned. */
+export function perkCost(id: PerkId, owned: number): number {
+  const p = PERKS[id];
+  return p.cost + (p.costStep ?? 0) * owned;
+}
+
+/** Is this perk's branch open? (A flyway's branch opens once you've hunted it.) */
+export function branchOpen(state: GameState, branch: BranchId): boolean {
+  return branch === 'lodge' || !!state.legacy.flyways[branch] || state.flyway === branch;
+}
 
 export function canBuyPerk(state: GameState, id: PerkId): boolean {
   const p = PERKS[id];
-  return !hasPerk(state, id) && state.legacy.stars >= p.cost && p.requires.every((r) => hasPerk(state, r));
+  const rank = perkRank(state, id);
+  return rank < perkMaxRank(id) && branchOpen(state, p.branch) && state.legacy.stars >= perkCost(id, rank) && p.requires.every((r) => hasPerk(state, r));
 }
 
 export function buyPerk(state: GameState, id: PerkId, events?: EventSink): boolean {
   if (!canBuyPerk(state, id)) return false;
-  state.legacy.stars -= PERKS[id].cost;
-  state.legacy.perks[id] = true;
+  const rank = perkRank(state, id);
+  state.legacy.stars -= perkCost(id, rank);
+  state.legacy.perks[id] = rank + 1;
   events?.push({ type: 'perkBought', perk: id });
   return true;
+}
+
+/** Stars spent on every perk owned (what a refund gives back). */
+export function starsInPerks(state: GameState): number {
+  let n = 0;
+  for (const id of PERK_ORDER) for (let r = 0; r < perkRank(state, id); r++) n += perkCost(id, r);
+  return n;
+}
+
+/** One free refund of every perk, once per season. */
+export function canRespec(state: GameState): boolean {
+  return state.legacy.respecSeason !== state.season.number && starsInPerks(state) > 0;
+}
+
+export function respecPerks(state: GameState): number {
+  if (!canRespec(state)) return 0;
+  const back = starsInPerks(state);
+  state.legacy.stars += back;
+  state.legacy.perks = {};
+  state.legacy.respecSeason = state.season.number;
+  return back;
+}
+
+/** Everything the Legacy perks add up to, in the shape the sim reads. */
+export interface LegacyFx {
+  coins: number;
+  feathers: number;
+  /** × every hunt job's speed. */
+  speed: number;
+  job: Partial<Record<JobId, number>>;
+  groundCoins: Partial<Record<GroundId, number>>;
+  groundFeathers: Partial<Record<GroundId, number>>;
+  groundFlocks: Partial<Record<GroundId, number>>;
+  incoming: Partial<Record<GroundId, number>>;
+  fog: number;
+  rare: number;
+  legendary: number;
+  crops: number;
+  fieldDecoys: number;
+}
+
+let fxFor: object | null = null;
+let fxKey = '';
+let fxCache: LegacyFx | null = null;
+
+export function legacyFx(state: GameState): LegacyFx {
+  const perks = state.legacy.perks;
+  let key = '';
+  for (const id of PERK_ORDER) key += perks[id] ?? 0;
+  if (fxCache && fxFor === perks && key === fxKey) return fxCache;
+  const r = (id: PerkId) => perks[id] ?? 0;
+  const on = (id: PerkId) => r(id) > 0;
+  const fx: LegacyFx = {
+    coins: 1 + 0.1 * r('oldMoney'),
+    feathers: 1 + 0.1 * r('fineFeathers'),
+    speed: 1 + 0.05 * r('deepBench'),
+    job: {},
+    groundCoins: {},
+    groundFeathers: {},
+    groundFlocks: {},
+    incoming: {},
+    fog: on('fogWalkers') ? 1.25 : 1,
+    rare: on('riceCountry') ? 1.25 : 1,
+    legendary: on('rareAir') ? 2 : 1,
+    crops: on('valleyHarvest') ? 1.5 : 1,
+    fieldDecoys: on('cornfieldDeals') ? 0.5 : 1,
+  };
+  if (on('cypressCalls')) fx.job.call = fx.job.tHunt = 1.25;
+  if (on('saltSpray')) fx.job.bHunt = 1.25;
+  if (on('woodDuckBoxes')) fx.groundFlocks.timber = 1.3;
+  if (on('prairieWind')) fx.groundFlocks.field = 1.3;
+  if (on('seaDuckRigs')) fx.groundFlocks.bay = 1.3;
+  if (on('bayouBrokers')) fx.groundCoins.marsh = fx.groundCoins.timber = 1.25;
+  if (on('honkerKings')) fx.groundCoins.field = 1.5;
+  if (on('coastalCharter')) fx.groundCoins.bay = 1.5;
+  if (on('eiderDown')) fx.groundFeathers.bay = 1.5;
+  if (on('bigSky')) fx.incoming.marsh = fx.incoming.field = 1;
+  fxFor = perks;
+  fxKey = key;
+  fxCache = fx;
+  return fx;
 }
 
 /** The flyway the next season will move to (or stay in, if no new one is open). */
@@ -95,6 +195,14 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
     }
   }
   if (hasPerk(state, 'seasonedCrew')) for (const id of BOT_ORDER) state.bots[id].level = 2;
+  if (hasPerk(state, 'homecoming')) {
+    for (const bot of ['caller', 'blind', 'retriever', 'ledger'] as const) {
+      state.bots[bot].owned += 5;
+      state.assign[bot][BOTS[bot].job] = (state.assign[bot][BOTS[bot].job] ?? 0) + 5;
+    }
+  }
+  // Hunting a new flyway opens its Legacy branch.
+  state.legacy.flyways[state.flyway] = true;
 
   events?.push({ type: 'seasonClosed', stars, season: state.season.number - 1, flyway: state.flyway });
   return stars;

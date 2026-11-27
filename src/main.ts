@@ -45,7 +45,7 @@ import { runOffline } from './sim/offline';
 import { buyUpgrade } from './sim/upgrades';
 import { buyTraining, trainDog } from './sim/training';
 import { DOG_SKILLS, TRAINING } from './data/training';
-import { buyPerk, closeSeason } from './sim/prestige';
+import { buyPerk, closeSeason, respecPerks } from './sim/prestige';
 import { FLYWAYS } from './data/flyways';
 import { PERKS } from './data/legacy';
 import { OFFLINE } from './data/upgrades';
@@ -696,6 +696,14 @@ const controls: GameControls = {
     const ok = trainDog(state, runner.sink);
     hud.set(snapshot(state));
     return ok;
+  },
+  respecPerks() {
+    const n = respecPerks(state);
+    if (n > 0) {
+      hud.set(snapshot(state));
+      save();
+    }
+    return n;
   },
   buyPerk(id) {
     const ok = buyPerk(state, id, runner.sink);

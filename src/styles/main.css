@@ -4991,3 +4991,59 @@ img { object-fit: contain; max-width: 100%; }
   transition: width 1s ease-out;
 }
 .reduce-motion .goal-strip__bar span { transition: none; }
+
+/* ---- Legacy: trunk, flyway branches, ranks, refund ------------------------ */
+.branch { display: grid; gap: 8px; margin-top: 14px; }
+.branch--lodge .card__hint { margin: -4px 0 2px; }
+.branch:not(.branch--lodge) {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 250, 240, 0.6);
+  box-shadow: 0 1px 4px rgba(40, 26, 14, 0.12);
+}
+.branch--mississippi:not(.is-locked) { background: rgba(94, 115, 82, 0.13); }
+.branch--central:not(.is-locked) { background: rgba(214, 170, 82, 0.16); }
+.branch--pacific:not(.is-locked) { background: rgba(120, 150, 170, 0.15); }
+.branch--atlantic:not(.is-locked) { background: rgba(70, 110, 140, 0.14); }
+.branch__head { display: grid; gap: 2px; }
+.branch__head h4 { margin: 0; font-family: var(--ui-fontHeading); font-size: 17px; }
+.branch__head span { font-size: 12.5px; color: var(--ui-textSoft); }
+.branch.is-locked .branch__head span { font-weight: 800; color: var(--c-wood, #6f4c31); }
+.branch__chain { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.branch__chain li { position: relative; display: grid; }
+/* A small knot between steps, so it reads as a path. */
+.branch__chain li + li::before {
+  content: '';
+  justify-self: center;
+  width: 6px;
+  height: 6px;
+  margin: -4px 0 2px;
+  border-radius: 50%;
+  background: rgba(90, 60, 30, 0.3);
+}
+.branch.is-locked .perk { cursor: default; opacity: 0.5; }
+.perk.is-maxed em { color: var(--c-sageDark); }
+.perk__ranks { display: flex; gap: 3px; margin-top: 2px; }
+.perk__ranks i { width: 8px; height: 8px; border-radius: 50%; background: rgba(90, 60, 30, 0.15); }
+.perk__ranks i.is-on { background: var(--c-gold, #e8b84a); }
+.respec {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 250, 240, 0.7);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.1);
+  font-size: 12.5px;
+  color: var(--ui-textSoft);
+}
+.respec .btn { align-self: center; white-space: nowrap; }
+/* Buyable perks glow gently instead of growing (the dot pulse made cards spill out). */
+.perk.is-buyable { animation: perk-glow 2.4s ease-in-out infinite; }
+@keyframes perk-glow {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.22); }
+  50% { box-shadow: 0 0 0 6px rgba(232, 163, 61, 0.32); }
+}
+.reduce-motion .perk.is-buyable { animation: none; }

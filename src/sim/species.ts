@@ -1,3 +1,4 @@
+import { legacyFx } from './prestige';
 import { SPECIES, SPECIES_ORDER, SPECIES_PREFERENCE, speciesAt, type SpeciesId } from '../data/species';
 import type { GroundId } from '../data/economy';
 import { UPGRADE_SPECIES } from '../data/upgrades';
@@ -37,6 +38,7 @@ export function speciesWeights(state: GameState, hour: number, g: GroundId = 'ma
       v *= WEATHER[w].rare * wf.rareMult * fx.rare * stage.rare * (state.legacy.perks.birdersLuck ? 1.5 : 1);
     }
     if (id === 'kingEider' && state.legacy.perks.legendHunter) v *= 3;
+    if (d.rarity === 'legendary') v *= legacyFx(state).legendary;
     v *= FLYWAYS[state.flyway].species[id] ?? 1;
     v *= cropSpeciesMult(state, id);
     v *= (carv[id] ?? 1) * (stage.species[id] ?? 1);

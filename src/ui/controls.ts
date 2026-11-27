@@ -50,6 +50,8 @@ export interface GameControls {
   /** Train your retriever to the next level. */
   trainDog(): boolean;
   buyPerk(id: PerkId): boolean;
+  /** Take back every perk for a full refund (free once per season). Returns stars refunded. */
+  respecPerks(): number;
   closeSeason(flyway: FlywayId): number;
   moveBot(bot: BotId, from: Slot, to: Slot): boolean;
   fixProblem(id: number): boolean;

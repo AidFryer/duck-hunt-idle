@@ -1,3 +1,4 @@
+import { legacyFx } from './prestige';
 import { trainingFx } from './training';
 import type { JobId } from '../data/economy';
 import {
@@ -135,21 +136,25 @@ export function evaluateWorkflow(nodes: WorkflowNode[], links: WorkflowLink[], m
  */
 export function workflowEval(state: GameState): WorkflowEval {
   const t = trainingFx(state);
+  const lg = legacyFx(state);
+  const job: Partial<Record<JobId, number>> = { ...t.job };
+  for (const [j, m] of Object.entries(lg.job)) job[j as JobId] = (job[j as JobId] ?? 1) * m;
+  const speed = t.speed * lg.speed;
   return {
-    speed: t.speed,
-    bonus: t.speed - 1,
+    speed,
+    bonus: speed - 1,
     complete: Object.keys(state.training).length > 0,
     goodLinks: 0,
     linkState: {},
     active: {},
-    fogFlockRate: t.fog,
-    rareMult: t.rare,
+    fogFlockRate: t.fog * lg.fog,
+    rareMult: t.rare * lg.rare,
     flockRate: 1,
     problemMult: t.problems,
     dawnSpeed: t.dawn,
     coldFlockSize: t.cold,
     noIce: t.noIce,
-    jobSpeed: t.job,
+    jobSpeed: job,
   };
 }
 

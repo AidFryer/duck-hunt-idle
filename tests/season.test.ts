@@ -1,3 +1,4 @@
+import { canRespec, perkCost, perkMaxRank, respecPerks } from '../src/sim/prestige';
 import { PRESTIGE } from '../src/data/legacy';
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
@@ -149,7 +150,7 @@ describe('save v5', () => {
     s.training.tOrder = true;
     s.dog.level = 4;
     s.season.coins = new Decimal('2.5e7');
-    s.legacy = { stars: 2, earned: 5, perks: { headStart: true } };
+    s.legacy = { stars: 2, earned: 5, perks: { headStart: 1, oldMoney: 3 }, flyways: { mississippi: true, central: true }, respecSeason: -1 };
     const b = deserialize(serialize(s));
     expect(b.season.coins.toNumber()).toBe(2.5e7);
     expect(b.legacy).toEqual(s.legacy);
@@ -162,5 +163,58 @@ describe('save v5', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.season.coins.toNumber()).toBe(123456);
     expect(s.flyway).toBe('mississippi');
+  });
+});
+
+describe('Legacy tree: ranks, flyway branches and the free refund', () => {
+  it('ranked perks cost more each rank and stop at the top', () => {
+    const s = createInitialState(5);
+    s.legacy.stars = 1000;
+    s.legacy.perks = { headStart: 1, nestEgg: 1 };
+    const before = birdValue(s, 'mallard').coins;
+    expect(buyPerk(s, 'oldMoney')).toBe(true);
+    expect(buyPerk(s, 'oldMoney')).toBe(true);
+    expect(s.legacy.stars).toBe(1000 - perkCost('oldMoney', 0) - perkCost('oldMoney', 1));
+    expect(birdValue(s, 'mallard').coins).toBeGreaterThan(before);
+    for (let i = 0; i < 20; i++) buyPerk(s, 'oldMoney');
+    expect(s.legacy.perks.oldMoney).toBe(perkMaxRank('oldMoney'));
+  });
+
+  it("a flyway's branch opens only once you've hunted there", () => {
+    const s = createInitialState(5);
+    s.legacy.stars = 50;
+    expect(buyPerk(s, 'prairieWind')).toBe(false);
+    expect(buyPerk(s, 'cypressCalls')).toBe(true);
+    s.legacy.flyways.central = true;
+    expect(buyPerk(s, 'prairieWind')).toBe(true);
+    expect(buyPerk(s, 'bigSky')).toBe(false); // needs Cornfield Deals first
+  });
+
+  it('refunds every star once per season', () => {
+    const s = createInitialState(5);
+    s.legacy.stars = 20;
+    buyPerk(s, 'headStart');
+    buyPerk(s, 'cypressCalls');
+    expect(s.legacy.stars).toBe(17);
+    expect(respecPerks(s)).toBe(3);
+    expect(s.legacy.stars).toBe(20);
+    expect(s.legacy.perks).toEqual({});
+    buyPerk(s, 'headStart');
+    expect(canRespec(s)).toBe(false);
+    s.season.number += 1;
+    expect(canRespec(s)).toBe(true);
+  });
+
+  it('old saves keep their perks and open the branches of flyways already hunted', () => {
+    const s = createInitialState(5);
+    const plain = JSON.parse(serialize(s));
+    plain.v = 21;
+    plain.s.version = 21;
+    plain.s.flyway = 'pacific';
+    plain.s.legacy = { stars: 3, earned: 9, perks: { headStart: true, keenEyes: true } };
+    const b = deserialize(JSON.stringify(plain));
+    expect(b.legacy.perks).toEqual({ headStart: 1, keenEyes: 1 });
+    expect(b.legacy.flyways).toEqual({ mississippi: true, central: true, pacific: true });
+    expect(b.legacy.respecSeason).toBe(-1);
   });
 });

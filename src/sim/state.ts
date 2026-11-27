@@ -8,7 +8,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 /**
  * Saves older than this are from before the everyone-starts-over update.
  * They load only when restored by hand; a normal start begins fresh.
@@ -252,7 +252,12 @@ export interface GameState {
     stars: number;
     /** Every star ever earned (each gives a permanent production bonus). */
     earned: number;
-    perks: Partial<Record<PerkId, boolean>>;
+    /** Perk ranks owned (1 for a one-time perk). */
+    perks: Partial<Record<PerkId, number>>;
+    /** Flyways hunted (each opens its Legacy branch). */
+    flyways: Partial<Record<FlywayId, true>>;
+    /** Season number the free refund was last used in (-1 = never). */
+    respecSeason: number;
   };
   workflow: {
     nextId: number;
@@ -381,7 +386,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     achievements: {},
     flyway: 'mississippi',
     season: { number: 1, coins: new Decimal(0) },
-    legacy: { stars: 0, earned: 0, perks: {} },
+    legacy: { stars: 0, earned: 0, perks: {}, flyways: { mississippi: true }, respecSeason: -1 },
     workflow: { nextId: 1, nodes: [], links: [] },
     returning: [],
     unlocks: {},

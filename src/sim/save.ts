@@ -144,6 +144,21 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     hunt.rhythm = 0;
     return { ...s, hunt, drifterAt: typeof s.elapsed === 'number' ? s.elapsed : 0, version: 21 };
   },
+  // v22: perks become ranks (owned = 1); flyways hunted so far open their Legacy branches.
+  21: (s) => {
+    const legacy = { ...((s.legacy as Json) ?? {}) };
+    const perks: Json = {};
+    for (const [k, v] of Object.entries((legacy.perks as Json) ?? {})) if (v) perks[k] = typeof v === 'number' ? v : 1;
+    const order = ['mississippi', 'central', 'pacific', 'atlantic'];
+    const cur = typeof s.flyway === 'string' ? s.flyway : 'mississippi';
+    const flyways: Json = { mississippi: true };
+    // Seasons move through the flyways in order, so everything up to the current one was hunted.
+    for (const f of order.slice(0, Math.max(0, order.indexOf(cur)) + 1)) flyways[f] = true;
+    legacy.perks = perks;
+    legacy.flyways = flyways;
+    legacy.respecSeason = -1;
+    return { ...s, legacy, version: 22 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

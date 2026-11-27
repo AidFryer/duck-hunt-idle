@@ -23,7 +23,8 @@ import { WEATHER, type WeatherId } from '../data/weather';
 import { offlineCapSeconds, upgradePrice } from '../sim/upgrades';
 import { FLYWAYS, FLYWAY_ORDER, type FlywayId } from '../data/flyways';
 import { PERK_ORDER, PERKS, PRESTIGE, type PerkId } from '../data/legacy';
-import { canBuyPerk, coinsForNextStar, nextFlyway, starsFor } from '../sim/prestige';
+import { branchOpen, canBuyPerk, canRespec, coinsForNextStar, nextFlyway, perkCost, perkMaxRank, perkRank, starsFor, starsInPerks } from '../sim/prestige';
+import { BRANCH_ORDER, type BranchId } from '../data/legacy';
 import { workflowEval } from '../sim/workflow';
 import { TRAINING_ORDER, DOG_MAX, DOG_SKILLS, type TrainingId } from '../data/training';
 import { canAffordTraining, dogNext, trainingStatus, type TrainingStatus } from '../sim/training';
@@ -260,7 +261,11 @@ export interface HudSnapshot {
     stars: number;
     earned: number;
     bonus: number;
-    perks: { id: PerkId; owned: boolean; canBuy: boolean; prereqsMet: boolean }[];
+    perks: { id: PerkId; owned: boolean; rank: number; maxRank: number; nextCost: number; canBuy: boolean; prereqsMet: boolean }[];
+    /** Which branches are open (a flyway's opens once you've hunted it). */
+    branches: { id: BranchId; open: boolean }[];
+    /** The free once-a-season refund: available now, and how many stars it'd return. */
+    respec: { can: boolean; stars: number };
   };
   flyways: { id: FlywayId; status: 'current' | 'visited' | 'next' | 'locked' | 'soon' }[];
   acres: number;
@@ -417,8 +422,8 @@ export interface ClosePreview {
 
 function closePreview(state: GameState, starsNow: number): ClosePreview {
   const starsAfter = state.legacy.stars + starsNow;
-  const owned = (id: PerkId) => !!state.legacy.perks[id];
-  const perks = PERK_ORDER.filter((id) => !owned(id) && PERKS[id].cost <= starsAfter && PERKS[id].requires.every(owned));
+  const owned = (id: PerkId) => perkRank(state, id) > 0;
+  const perks = PERK_ORDER.filter((id) => perkRank(state, id) < perkMaxRank(id) && branchOpen(state, PERKS[id].branch) && perkCost(id, perkRank(state, id)) <= starsAfter && PERKS[id].requires.every(owned));
   const fly = nextFlyway(state);
   const newBirds = SPECIES_ORDER.filter((sp) => {
     if ((state.guide[sp]?.count ?? 0) > 0) return false;
@@ -686,10 +691,15 @@ export function snapshot(state: GameState): HudSnapshot {
       bonus: PRESTIGE.bonusPerStar * state.legacy.earned,
       perks: PERK_ORDER.map((id) => ({
         id,
-        owned: !!state.legacy.perks[id],
+        owned: perkRank(state, id) > 0,
+        rank: perkRank(state, id),
+        maxRank: perkMaxRank(id),
+        nextCost: perkCost(id, perkRank(state, id)),
         canBuy: canBuyPerk(state, id),
         prereqsMet: PERKS[id].requires.every((q) => !!state.legacy.perks[q]),
       })),
+      branches: BRANCH_ORDER.map((id) => ({ id, open: branchOpen(state, id) })),
+      respec: { can: canRespec(state), stars: starsInPerks(state) },
     },
     flyways: FLYWAY_ORDER.map((id) => {
       const i = FLYWAY_ORDER.indexOf(id);
