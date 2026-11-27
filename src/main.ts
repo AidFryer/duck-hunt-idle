@@ -23,7 +23,7 @@ import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
 import { BUILD_STAMP, installState } from './app/pwa';
-import { failureText, joinGame, leaderboard, newSecret, onlineEnabled, OnlineFailure, renamePlayer, reportProgress, type Progress } from './app/online';
+import { failureText, joinGame, leaderboard, newSecret, onlineEnabled, onlineReady, probeOnline, OnlineFailure, renamePlayer, reportProgress, type Progress } from './app/online';
 import { speciesFound } from './sim/progression';
 import { NAME_MAX } from './data/avatars';
 import { BREEDS, DOG_NAME_MAX } from './data/crew';
@@ -174,7 +174,9 @@ function progressOf(s: GameState): Progress {
 }
 
 async function syncOnline(): Promise<void> {
-  if (!onlineEnabled() || syncing) return;
+  // While the board isn't set up on the server, just check now and then.
+  if (onlineReady() !== true) await probeOnline();
+  if (!onlineEnabled() || onlineReady() !== true || syncing) return;
   const s = state;
   const name = s.profile.name.trim();
   if (!s.online && (!name || name === takenName)) return;
@@ -199,6 +201,7 @@ async function syncOnline(): Promise<void> {
   }
 }
 setInterval(() => void syncOnline(), 5 * 60_000);
+void probeOnline();
 setTimeout(() => void syncOnline(), 15_000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) void syncOnline();
@@ -617,7 +620,7 @@ const controls: GameControls = {
     }
   },
   onlineStatus() {
-    return { enabled: onlineEnabled(), joined: !!state.online, name: state.online?.name ?? state.profile.name, takenName };
+    return { enabled: onlineEnabled() && onlineReady() === true, joined: !!state.online, name: state.online?.name ?? state.profile.name, takenName };
   },
   async fetchBoard(sort) {
     try {

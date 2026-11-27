@@ -5,7 +5,7 @@ import { SUPABASE_KEY, SUPABASE_URL } from '../config';
  * waits on the network, and nothing breaks when the player is offline.
  */
 
-export type OnlineError = 'offline' | 'name_taken' | 'bad_name' | 'not_found' | 'wrong_password' | 'unknown';
+export type OnlineError = 'not_set_up' | 'offline' | 'name_taken' | 'bad_name' | 'not_found' | 'wrong_password' | 'unknown';
 
 export class OnlineFailure extends Error {
   constructor(readonly kind: OnlineError) {
@@ -13,12 +13,32 @@ export class OnlineFailure extends Error {
   }
 }
 
-export const onlineEnabled = (): boolean => SUPABASE_URL !== '' && SUPABASE_KEY !== '';
+/**
+ * Whether the board's functions exist on the server: unknown until the first
+ * call, false while the database setup hasn't been run.
+ */
+let ready: boolean | null = null;
+
+/** Configured, and not known to be missing its database setup. */
+export const onlineEnabled = (): boolean => SUPABASE_URL !== '' && SUPABASE_KEY !== '' && ready !== false;
+
+/** Ask the server once whether the board is set up (used while it isn't). */
+export async function probeOnline(): Promise<void> {
+  if (SUPABASE_URL === '' || SUPABASE_KEY === '') return;
+  try {
+    await rpc('leaderboard', { p_sort: 'birds', p_limit: 1, p_id: null }, true);
+  } catch {
+    /* the result is recorded in `ready` */
+  }
+}
+
+export const onlineReady = (): boolean | null => ready;
 
 /** Plain words for each failure, for the HUD. */
 export function failureText(e: unknown): string {
   const kind = e instanceof OnlineFailure ? e.kind : 'unknown';
   switch (kind) {
+    case 'not_set_up': return "The leaderboard isn't set up yet.";
     case 'name_taken': return 'Someone already has that name. Try another.';
     case 'bad_name': return 'Names are 2 to 20 letters or numbers (spaces, . \' - _ are fine).';
     case 'offline': return "Can't reach the leaderboard right now. Check your connection and try again.";
@@ -28,15 +48,20 @@ export function failureText(e: unknown): string {
   }
 }
 
-async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
-  if (!onlineEnabled()) throw new OnlineFailure('offline');
+async function rpc<T>(fn: string, args: Record<string, unknown>, probe = false): Promise<T> {
+  if (!probe && !onlineEnabled()) throw new OnlineFailure('not_set_up');
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 10_000);
   let res: Response;
   try {
     res = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/${fn}`, {
       method: 'POST',
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      // New-style publishable keys go in the apikey header only; old JWT keys also as a bearer token.
+      headers: {
+        apikey: SUPABASE_KEY,
+        ...(SUPABASE_KEY.startsWith('sb_') ? {} : { Authorization: `Bearer ${SUPABASE_KEY}` }),
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify(args),
       signal: ctl.signal,
     });
@@ -46,6 +71,12 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
     clearTimeout(timer);
   }
   const text = await res.text();
+  // 404: the functions aren't there yet (setup not run).
+  if (res.status === 404) {
+    ready = false;
+    throw new OnlineFailure('not_set_up');
+  }
+  ready = true;
   if (!res.ok) {
     let msg = '';
     try {

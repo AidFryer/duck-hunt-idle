@@ -24,5 +24,5 @@ export const SAVE_KEY = 'duck-hunt-idle.save';
  * key only allows the game's own functions (see supabase/leaderboard.sql).
  * Leave them empty and every online feature quietly stays hidden.
  */
-export const SUPABASE_URL = '';
-export const SUPABASE_KEY = '';
+export const SUPABASE_URL: string = 'https://wucvujizojemlqtkqlcg.supabase.co';
+export const SUPABASE_KEY: string = 'sb_publishable_hb6hGggzByc--w5BgzkXhg_DtMeIZjr';
