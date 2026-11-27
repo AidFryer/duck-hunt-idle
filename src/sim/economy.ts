@@ -1,4 +1,5 @@
 import { GUESTS } from '../data/guests';
+import { DOG_FX } from '../data/training';
 import { carvingFx } from './carvings';
 import { stageFor } from '../data/calendar';
 import { PATCH_COIN_BONUS } from '../data/achievements';
@@ -263,6 +264,6 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   const coinBoost = reputationMultiplier(state) * rooms * rungFx(state).coins * extra;
   return {
     coins: Math.round(s.coins * coinBoost * stars * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
   };
 }

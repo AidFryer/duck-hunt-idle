@@ -128,8 +128,8 @@ export const GOALS: readonly GoalDef[] = [
   },
   {
     id: 'workflow',
-    title: 'Tie a complete workflow chain',
-    gus: "Open Workflows and tie the jobs together with rope: Scout, Call, Shoot, Retrieve, Log. When the whole crew knows the order, everything runs faster.",
+    title: 'Teach the crew a skill',
+    gus: "Open Training and teach the crew something new. Feathers well spent: a trained crew works faster, in any weather.",
     done: (s) => s.stats.seasonsClosed > 0 || completeChain(s),
   },
   {

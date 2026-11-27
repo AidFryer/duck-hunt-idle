@@ -1,4 +1,5 @@
 import type { CarvingId } from '../data/carvings';
+import type { TrainingId } from '../data/training';
 import type { StageId } from '../data/calendar';
 import type { CropId } from '../data/crops';
 import type { RungId } from '../data/progression';
@@ -20,6 +21,8 @@ export type SimEvent =
   | { type: 'decoyDrift'; decoys: number; ground?: 'field' }
   | { type: 'flockArrived'; flockId: number; size: number; species: SpeciesId; ground?: 'field'; golden?: boolean }
   | { type: 'volleyUnlocked' }
+  | { type: 'trainingLearned'; training: TrainingId }
+  | { type: 'dogLevel'; level: number }
   | { type: 'guestBooked'; who: string }
   | { type: 'guestServed'; who: string; coins: number; feathers: number; served: number }
   | { type: 'stageChanged'; stage: StageId }

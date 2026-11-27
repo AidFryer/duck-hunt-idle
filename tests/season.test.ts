@@ -1,7 +1,6 @@
 import { PRESTIGE } from '../src/data/legacy';
 import Decimal from 'break_infinity.js';
 import { describe, expect, it } from 'vitest';
-import { WORKFLOW } from '../src/data/workflows';
 import { BOTS } from '../src/data/economy';
 import { buyBot, birdValue, botPrice, botPriceMult } from '../src/sim/economy';
 import type { SimEvent } from '../src/sim/events';
@@ -9,7 +8,8 @@ import { buyPerk, closeSeason, coinsForNextStar, nextFlyway, starMultiplier, sta
 import { fromPlain, serialize, deserialize } from '../src/sim/save';
 import { createInitialState, SAVE_VERSION, type GameState } from '../src/sim/state';
 import { advance } from '../src/sim/tick';
-import { addNode, connect, cut, evaluateWorkflow, removeNode, workflowEval } from '../src/sim/workflow';
+import { workflowEval } from '../src/sim/workflow';
+import { buyTraining, trainDog } from '../src/sim/training';
 import { jobRate } from '../src/sim/jobs';
 import { offlineCapSeconds } from '../src/sim/upgrades';
 import { opened } from './helpers';
@@ -22,69 +22,52 @@ function rich(seed = 3): GameState {
   return s;
 }
 
-function chain(s: GameState, kinds: Parameters<typeof addNode>[1][]): number[] {
-  const ids = kinds.map((k) => addNode(s, k)!);
-  for (let i = 0; i + 1 < ids.length; i++) connect(s, ids[i]!, ids[i + 1]!);
-  return ids;
-}
 
-describe('workflows', () => {
-  it('locked until the Sporting Club is built', () => {
-    const s = createInitialState(1);
-    expect(addNode(s, 'scout')).toBeNull();
-  });
-
-  it('a complete chain gives the big bonus; links in order count', () => {
-    const s = rich();
-    chain(s, ['scout', 'call', 'shoot', 'retrieve', 'log']);
-    const ev = workflowEval(s);
-    expect(ev.complete).toBe(true);
-    expect(ev.goodLinks).toBe(4);
-    expect(ev.bonus).toBeCloseTo(4 * WORKFLOW.perLink + WORKFLOW.complete);
-  });
-
-  it('decoys in the right place add a little more', () => {
-    const s = rich();
-    chain(s, ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log']);
-    expect(workflowEval(s).bonus).toBeCloseTo(5 * WORKFLOW.perLink + WORKFLOW.complete + WORKFLOW.decoys);
-  });
-
-  it('out-of-order links are tangled and give nothing', () => {
-    const s = rich();
-    const [a, b] = chain(s, ['shoot', 'call']);
-    const ev = workflowEval(s);
-    expect(ev.goodLinks).toBe(0);
-    expect(ev.linkState[`${a}>${b}`]).toBe('tangled');
-  });
-
-  it('special cards work only in the right spot', () => {
-    const s = rich();
-    chain(s, ['scout', 'fogBonus', 'call', 'shoot', 'retrieve', 'log']);
-    const ev = workflowEval(s);
-    expect(ev.complete).toBe(true);
-    expect(ev.fogFlockRate).toBe(WORKFLOW.fogFlockRate);
-    const nodes = [{ id: 1, kind: 'call' as const }, { id: 2, kind: 'fogBonus' as const }];
-    expect(evaluateWorkflow(nodes, [{ from: 1, to: 2 }]).fogFlockRate).toBe(1);
-  });
-
-  it('chain bonus speeds up hunt jobs', () => {
-    const s = rich();
-    buyBot(s, 'caller', 5);
+describe('crew training', () => {
+  it('skills need the lodge, the skill before, feathers and coins, and speed up the hunt', () => {
+    const s = opened(createInitialState(1));
+    s.lodge = 2;
+    s.currencies.coins = new Decimal(1e12);
+    s.currencies.feathers = new Decimal(1e12);
+    buyBot(s, 'caller', 3);
     const before = jobRate(s, 'call');
-    chain(s, ['scout', 'call', 'shoot', 'retrieve', 'log']);
-    expect(jobRate(s, 'call')).toBeCloseTo(before * (1 + 4 * WORKFLOW.perLink + WORKFLOW.complete));
+    expect(buyTraining(s, 'tSignals')).toBe(false); // needs Know the Order and the Marsh Lodge
+    expect(buyTraining(s, 'tOrder')).toBe(true);
+    expect(buyTraining(s, 'tOrder')).toBe(false); // once
+    expect(buyTraining(s, 'cDuet')).toBe(true);
+    expect(jobRate(s, 'call')).toBeCloseTo(before * 1.08 * 1.2);
+    expect(workflowEval(s).complete).toBe(true);
+    s.lodge = 3;
+    expect(buyTraining(s, 'cFog')).toBe(true);
+    expect(workflowEval(s).fogFlockRate).toBeCloseTo(1.5);
   });
 
-  it('no loops; one rope in and out; cut and remove', () => {
-    const s = rich();
-    const [a, b, c] = chain(s, ['scout', 'call', 'shoot']);
-    expect(connect(s, c!, a!)).toBe(false);
-    expect(connect(s, a!, c!)).toBe(true);
-    expect(s.workflow.links.filter((l) => l.from === a)).toHaveLength(1);
-    expect(cut(s, a!)).toBe(true);
-    expect(removeNode(s, b!)).toBe(true);
-    expect(s.workflow.links.some((l) => l.from === b || l.to === b)).toBe(false);
-    expect(addNode(s, 'scout')).toBeNull(); // one card of each kind
+  it('your retriever levels up from birds fetched by hand', () => {
+    const s = opened(createInitialState(1));
+    s.currencies.feathers = new Decimal(1e9);
+    expect(trainDog(s)).toBe(false); // no fetches yet
+    s.stats.manualByJob.retrieve = 1000;
+    expect(trainDog(s)).toBe(true);
+    expect(s.dog.level).toBe(2);
+    expect(trainDog(s)).toBe(true);
+    expect(s.dog.level).toBe(3);
+  });
+
+  it('an old workflow board carries over as skills', () => {
+    const plain = JSON.parse(serialize(createInitialState(1))) as { v: number; s: Record<string, unknown> };
+    plain.v = 16;
+    plain.s.workflow = {
+      nextId: 7,
+      nodes: [
+        { id: 1, kind: 'scout' }, { id: 2, kind: 'call' }, { id: 3, kind: 'shoot' }, { id: 4, kind: 'retrieve' }, { id: 5, kind: 'log' }, { id: 6, kind: 'fogBonus' },
+      ],
+      links: [{ from: 1, to: 6 }, { from: 6, to: 2 }, { from: 2, to: 3 }, { from: 3, to: 4 }, { from: 4, to: 5 }],
+    };
+    delete plain.s.training;
+    const s = deserialize(JSON.stringify(plain));
+    expect(s.training.tOrder).toBe(true);
+    expect(s.training.tSignals).toBe(true);
+    expect(s.training.cFog).toBe(true);
   });
 });
 
@@ -161,15 +144,17 @@ describe('central flyway', () => {
 });
 
 describe('save v5', () => {
-  it('round-trips seasons, legacy and workflows', () => {
+  it('round-trips seasons, legacy and training', () => {
     const s = rich();
-    chain(s, ['scout', 'call']);
+    s.training.tOrder = true;
+    s.dog.level = 4;
     s.season.coins = new Decimal('2.5e7');
     s.legacy = { stars: 2, earned: 5, perks: { headStart: true } };
     const b = deserialize(serialize(s));
     expect(b.season.coins.toNumber()).toBe(2.5e7);
     expect(b.legacy).toEqual(s.legacy);
-    expect(b.workflow).toEqual(s.workflow);
+    expect(b.training).toEqual(s.training);
+    expect(b.dog.level).toBe(4);
   });
 
   it('migrates v4: coins so far count toward season 1', () => {

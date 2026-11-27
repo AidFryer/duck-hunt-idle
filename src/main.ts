@@ -39,7 +39,8 @@ import { SimRunner } from './sim/runner';
 import { deserialize, exportSave, importSave } from './sim/save';
 import { runOffline } from './sim/offline';
 import { buyUpgrade } from './sim/upgrades';
-import { addNode, connect, cut, removeNode } from './sim/workflow';
+import { buyTraining, trainDog } from './sim/training';
+import { DOG_SKILLS, TRAINING } from './data/training';
 import { buyPerk, closeSeason } from './sim/prestige';
 import { FLYWAYS } from './data/flyways';
 import { PERKS } from './data/legacy';
@@ -243,6 +244,15 @@ function onEvent(e: SimEvent, at: Point | null): void {
       const p = at ?? lastTapAt;
       if (p) feedback.pickup(formatNumber(e.coins, n), formatNumber(e.feathers, n), p.x, p.y - 40);
       feedback.toast(`Big Volley! ${formatNumber(e.birds, n)} birds in one go.`, 'celebrate', 3200);
+      break;
+    }
+    case 'trainingLearned':
+      feedback.toast(`The crew learned ${TRAINING[e.training].name}. ${TRAINING[e.training].desc}`, 'good', 3600);
+      break;
+    case 'dogLevel': {
+      buzz('big');
+      const skill = DOG_SKILLS.find((k) => k.level === e.level);
+      feedback.toast(`${dogNameOf(state.profile)} reached level ${e.level}!${skill ? ` New skill: ${skill.name}.` : ''}`, 'celebrate', 4000);
       break;
     }
     case 'guestBooked':
@@ -551,23 +561,13 @@ const controls: GameControls = {
     hud.set(snapshot(state));
     return ok;
   },
-  addCard(kind) {
-    const ok = addNode(state, kind, runner.sink) !== null;
+  buyTraining(id) {
+    const ok = buyTraining(state, id, runner.sink);
     hud.set(snapshot(state));
     return ok;
   },
-  removeCard(id) {
-    const ok = removeNode(state, id, runner.sink);
-    hud.set(snapshot(state));
-    return ok;
-  },
-  connectCards(from, to) {
-    const ok = connect(state, from, to, runner.sink);
-    hud.set(snapshot(state));
-    return ok;
-  },
-  cutRope(from) {
-    const ok = cut(state, from, runner.sink);
+  trainDog() {
+    const ok = trainDog(state, runner.sink);
     hud.set(snapshot(state));
     return ok;
   },

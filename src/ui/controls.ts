@@ -4,7 +4,7 @@ import type { DayPhaseId } from '../data/dayCycle';
 import type { BotId, GroundId, HuntStage, Slot } from '../data/economy';
 import type { Notation } from '../util/format';
 import type { UpgradeId } from '../data/upgrades';
-import type { NodeKind } from '../data/workflows';
+import type { TrainingId } from '../data/training';
 import type { PerkId } from '../data/legacy';
 import type { FlywayId } from '../data/flyways';
 import type { RungId } from '../data/progression';
@@ -32,10 +32,10 @@ export interface GameControls {
   plantCrop(plot: number, crop: CropId): boolean;
   buyDecoys(g: GroundId): boolean;
   buyRung(id: RungId): boolean;
-  addCard(kind: NodeKind): boolean;
-  removeCard(id: number): boolean;
-  connectCards(from: number, to: number): boolean;
-  cutRope(from: number): boolean;
+  /** Teach the crew a Crew Training skill. */
+  buyTraining(id: TrainingId): boolean;
+  /** Train your retriever to the next level. */
+  trainDog(): boolean;
   buyPerk(id: PerkId): boolean;
   closeSeason(flyway: FlywayId): number;
   moveBot(bot: BotId, from: Slot, to: Slot): boolean;

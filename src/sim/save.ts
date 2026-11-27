@@ -1,3 +1,5 @@
+import { evaluateWorkflow } from './workflow';
+import type { WorkflowLink, WorkflowNode } from './state';
 import { LODGE_LEVELS } from '../data/progression';
 import { PRESTIGE } from '../data/legacy';
 import Decimal from 'break_infinity.js';
@@ -115,6 +117,20 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v16: lodge rooms (renamed upgrades, same ids) and guest bookings (defaults fill in).
   15: (s) => ({ ...s, version: 16 }),
+  // v17: Crew Training replaces the workflow board; what the board did carries over as skills.
+  16: (s) => {
+    const wf = (s.workflow ?? { nodes: [], links: [] }) as { nodes: WorkflowNode[]; links: WorkflowLink[] };
+    const ev = evaluateWorkflow(wf.nodes ?? [], wf.links ?? []);
+    const kinds = new Set((wf.nodes ?? []).map((n) => n.kind));
+    const t: Record<string, true> = {};
+    if (ev.goodLinks >= 2 || ev.complete) t.tOrder = true;
+    if (ev.complete) t.tSignals = true;
+    if (kinds.has('fogBonus')) Object.assign(t, { cDuet: true, cFog: true });
+    if (kinds.has('dawnRush')) Object.assign(t, { cDuet: true, cFog: true, cDawn: true });
+    if (kinds.has('coldPrep')) Object.assign(t, { bSteady: true, bCold: true });
+    if (kinds.has('doubleCheck')) Object.assign(t, { rDrill: true, rCheck: true });
+    return { ...s, training: t, version: 17 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

@@ -1,3 +1,4 @@
+import { DOG_FX } from '../data/training';
 import { BOT_ORDER, BOTS, CROSS_JOB_EFFICIENCY, type BotId, type JobId, type Slot } from '../data/economy';
 import { botUnitSpeed, milestoneMultiplier } from './economy';
 import type { EventSink } from './events';
@@ -48,7 +49,8 @@ export function contribution(state: GameState, bot: BotId, job: JobId): number {
 export function jobGear(state: GameState, job: JobId): number {
   const rung = rungFx(state).jobMult[job] ?? 1;
   const boat = job === 'retrieve' ? 1 + UPGRADE_EFFECTS.boatHouseRetrieve * (state.upgrades.boatHouse ?? 0) : 1;
-  return rung * boat;
+  const champ = (job === 'retrieve' || job === 'fRetrieve') && state.dog.level >= DOG_FX.championLevel ? DOG_FX.championRetrieve : 1;
+  return rung * boat * champ;
 }
 
 /** Workflow chain bonus (and Dawn Rush) for hunt jobs. */
@@ -56,7 +58,7 @@ export function pipelineBoost(state: GameState, job: JobId): number {
   if (job === 'foreman' || job === 'tinker') return 1;
   const wf = workflowEval(state);
   const dawn = wf.dawnSpeed > 0 && clockAt(state.clock.dayTime).phase.id === 'sunrise' ? 1 + wf.dawnSpeed : 1;
-  return wf.speed * dawn;
+  return wf.speed * dawn * (wf.jobSpeed[job] ?? 1);
 }
 
 /** Total actions per second for a job across every bot assigned to it. */
@@ -152,7 +154,7 @@ export function rateTable(state: GameState): RateTable {
       const w = n - (stuckBy.get(`${bot}|${job}`) ?? 0);
       if (w <= 0) continue;
       const pipeline = job !== 'foreman' && job !== 'tinker';
-      const c = w * unit * efficiency(bot, job) * (pipeline ? wf.speed * dawn : 1) * jobGear(state, job);
+      const c = w * unit * efficiency(bot, job) * (pipeline ? wf.speed * dawn * (wf.jobSpeed[job as JobId] ?? 1) : 1) * jobGear(state, job);
       if (c <= 0) continue;
       (parts[job] ??= []).push([bot, c]);
       total[job] = (total[job] ?? 0) + c;

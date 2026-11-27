@@ -200,16 +200,7 @@ function BotRow({ id, hud, controls, notation, mode, open, onToggle }: { id: Bot
             {ms && <div><dt>Next team-up</dt><dd>{b.owned}/{ms} → ×{formatNumber(b.multiplier * MILESTONE_MULTIPLIER, notation)}</dd></div>}
             {b.bench > 0 && <div><dt>Resting</dt><dd>{b.bench}</dd></div>}
           </dl>
-          {b.owned > 0 && (
-            <button
-              class="btn btn--buy btn--small"
-              aria-disabled={!b.levelAffordable}
-              onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.levelUp(id))}
-            >
-              <span>Tune up (+{Math.round(def.levelSpeedBonus * 100)}% speed)</span>
-              <Cost price={b.levelPrice} notation={notation} />
-            </button>
-          )}
+          {b.owned > 0 && <p class="card__hint">Drills for this bot are in the Training sheet.</p>}
           {rungs.length > 0 && <Ladder rungs={rungs} owned={b.owned} controls={controls} notation={notation} />}
         </div>
       )}

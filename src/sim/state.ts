@@ -1,3 +1,4 @@
+import type { TrainingId } from '../data/training';
 import type { BreedId } from '../data/crew';
 import type { CarvingId } from '../data/carvings';
 import type { CropId } from '../data/crops';
@@ -7,7 +8,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 export type { WeatherId } from '../data/weather';
 import type { WeatherId } from '../data/weather';
@@ -160,6 +161,10 @@ export interface GameState {
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
   /** Guest hunting parties: the booking board and the guestbook. */
   guests: { board: GuestRequest[]; served: number; nextId: number };
+  /** Crew Training skills learned (kept across seasons). */
+  training: Partial<Record<TrainingId, true>>;
+  /** Your retriever's training (kept across seasons). */
+  dog: { level: number; swim: number };
   /** Carved decoys on the lodge shelf (permanent). */
   carvings: Partial<Record<CarvingId, true>>;
   /** The Big Volley: unlocked for good once the marsh gets busy. */
@@ -336,6 +341,8 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
     carvings: {},
     guests: { board: [], served: 0, nextId: 1 },
+    training: {},
+    dog: { level: 1, swim: 0 },
     volley: { unlocked: false, charge: 0, fired: 0, birdsRate: 0, coinsRate: 0, feathersRate: 0 },
     plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
     decoyBags: { marsh: 0, field: 0 },

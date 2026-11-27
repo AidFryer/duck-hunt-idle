@@ -20,7 +20,7 @@ import { UpgradesTab } from './components/UpgradesTab';
 import { FieldGuide } from './components/FieldGuide';
 import { Moments } from './components/Moments';
 import { OfflineCard } from './components/OfflineCard';
-import { WorkflowEditor } from './components/WorkflowEditor';
+import { TrainingTab } from './components/TrainingTab';
 import { LegacyTab } from './components/LegacyTab';
 import { SeasonCeremony } from './components/SeasonCeremony';
 import { Tutorial, tutorialStep } from './components/Tutorial';
@@ -178,7 +178,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           )}
           {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
-          {activeOpen && tab === 'workflows' && <WorkflowEditor hud={hud} controls={controls} />}
+          {activeOpen && tab === 'workflows' && <TrainingTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
         </div>
       </aside>

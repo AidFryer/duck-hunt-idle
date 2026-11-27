@@ -1,3 +1,4 @@
+import { trainingFx } from './training';
 import type { JobId } from '../data/economy';
 import {
   JOB_NODE_ORDER, REQUIRED_CHAIN, SPECIAL_ORDER, SPECIALS, WORKFLOW,
@@ -24,6 +25,8 @@ export interface WorkflowEval {
   dawnSpeed: number;
   coldFlockSize: number;
   noIce: boolean;
+  /** × speed of particular jobs (from Crew Training). */
+  jobSpeed: Partial<Record<JobId, number>>;
 }
 
 const isJob = (k: NodeKind): k is JobNode => (JOB_NODE_ORDER as readonly string[]).includes(k);
@@ -44,7 +47,7 @@ export function evaluateWorkflow(nodes: WorkflowNode[], links: WorkflowLink[], m
   }
   const ev: WorkflowEval = {
     speed: 1, bonus: 0, complete: false, goodLinks: 0, linkState: {}, active: {},
-    fogFlockRate: 1, rareMult: 1, flockRate: 1, problemMult: {}, dawnSpeed: 0, coldFlockSize: 0, noIce: false,
+    fogFlockRate: 1, rareMult: 1, flockRate: 1, problemMult: {}, dawnSpeed: 0, coldFlockSize: 0, noIce: false, jobSpeed: {},
   };
   let bonus = 0;
   // Walk every chain from its first card.
@@ -125,18 +128,29 @@ export function evaluateWorkflow(nodes: WorkflowNode[], links: WorkflowLink[], m
   return ev;
 }
 
-// Cache evaluations by board contents so the sim can ask every tick for free.
-let cacheKey = '';
-let cacheVal: WorkflowEval | null = null;
 
+/**
+ * The crew's training, in the shape the rest of the sim reads. (The old rope
+ * board is gone; Crew Training took its place.)
+ */
 export function workflowEval(state: GameState): WorkflowEval {
-  const w = state.workflow;
-  const key = `${state.legacy.perks.workflowMastery ? 'm' : ''}|${w.nodes.map((n) => `${n.id}:${n.kind}`).join(',')}|${w.links.map(linkKey).join(',')}`;
-  if (key !== cacheKey || !cacheVal) {
-    cacheKey = key;
-    cacheVal = evaluateWorkflow(w.nodes, w.links, !!state.legacy.perks.workflowMastery);
-  }
-  return cacheVal;
+  const t = trainingFx(state);
+  return {
+    speed: t.speed,
+    bonus: t.speed - 1,
+    complete: Object.keys(state.training).length > 0,
+    goodLinks: 0,
+    linkState: {},
+    active: {},
+    fogFlockRate: t.fog,
+    rareMult: t.rare,
+    flockRate: 1,
+    problemMult: t.problems,
+    dawnSpeed: t.dawn,
+    coldFlockSize: t.cold,
+    noIce: t.noIce,
+    jobSpeed: t.job,
+  };
 }
 
 export function workflowUnlocked(state: GameState): boolean {

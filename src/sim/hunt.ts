@@ -1,5 +1,7 @@
 import { markPace, stepVolley } from './volley';
 import { guestBirds, guestGolden, refreshGuests } from './guests';
+import { dogHas, dogSwim } from './training';
+import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
 import { ACRES, BOTS, FIELD, FIELD_JOBS, GOLDEN, HUNT, LEDGER, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, STREAK, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type Step } from '../data/economy';
@@ -60,7 +62,8 @@ export function botCanDo(state: GameState, job: ActionJob): boolean {
 /** Coins a golden flock pays when you shoot it yourself. */
 export function goldenBonus(state: GameState): number {
   const perSecond = throughput(state, 'log') * birdValue(state, 'mallard').coins;
-  return Math.round(Math.max(GOLDEN.minBonus, perSecond * GOLDEN.bonusSeconds));
+  const nose = dogHas(state, DOG_FX.goldLevel) ? DOG_FX.goldMult : 1;
+  return Math.round(Math.max(GOLDEN.minBonus, perSecond * GOLDEN.bonusSeconds) * nose);
 }
 
 /** Which flock an action takes: the tapped one, else the oldest (bots skip golden ones). */
@@ -155,7 +158,9 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
     case 'retrieve':
     case 'log': {
       const species = job === 'log' ? undefined : h.downed[0];
-      doMany(state, job as 'retrieve' | 'log' | 'fRetrieve', 1, source, events);
+      // Your retriever brings two at a time once she's learned Fetch Two.
+      const fetch = job !== 'log' && source === 'manual' && dogHas(state, DOG_FX.fetchTwoLevel) ? 2 : 1;
+      doMany(state, job as 'retrieve' | 'log' | 'fRetrieve', fetch, source, events);
       // Hunter's Rhythm pays a bonus on birds you fetch by hand.
       if (source === 'manual' && species && hunt.streak > 1) {
         const bonus = Math.round(birdValue(state, species).coins * STREAK.bonusPerLevel * hunt.streak * 100) / 100;
@@ -285,6 +290,9 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   stepGround(state, 'marsh', dt, activity, events);
   if (fieldOpen(state)) stepGround(state, 'field', dt, activity, events);
   stepGolden(state, dt, activity, events);
+  // Swims on Her Own: your retriever fetches a bird now and then by herself.
+  const swim = dogSwim(state, dt);
+  if (swim > 0) doMany(state, 'retrieve', swim, 'retriever', events);
   stepCrops(state, dt);
 
   // Gus keeps the ledger himself at a gentle pace.

@@ -32,7 +32,7 @@ export const PERKS: Record<PerkId, PerkDef> = {
   seasonedCrew: { id: 'seasonedCrew', name: 'Seasoned Crew', desc: 'Every bot type starts the season at level 2.', cost: 3, tier: 2, requires: ['keenEyes'] },
   longerNights: { id: 'longerNights', name: 'Longer Nights', desc: '+4 more hours of offline progress.', cost: 3, tier: 2, requires: ['longNights'] },
   legendHunter: { id: 'legendHunter', name: 'Legend Hunter', desc: 'King Eiders are three times as likely.', cost: 5, tier: 3, requires: ['birdersLuck'] },
-  workflowMastery: { id: 'workflowMastery', name: 'Workflow Mastery', desc: 'Workflow chain bonuses are 50% stronger.', cost: 3, tier: 3, requires: ['seasonedCrew'] },
+  workflowMastery: { id: 'workflowMastery', name: 'Master Trainer', desc: 'Crew Training speed skills are 50% stronger.', cost: 3, tier: 3, requires: ['seasonedCrew'] },
 };
 
 export const PERK_ORDER: readonly PerkId[] = [

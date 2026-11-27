@@ -64,7 +64,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 2, name: "Trapper's Cabin",
     gus: "Four real walls and a workbench. Now we can start carving help.",
-    birds: 150, species: 2, coins: 400, feathers: 60, opens: ['bots', 'upgrades'],
+    birds: 150, species: 2, coins: 400, feathers: 60, opens: ['bots', 'upgrades', 'workflows'],
     points: [
       'The Workshop: do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins.',
       'Your first food plot: plant millet and more on the far bank. What grows depends on the flyway.',
@@ -84,7 +84,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 120_000, species: 9, coins: 1_200_000, feathers: 80_000, opens: ['field', 'workflows'],
+    birds: 120_000, species: 9, coins: 1_200_000, feathers: 80_000, opens: ['field'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch to it from the marsh.',
       'Workflows: tie the jobs together with rope for big crew bonuses.',

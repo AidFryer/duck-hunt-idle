@@ -1,9 +1,12 @@
 /**
  * A scripted "attentive player" used by the balance test. It taps like a
  * person (a limited number of actions per second), fixes stuck bots,
- * buys what the pipeline's bottleneck needs, builds the workflow chain and
+ * buys what the pipeline's bottleneck needs, learns crew skills, trains the dog, serves guests and
  * closes the season when it's worth a star. Pure: drives the sim directly.
  */
+import { TRAINING, TRAINING_ORDER } from '../data/training';
+import { buyTraining, dogNext, trainDog, trainingStatus } from './training';
+import { claimGuest } from './guests';
 import { CARVINGS, CARVING_ORDER } from '../data/carvings';
 import { buyCarving, carvingStatus } from './carvings';
 import { fireVolley } from './volley';
@@ -18,7 +21,6 @@ import { closeSeason, nextFlyway, starsFor } from './prestige';
 import type { GameState } from './state';
 import { step } from './tick';
 import { buyUpgrade, upgradePrice } from './upgrades';
-import { addNode, connect, workflowEval, workflowUnlocked } from './workflow';
 import { buildLodge, buyRung, canBuildLodge, lodgeReady, nextLodge, rungPrice, rungReady } from './progression';
 import { RUNG_ORDER, SPECIES_DRAW } from '../data/progression';
 import type { UpgradeId } from '../data/upgrades';
@@ -138,6 +140,15 @@ function options(s: GameState): Option[] {
     if (lvl >= UPGRADES[u].maxLevel || s.lodge < UPGRADES[u].lodge) continue;
     opts.push({ price: upgradePrice(u, lvl), buy: () => buyUpgrade(s, u), first: bringsNewBirds(s, u) });
   }
+  // Crew Training skills and the dog.
+  for (const id of TRAINING_ORDER) {
+    if (trainingStatus(s, id) !== 'ready') continue;
+    opts.push({ price: { coins: new Decimal(TRAINING[id].coins), feathers: new Decimal(TRAINING[id].feathers) }, buy: () => buyTraining(s, id) });
+  }
+  const dn = dogNext(s);
+  if (dn?.ready) opts.push({ price: { coins: new Decimal(0), feathers: new Decimal(dn.feathers) }, buy: () => trainDog(s) });
+  // Lodge rooms are upgrades (already above); guests get their bookings handed over.
+  for (const r of [...s.guests.board]) if (r.progress >= r.target) claimGuest(s, r.id, []);
   // Carved decoys for the shelf.
   for (const id of CARVING_ORDER) {
     if (carvingStatus(s, id) !== 'ready') continue;
@@ -164,17 +175,6 @@ function shop(s: GameState): void {
     affordable.sort((a, b) => Number(!!b.first) - Number(!!a.first) || a.price.coins.cmp(b.price.coins));
     if (!affordable[0]!.buy()) return;
   }
-}
-
-function buildChain(s: GameState): void {
-  if (s.unlocks.workflows === undefined || !workflowUnlocked(s) || workflowEval(s).complete) return;
-  const kinds = ['scout', 'decoys', 'call', 'shoot', 'retrieve', 'log'] as const;
-  const ids: number[] = [];
-  for (const k of kinds) {
-    const existing = s.workflow.nodes.find((n) => n.kind === k);
-    ids.push(existing ? existing.id : addNode(s, k)!);
-  }
-  for (let i = 0; i + 1 < ids.length; i++) connect(s, ids[i]!, ids[i + 1]!);
 }
 
 const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve'];
@@ -218,7 +218,6 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
     // Shopping and planning, about once a second.
     if (i % Math.max(1, Math.round(1 / dt)) === 0) {
       shop(s);
-      buildChain(s);
       if (opts.prestige && starsFor(s.season.coins) >= 1) closeSeason(s, nextFlyway(s));
     }
 

@@ -4721,3 +4721,43 @@ select {
 .room__lvl { font-size: 11.5px; font-weight: 800; color: var(--c-sageDark); }
 .room__effect { font-size: 12px; color: var(--ui-textSoft); }
 .room .btn { margin-top: 4px; justify-self: start; }
+
+/* ------------------------------------------------------------ training */
+.training { display: grid; gap: 12px; }
+.dog-card { display: grid; gap: 8px; padding: 12px; border-radius: 16px; background: linear-gradient(#fbf3df, #f2e3c2); box-shadow: 0 2px 6px rgba(40, 26, 14, 0.14); }
+.dog-card__head { display: flex; align-items: center; gap: 12px; }
+.dog-card__head > div:last-child { display: grid; }
+.dog-card__head strong { font-family: var(--ui-fontHeading); font-size: 19px; }
+.dog-card__head span { font-size: 12.5px; font-weight: 800; color: var(--c-sageDark); }
+.dog-card__portrait { display: grid; place-items: center; width: 64px; height: 52px; border-radius: 14px; background: radial-gradient(circle at 50% 40%, #fff6e2, var(--ui-panelShade)); }
+.dog-card__portrait img { width: 58px; animation: bob 3.2s ease-in-out infinite; }
+.dog-card__next { display: grid; gap: 6px; }
+.dog-card__next .btn { justify-self: start; }
+.dog-card__need { font-size: 12.5px; color: var(--ui-textSoft); }
+.dog-skills { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.dog-skills li { display: flex; gap: 8px; align-items: baseline; font-size: 12.5px; color: var(--ui-textSoft); opacity: 0.7; }
+.dog-skills li.has { opacity: 1; color: var(--ui-text); }
+.dog-skills__lvl { flex: none; min-width: 34px; padding: 1px 6px; border-radius: 999px; background: rgba(107, 74, 47, 0.12); font-size: 11px; font-weight: 800; text-align: center; }
+.dog-skills li.has .dog-skills__lvl { background: var(--c-sageDark); color: var(--c-cream); }
+.drill-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.drill { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--c-cream); box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12); }
+.drill img { width: 34px; flex: none; }
+.drill__text { flex: 1; display: grid; min-width: 0; }
+.drill__text strong { font-size: 14px; }
+.drill__text span { font-size: 12px; color: var(--ui-textSoft); }
+.training__sum { margin: 0; padding: 10px 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.5); font-size: 12.5px; color: var(--ui-textSoft); }
+.branch { display: grid; gap: 4px; }
+.branch .card__hint { margin: 0 0 4px; }
+.branch__path { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.skill { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 0 8px 34px; }
+.skill::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 3px; border-radius: 3px; background: rgba(107, 74, 47, 0.18); }
+.skill:first-child::before { top: 50%; }
+.skill:last-child::before { bottom: 50%; }
+.skill__dot { position: absolute; left: 3px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: var(--c-cream); box-shadow: 0 0 0 3px rgba(107, 74, 47, 0.25); font-size: 12px; font-weight: 800; color: var(--c-cream); }
+.skill--learned .skill__dot { background: var(--c-sageDark); box-shadow: 0 0 0 3px rgba(110, 133, 88, 0.35); }
+.skill--ready .skill__dot { background: #f6d07e; box-shadow: 0 0 0 3px rgba(201, 160, 78, 0.45); }
+.skill__text { flex: 1; display: grid; gap: 1px; min-width: 0; }
+.skill__text strong { font-size: 14px; }
+.skill__text span { font-size: 12.5px; color: var(--ui-textSoft); }
+.skill__text em { font-size: 11.5px; font-style: normal; font-weight: 700; color: var(--c-wood); }
+.skill--needsLodge, .skill--needsPrev { opacity: 0.65; }

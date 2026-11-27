@@ -91,16 +91,15 @@ export const FEATURES: Record<FeatureId, FeatureDef> = {
     },
   },
   workflows: {
-    id: 'workflows', stage: 6, lodge: 4, name: 'Workflows',
-    requirement: 'Build the Sporting Club (lodge level 4) on the Marsh tab.',
-    progress: (s) => [lodge(s), 4],
+    id: 'workflows', stage: 3, lodge: 2, name: 'Training',
+    requirement: "Build the Trapper's Cabin (lodge level 2) from the Lodge.",
+    progress: (s) => [lodge(s), 2],
     intro: {
-      gus: 'A crew that knows the order of the hunt works faster. Here is some rope.',
+      gus: 'A crew that drills together hunts together. And that dog of yours wants a job.',
       points: [
-        'Tap a job card, then tap the card that comes next, to tie them together.',
-        'Every link in the right order speeds up the whole hunt.',
-        'A full Scout → Call → Shoot → Retrieve → Log chain adds a big bonus.',
-        'Special cards only work right after the job they help.',
+        'Train your retriever with the birds you fetch by hand. Each level teaches her something new.',
+        'Drills (tune-ups) make each kind of bot faster this season.',
+        'Skills are learned for good: teamwork, calling, shooting, fetching and more.',
       ],
     },
   },

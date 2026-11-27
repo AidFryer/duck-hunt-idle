@@ -21,9 +21,10 @@ import { WEATHER, type WeatherId } from '../data/weather';
 import { offlineCapSeconds, upgradePrice } from '../sim/upgrades';
 import { FLYWAYS, FLYWAY_ORDER, type FlywayId } from '../data/flyways';
 import { PERK_ORDER, PERKS, PRESTIGE, type PerkId } from '../data/legacy';
-import { SPECIALS, WORKFLOW, type NodeKind } from '../data/workflows';
 import { canBuyPerk, coinsForNextStar, nextFlyway, starsFor } from '../sim/prestige';
-import { ALL_CARDS, cardUnlocked, linkKey, workflowEval, workflowUnlocked } from '../sim/workflow';
+import { workflowEval } from '../sim/workflow';
+import { TRAINING_ORDER, DOG_MAX, DOG_SKILLS, type TrainingId } from '../data/training';
+import { canAffordTraining, dogNext, trainingStatus, type TrainingStatus } from '../sim/training';
 import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, decoyBagPrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
@@ -230,16 +231,16 @@ export interface HudSnapshot {
   offlineHours: number;
   unlocks: Record<FeatureId, boolean>;
   featureProgress: Record<FeatureId, [number, number]>;
-  workflow: {
-    unlocked: boolean;
-    unlockCoins: number;
-    nodes: { id: number; kind: NodeKind; active: boolean }[];
-    links: { from: number; to: number; state: 'good' | 'tangled' }[];
-    palette: { kind: NodeKind; unlocked: boolean; placed: boolean; hint: string }[];
-    bonus: number;
-    complete: boolean;
-    goodLinks: number;
+  training: {
+    skills: { id: TrainingId; status: TrainingStatus; affordable: boolean }[];
+    /** Bonus lines for what the crew has learned. */
     effects: string[];
+  };
+  dog: {
+    level: number;
+    max: number;
+    next: { level: number; fetches: number; feathers: number; haveFetches: number; ready: boolean; affordable: boolean } | null;
+    skills: { level: number; name: string; desc: string; has: boolean }[];
   };
   season: {
     number: number;
@@ -639,7 +640,13 @@ export function snapshot(state: GameState): HudSnapshot {
     offlineHours: offlineCapSeconds(state) / 3600,
     unlocks: Object.fromEntries(FEATURE_ORDER.map((f) => [f, state.unlocks[f] !== undefined])) as Record<FeatureId, boolean>,
     featureProgress: Object.fromEntries(FEATURE_ORDER.map((f) => [f, FEATURES[f].progress(state)])) as Record<FeatureId, [number, number]>,
-    workflow: workflowSnap(state),
+    training: trainingSnap(state),
+    dog: {
+      level: state.dog.level,
+      max: DOG_MAX,
+      next: dogNext(state),
+      skills: DOG_SKILLS.map((k) => ({ ...k, has: state.dog.level >= k.level })),
+    },
     season: (() => {
       const starsNow = starsFor(state.season.coins);
       const next = coinsForNextStar(state.season.coins);
@@ -715,30 +722,19 @@ export function windLabel(w: number): string {
   return 'Calm';
 }
 
-function workflowSnap(state: GameState): HudSnapshot['workflow'] {
+function trainingSnap(state: GameState): HudSnapshot['training'] {
   const ev = workflowEval(state);
-  const placed = new Set(state.workflow.nodes.map((n) => n.kind));
   const effects: string[] = [];
   if (ev.bonus > 0) effects.push(`+${Math.round(ev.bonus * 100)}% speed for every hunt job`);
+  for (const [j, m] of Object.entries(ev.jobSpeed)) if ((m ?? 1) > 1) effects.push(`${JOBS[j as JobId]?.name ?? j} +${Math.round(((m ?? 1) - 1) * 100)}%`);
   if (ev.fogFlockRate > 1) effects.push(`+${Math.round((ev.fogFlockRate - 1) * 100)}% flocks in fog`);
-  if (ev.rareMult > 1) effects.push(`Rare birds ×${ev.rareMult}`);
-  if (ev.flockRate < 1) effects.push(`${Math.round((ev.flockRate - 1) * 100)}% flocks`);
-  for (const [j, m] of Object.entries(ev.problemMult)) effects.push(`${Math.round((1 - (m ?? 1)) * 100)}% fewer problems at ${j}`);
+  if (ev.rareMult > 1) effects.push(`Rare birds ×${ev.rareMult.toFixed(1)}`);
   if (ev.dawnSpeed > 0) effects.push(`+${Math.round(ev.dawnSpeed * 100)}% speed at sunrise`);
-  if (ev.noIce) effects.push('No icy calls; +1 bird per flock in cold fronts');
+  if (ev.noIce) effects.push('No icy calls; more birds in cold fronts');
+  const fewer = Object.keys(ev.problemMult).length;
+  if (fewer > 0) effects.push(`Fewer snags at ${fewer} job${fewer > 1 ? 's' : ''}`);
   return {
-    unlocked: workflowUnlocked(state),
-    unlockCoins: WORKFLOW.unlockCoins,
-    nodes: state.workflow.nodes.map((n) => ({ id: n.id, kind: n.kind, active: !!ev.active[n.id] })),
-    links: state.workflow.links.map((l) => ({ from: l.from, to: l.to, state: ev.linkState[linkKey(l)] ?? 'tangled' })),
-    palette: ALL_CARDS.map((kind) => {
-      const sp = kind in SPECIALS ? SPECIALS[kind as keyof typeof SPECIALS] : null;
-      const hint = sp ? (sp.unlockSeasons > 0 ? 'Close a season to unlock' : `Earn ${sp.unlockCoins.toLocaleString()} coins`) : '';
-      return { kind, unlocked: cardUnlocked(state, kind), placed: placed.has(kind), hint };
-    }),
-    bonus: ev.bonus,
-    complete: ev.complete,
-    goodLinks: ev.goodLinks,
+    skills: TRAINING_ORDER.map((id) => ({ id, status: trainingStatus(state, id), affordable: canAffordTraining(state, id) })),
     effects,
   };
 }
