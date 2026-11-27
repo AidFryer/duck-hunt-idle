@@ -170,6 +170,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     const environment = { ...((s.environment as Json) ?? {}), special: null };
     return { ...s, mastery, environment, version: 23 };
   },
+  // v24: crew gear and lodge projects.
+  23: (s) => ({ ...s, gear: s.gear ?? {}, projects: s.projects ?? {}, version: 24 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

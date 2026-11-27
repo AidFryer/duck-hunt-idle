@@ -5067,3 +5067,76 @@ img { object-fit: contain; max-width: 100%; }
 .lb__sorts { flex-wrap: wrap; justify-content: center; }
 .rail-btn--day { background: rgba(94, 115, 82, 0.92); }
 .rail-btn--day .icon { color: var(--c-gold, #e8b84a); }
+
+/* ---- Crew gear (Workshop) -------------------------------------------------- */
+.gear-hint { margin: -2px 0 6px; }
+.gear-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gear-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--c-cream, #f6ecd8);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+}
+.gear-row__text { display: grid; gap: 1px; min-width: 0; }
+.gear-row__text strong { font-size: 14px; }
+.gear-row__text span { font-size: 12px; color: var(--ui-textSoft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gear-row__lvl { font-size: 12px; font-weight: 700; color: var(--ui-textSoft); }
+.gear-row__max { font-size: 12px; font-weight: 800; color: var(--c-sageDark); }
+
+/* ---- Lodge projects (Lodge tab) -------------------------------------------- */
+.project-list { display: grid; gap: 8px; }
+.project {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--c-cream, #f6ecd8);
+  box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12);
+}
+.project.is-done { background: rgba(232, 184, 74, 0.2); }
+.project__head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.project__head strong { font-family: var(--ui-fontHeading); font-size: 15.5px; }
+.project__head span { font-size: 12px; font-weight: 700; color: var(--ui-textSoft); }
+.project__done { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.project__done li { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(94, 115, 82, 0.16); color: var(--c-sageDark, #4d6142); }
+.project__next { margin: 0; font-size: 12.5px; color: var(--ui-textSoft); }
+.project__next strong { color: var(--ui-text); }
+.project__bars { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px; }
+.project__bar { height: 6px; border-radius: 999px; background: rgba(90, 60, 30, 0.12); overflow: hidden; }
+.project__bar i { display: block; height: 100%; border-radius: inherit; background: var(--c-gold, #e8b84a); transition: width 0.8s ease-out; }
+.project__bar--f i { background: #b5562b; }
+.reduce-motion .project__bar i { transition: none; }
+.project__num { font-size: 11.5px; font-weight: 700; color: var(--ui-textSoft); font-variant-numeric: tabular-nums; }
+.project .btn { justify-self: start; align-self: start; }
+
+/* ---- Compact pass ---------------------------------------------------------- */
+/* Legacy perks: compact rows (name and what it does, cost or status on the right). */
+.perk-tier { grid-template-columns: 1fr; gap: 6px; }
+.perk-tier + .perk-tier::before { display: none; }
+.perk-tree { gap: 6px; }
+.perk {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 1px;
+  padding: 8px 10px;
+  border-width: 1px;
+}
+.perk strong { grid-column: 1; font-size: 14px; }
+.perk span { grid-column: 1; font-size: 12px; }
+.perk em { grid-column: 2; grid-row: 1 / span 3; align-self: center; text-align: right; max-width: 9em; font-size: 12px; }
+.perk .perk__ranks { grid-column: 1; }
+.branch__chain { gap: 4px; }
+.branch__chain li + li::before { margin: -2px 0 0; width: 4px; height: 4px; }
+.branch:not(.branch--lodge) { padding: 10px; gap: 6px; }
+.mastery { padding: 8px 10px; gap: 4px; }
+
+/* Projects: the button sits beside the bars. */
+.project { grid-template-columns: 1fr auto; column-gap: 10px; }
+.project > .project__head, .project > .project__done, .project > .project__next { grid-column: 1 / -1; }
+.project > .project__bars { grid-column: 1; }
+.project > .btn { grid-column: 2; align-self: center; }

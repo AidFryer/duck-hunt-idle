@@ -1,3 +1,5 @@
+import { gearMult } from './gear';
+import { projectFx } from './projects';
 import { legacyFx } from './prestige';
 import { trainingFx } from './training';
 import type { JobId } from '../data/economy';
@@ -139,6 +141,13 @@ export function workflowEval(state: GameState): WorkflowEval {
   const lg = legacyFx(state);
   const job: Partial<Record<JobId, number>> = { ...t.job };
   for (const [j, m] of Object.entries(lg.job)) job[j as JobId] = (job[j as JobId] ?? 1) * m;
+  // Crew gear and lodge projects.
+  const pj = projectFx(state);
+  const mul = (j: JobId, m: number) => (job[j] = (job[j] ?? 1) * m);
+  for (const j of ['call', 'flag'] as const) mul(j, gearMult(state, 'calls'));
+  for (const j of ['retrieve', 'fRetrieve'] as const) mul(j, gearMult(state, 'vests') * pj.fetch);
+  mul('log', gearMult(state, 'ink'));
+  for (const j of ['tHunt', 'bHunt'] as const) mul(j, pj.farCrews);
   const speed = t.speed * lg.speed;
   return {
     speed,

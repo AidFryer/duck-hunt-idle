@@ -1,3 +1,6 @@
+import { buyGear } from './sim/gear';
+import { fundProject } from './sim/projects';
+import { PROJECTS } from './data/projects';
 import { SPECIAL_DAYS } from './data/days';
 import '@fontsource/zilla-slab/latin-500.css';
 import '@fontsource/zilla-slab/latin-700.css';
@@ -371,6 +374,13 @@ function onEvent(e: SimEvent, at: Point | null): void {
     case 'perkBought':
       feedback.toast(`Legacy perk: ${PERKS[e.perk].name}.`, 'celebrate');
       break;
+    case 'projectStage': {
+      const st = PROJECTS[e.project].stages[e.stage - 1]!;
+      buzz('big');
+      audio.play('season');
+      feedback.toast(`${st.name} is finished! ${st.does}`, 'celebrate', 5000);
+      break;
+    }
     case 'specialDay': {
       const d = SPECIAL_DAYS[e.day];
       feedback.toast(`${d.name}! ${d.ray}`, 'good', 6000);
@@ -382,6 +392,11 @@ function onEvent(e: SimEvent, at: Point | null): void {
       feedback.toast(`${FLYWAYS[e.flyway].name} mastered! A badge for the lodge, and coins +10% for good.`, 'celebrate', 5000);
       break;
 
+    case 'handBonus':
+      // Rides along in the same pickup popup as the bird's feathers.
+      pendingCoins += e.coins;
+      if (lastTapAt) pendingAt = lastTapAt;
+      break;
     case 'logged':
       if (busy()) break;
       pendingCoins += e.coins;
@@ -708,6 +723,19 @@ const controls: GameControls = {
     hud.set(snapshot(state));
     return ok;
   },
+  buyGear(id) {
+    const ok = buyGear(state, id, runner.sink);
+    if (ok) hud.set(snapshot(state));
+    return ok;
+  },
+  fundProject(id) {
+    const ok = fundProject(state, id, runner.sink);
+    if (ok) {
+      hud.set(snapshot(state));
+      save();
+    }
+    return ok;
+  },
   respecPerks() {
     const n = respecPerks(state);
     if (n > 0) {
@@ -829,6 +857,7 @@ function updatePrefs(p: Prefs): void {
       activity: duckActivityAt(hour),
       rain: state.environment.weather === 'drizzle',
       hour,
+      special: state.environment.special ?? null,
     });
   }, 500);
 }

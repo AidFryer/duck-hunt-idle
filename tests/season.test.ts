@@ -1,3 +1,6 @@
+import { buyGear, gearPrice } from '../src/sim/gear';
+import { fundProject } from '../src/sim/projects';
+import { PROJECTS } from '../src/data/projects';
 import { rollSpecialDay } from '../src/sim/days';
 import { flockDraw } from '../src/sim/economy';
 import { masteryBird, masteryGuest, masteryStar } from '../src/sim/mastery';
@@ -261,5 +264,42 @@ describe('named days', () => {
     }
     expect(named).toBeGreaterThan(40);
     expect(named).toBeLessThan(140);
+  });
+});
+
+describe('crew gear and lodge projects', () => {
+  it('gear levels cost more each time, help, and start over with the season', () => {
+    const s = createInitialState(9);
+    s.currencies.coins = new Decimal(1e9);
+    s.currencies.feathers = new Decimal(1e8);
+    const before = birdValue(s, 'mallard').coins;
+    s.lodge = 4;
+    expect(buyGear(s, 'lantern')).toBe(true);
+    expect(buyGear(s, 'lantern')).toBe(true);
+    expect(gearPrice('lantern', 2).coins.gt(gearPrice('lantern', 1).coins)).toBe(true);
+    expect(birdValue(s, 'mallard').coins).toBeGreaterThan(before);
+    s.season.coins = new Decimal(PRESTIGE.divisor);
+    closeSeason(s, s.flyway);
+    expect(s.gear).toEqual({});
+  });
+
+  it('projects take money bit by bit, finish stages, and keep them for good', () => {
+    const s = createInitialState(9);
+    s.lodge = 2;
+    const st = PROJECTS.carvingShop.stages[0];
+    s.currencies.coins = new Decimal(st.coins / 2);
+    s.currencies.feathers = new Decimal(st.feathers);
+    const ev: SimEvent[] = [];
+    expect(fundProject(s, 'carvingShop', ev)).toBe(true);
+    expect(s.projects.carvingShop?.stage).toBe(0);
+    expect(s.projects.carvingShop?.coins).toBe(st.coins / 2);
+    s.currencies.coins = new Decimal(st.coins);
+    fundProject(s, 'carvingShop', ev);
+    expect(s.projects.carvingShop?.stage).toBe(1);
+    expect(ev.some((e) => e.type === 'projectStage')).toBe(true);
+    expect(botPriceMult(s, 'caller')).toBeCloseTo(0.95, 5);
+    s.season.coins = new Decimal(PRESTIGE.divisor);
+    closeSeason(s, s.flyway);
+    expect(s.projects.carvingShop?.stage).toBe(1);
   });
 });

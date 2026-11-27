@@ -1,3 +1,5 @@
+import type { GearId } from '../data/gear';
+import type { ProjectId } from '../data/projects';
 import type { BreedId } from '../data/crew';
 import type { CarvingId } from '../data/carvings';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -50,6 +52,10 @@ export interface GameControls {
   /** Train your retriever to the next level. */
   trainDog(): boolean;
   buyPerk(id: PerkId): boolean;
+  /** Buy the next level of a piece of crew gear. */
+  buyGear(id: GearId): boolean;
+  /** Put what you can toward a lodge project's next stage. */
+  fundProject(id: ProjectId): boolean;
   /** Take back every perk for a full refund (free once per season). Returns stars refunded. */
   respecPerks(): number;
   closeSeason(flyway: FlywayId): number;

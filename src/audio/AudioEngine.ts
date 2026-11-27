@@ -25,6 +25,8 @@ export interface Environment {
   rain: boolean;
   /** Clock hour, for the music's mood. */
   hour: number;
+  /** Today's named day (Cold Front Push…), for its own sounds. */
+  special?: string | null;
 }
 
 /** Major pentatonic (semitones) — cozy, never dissonant. */
@@ -79,9 +81,11 @@ export class AudioEngine {
     this.env = e;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.windGain.gain.setTargetAtTime(0.015 + e.wind * 0.07, t, 1.5);
+    const strays = e.special === 'strays';
+    const gray = e.special === 'grayDay';
+    this.windGain.gain.setTargetAtTime(0.015 + e.wind * 0.07 + (strays ? 0.04 : 0), t, 1.5);
     this.windFilter.frequency.setTargetAtTime(350 + e.wind * 700, t, 2);
-    this.rainGain.gain.setTargetAtTime(e.rain ? 0.05 : 0, t, 2);
+    this.rainGain.gain.setTargetAtTime(gray ? 0.085 : e.rain ? 0.05 : 0, t, 2);
   }
 
   suspend(): void {
@@ -163,6 +167,114 @@ export class AudioEngine {
       if (Math.random() < this.env.activity * 0.8 + 0.05) this.quack(this.buses.ambience, 0.05 + Math.random() * 0.04, 0.9 + Math.random() * 0.25, true, 1 + Math.floor(Math.random() * 3));
       return 5 + Math.random() * 12;
     });
+
+    // Named days have their own sounds.
+    this.loop(() => {
+      if (this.env.special !== 'coldPush') return 3;
+      this.honkingFlock();
+      return 7 + Math.random() * 10;
+    });
+    this.loop(() => {
+      if (this.env.special !== 'bluebird' || this.env.darkness > 0.4) return 3;
+      this.songbird();
+      return 2.5 + Math.random() * 5;
+    });
+    this.loop(() => {
+      if (this.env.special !== 'grayDay') return 3;
+      this.roofPatter();
+      return 1;
+    });
+    this.loop(() => {
+      if (this.env.special !== 'strays') return 3;
+      this.gust();
+      return 6 + Math.random() * 8;
+    });
+  }
+
+  /** A skein of geese honking as it passes over, far off. */
+  private honkingFlock(): void {
+    const c = this.ctx!;
+    const t0 = c.currentTime;
+    const n = 4 + Math.floor(Math.random() * 5);
+    const from = Math.random() < 0.5 ? -0.8 : 0.8;
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * (0.22 + Math.random() * 0.3);
+      const o = c.createOscillator();
+      o.type = 'sawtooth';
+      const f = 300 + Math.random() * 60;
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * 0.82, t + 0.18);
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 900;
+      bp.Q.value = 3;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.018, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+      const pan = c.createStereoPanner();
+      pan.pan.value = from - (from * 2 * i) / Math.max(1, n - 1);
+      o.connect(bp).connect(g).connect(pan).connect(this.buses.ambience);
+      o.start(t);
+      o.stop(t + 0.22);
+    }
+  }
+
+  /** A little songbird phrase on a clear morning. */
+  private songbird(): void {
+    const c = this.ctx!;
+    const t0 = c.currentTime;
+    const notes = 3 + Math.floor(Math.random() * 4);
+    const pan = c.createStereoPanner();
+    pan.pan.value = Math.random() * 1.4 - 0.7;
+    pan.connect(this.buses.ambience);
+    for (let i = 0; i < notes; i++) {
+      const t = t0 + i * (0.09 + Math.random() * 0.06);
+      const o = c.createOscillator();
+      o.type = 'sine';
+      const f = 2400 + Math.random() * 1800;
+      o.frequency.setValueAtTime(f, t);
+      o.frequency.exponentialRampToValueAtTime(f * (Math.random() < 0.5 ? 1.25 : 0.8), t + 0.07);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.012, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+      o.connect(g).connect(pan);
+      o.start(t);
+      o.stop(t + 0.1);
+    }
+  }
+
+  /** Soft rain ticking on the lodge roof. */
+  private roofPatter(): void {
+    const c = this.ctx!;
+    const t0 = c.currentTime;
+    for (let i = 0; i < 14; i++) {
+      const t = t0 + Math.random();
+      const s = this.noiseSource();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1800 + Math.random() * 2500;
+      bp.Q.value = 1.5;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.006 + Math.random() * 0.008, t + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+      s.connect(bp).connect(g).connect(this.buses.ambience);
+      s.start(t, Math.random() * 1.5, 0.04);
+    }
+  }
+
+  /** A gust that swells through the reeds and fades. */
+  private gust(): void {
+    const c = this.ctx!;
+    const t = c.currentTime;
+    const g = this.windGain.gain;
+    const now = g.value;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(now, t);
+    g.linearRampToValueAtTime(now + 0.06, t + 1.6);
+    g.linearRampToValueAtTime(now, t + 4);
   }
 
   private loop(fn: () => number): void {

@@ -1,3 +1,5 @@
+import type { GearId } from '../data/gear';
+import type { ProjectId } from '../data/projects';
 import type { SpecialDayId } from '../data/days';
 import type { GroundId } from '../data/economy';
 /** Events from grounds other than the marsh carry their ground. */
@@ -63,6 +65,9 @@ export type SimEvent =
   | { type: 'rungBuilt'; rung: RungId }
   | { type: 'dailyBonus'; coins: number; feathers: number }
   | { type: 'drifterClaimed'; coins: number; feathers: number }
+  | { type: 'handBonus'; coins: number }
+  | { type: 'gearBought'; gear: GearId; level: number }
+  | { type: 'projectStage'; project: ProjectId; stage: number }
   | { type: 'flywayMastered'; flyway: FlywayId }
   | { type: 'specialDay'; day: SpecialDayId }
   | { type: 'perkBought'; perk: PerkId }

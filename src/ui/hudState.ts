@@ -1,3 +1,7 @@
+import { GEAR, GEAR_ORDER, type GearId } from '../data/gear';
+import { canBuyGear, gearLevel, gearOpen, gearPrice } from '../sim/gear';
+import { PROJECT_ORDER, PROJECTS, PROJECTS_LODGE, type ProjectId } from '../data/projects';
+import { project, projectFx } from '../sim/projects';
 import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -278,6 +282,10 @@ export interface HudSnapshot {
   lifetimeCoins: Decimal;
   goalId: string;
   goalTitle: string;
+  /** Crew gear on the shelf (open ones, plus the next to open). */
+  gear: { id: GearId; level: number; open: boolean; price: Price; affordable: boolean; lodgeName: string }[];
+  /** Lodge projects: stage, the next stage's cost and how much is in. */
+  projects: { id: ProjectId; stage: number; coins: number; feathers: number; canFund: boolean }[];
   /** Today's named day, if any. */
   specialDay: SpecialDayId | null;
   /** How far along the current goal is (0–1), when it can be measured. */
@@ -721,6 +729,17 @@ export function snapshot(state: GameState): HudSnapshot {
     goalId: goal.goal.id,
     goalTitle: goal.goal.title,
     specialDay: state.environment.special ?? null,
+    gear: GEAR_ORDER.map((id) => {
+      const level = gearLevel(state, id);
+      const price = gearPrice(id, level, projectFx(state).gearPrice);
+      return { id, level, open: gearOpen(state, id), price, affordable: canBuyGear(state, id), lodgeName: lodgeDef(GEAR[id].lodge).name };
+    }),
+    projects: PROJECT_ORDER.map((id) => {
+      const p = project(state, id);
+      const st = PROJECTS[id].stages[p.stage];
+      const canFund = !!st && state.lodge >= PROJECTS_LODGE && ((st.coins > p.coins && state.currencies.coins.gte(1)) || (st.feathers > p.feathers && state.currencies.feathers.gte(1)));
+      return { id, stage: p.stage, coins: p.coins, feathers: p.feathers, canFund };
+    }),
     goalProgress: goal.goal.progress ? Math.max(0, Math.min(1, goal.goal.progress(state))) : null,
     goalGus: goal.goal.gus,
     goalIndex: goal.index,

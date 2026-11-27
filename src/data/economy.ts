@@ -385,6 +385,18 @@ export const LEDGER = {
 
 /** Hunter's Rhythm: quick manual taps in a row build a streak that pays a bonus. */
 /**
+ * Hunting by hand pays: each of your own calls, shots and fetches earns this
+ * many seconds of the crew's current coin income, on top of the birds.
+ */
+export const HAND = {
+  call: 0.25,
+  shoot: 0.75,
+  retrieve: 0.35,
+  /** Floor per action, so it counts from the very first day. */
+  minCoins: 1,
+} as const;
+
+/**
  * Crew Rhythm: fills while the hunt flows (birds don't pile up, nobody's
  * stuck, flocks get worked) and pays extra coins on every bird.
  */

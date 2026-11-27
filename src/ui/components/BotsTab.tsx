@@ -1,3 +1,4 @@
+import { GEAR } from '../../data/gear';
 import { useState } from 'preact/hooks';
 import { BOT_MILESTONES, BOTS, DECOYS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId, type GroundId } from '../../data/economy';
 import { PLANS } from '../../data/progression';
@@ -31,8 +32,9 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
   const sections = [
     ...groups.slice(0, 1),
     { key: 'decoys', title: 'Decoys', ids: [] },
+    { key: 'gear', title: 'Crew gear', ids: [] },
     ...groups.slice(1),
-  ].filter((g) => g.key === 'decoys' || g.ids.length > 0);
+  ].filter((g) => g.key === 'decoys' || g.key === 'gear' || g.ids.length > 0);
   const jump = (key: string) => document.getElementById(`ws-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
     <div class="tab-body workshop">
@@ -59,6 +61,8 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
           <h4 class="group-head">{g.title}</h4>
           {g.key === 'decoys' ? (
             <DecoysSection hud={hud} controls={controls} notation={notation} />
+          ) : g.key === 'gear' ? (
+            <GearSection hud={hud} controls={controls} notation={notation} />
           ) : (
             <ul class="ws-list">
               {g.ids.map((id) => (
@@ -311,4 +315,39 @@ export function pulse(el: HTMLElement, ok: boolean): void {
     audio.play('buy');
   }
   if (!ok) audio.play('nope');
+}
+
+/** Crew gear: cheap buys with many levels, a few percent each. */
+function GearSection({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
+  const open = hud.gear.filter((g) => g.open);
+  const later = hud.gear.filter((g) => !g.open);
+  return (
+    <>
+      <p class="card__hint gear-hint">Small buys with lots of levels. Gear starts over each season.</p>
+      <ul class="gear-list">
+        {open.map((g) => {
+          const d = GEAR[g.id];
+          const maxed = g.level >= 25;
+          return (
+            <li class="gear-row">
+              <div class="gear-row__text">
+                <strong>{d.name} <span class="gear-row__lvl">Lv {g.level}</span></strong>
+                <span>{d.per} each{g.level > 0 ? ` · now +${Math.round(d.step * g.level * 100)}%` : ''}</span>
+              </div>
+              {maxed ? (
+                <span class="gear-row__max">Maxed</span>
+              ) : (
+                <button class="btn btn--primary btn--buy btn--small" aria-disabled={!g.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyGear(g.id))}>
+                  <Cost price={g.price} notation={notation} />
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {later.length > 0 && (
+        <p class="card__hint">More gear with the {later[0]!.lodgeName}: {later.filter((g) => g.lodgeName === later[0]!.lodgeName).map((g) => GEAR[g.id].name).join(', ')}.</p>
+      )}
+    </>
+  );
 }

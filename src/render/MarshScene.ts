@@ -280,7 +280,14 @@ export class MarshScene {
       case 'trainingLearned':
       case 'dogLevel':
       case 'specialDay':
+      case 'handBonus':
+      case 'gearBought':
         return null;
+      case 'projectStage': {
+        const a = this.layout.anchors.lodge;
+        this.fx.confetti(a.x, a.y - 30 * this.layout.scale, this.layout.scale, 40);
+        return { x: a.x, y: a.y - 40 * this.layout.scale };
+      }
       case 'volley': {
         this.ducks.volley();
         for (let i = 0; i < 4; i++) this.crew.shoot('blind');

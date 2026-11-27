@@ -1,3 +1,4 @@
+import { projectFx } from './projects';
 import { DAY_LENGTH_SECONDS } from '../config';
 import { SPECIAL_DAYS, SPECIAL_DAY_CHANCE, SPECIAL_DAY_ORDER, type SpecialDayDef } from '../data/days';
 import type { EventSink } from './events';
@@ -21,7 +22,7 @@ export function rollSpecialDay(state: GameState, events: EventSink): void {
   const env = state.environment;
   const had = env.special;
   env.special = null;
-  if (had || rand(state) >= SPECIAL_DAY_CHANCE) return;
+  if (had || rand(state) >= SPECIAL_DAY_CHANCE * projectFx(state).namedDays) return;
   const id = SPECIAL_DAY_ORDER[Math.floor(rand(state) * SPECIAL_DAY_ORDER.length)]!;
   env.special = id;
   const d = SPECIAL_DAYS[id];

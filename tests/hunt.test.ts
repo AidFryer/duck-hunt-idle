@@ -35,8 +35,10 @@ describe('manual hunt pipeline', () => {
     for (let i = 0; i < downed; i++) doAction(s, 'retrieve', 'manual', ev);
     expect(s.hunt.bag).toBe(downed);
     expect(s.hunt.ledger).toHaveLength(downed);
-    // Birds pay when logged, not on the spot.
-    expect(s.currencies.coins.toNumber()).toBe(0);
+    // Birds pay when logged; hunting by hand pays a little on the spot.
+    const hand = ev.filter((e) => e.type === 'handBonus').reduce((t, e) => t + (e.type === 'handBonus' ? e.coins : 0), 0);
+    expect(hand).toBeGreaterThan(0);
+    expect(s.currencies.coins.toNumber()).toBeCloseTo(hand, 6);
     expect(s.currencies.feathers.toNumber()).toBe(downed * SPECIES.mallard.feathers);
     for (let i = 0; i < downed; i++) doAction(s, 'log', 'manual', ev);
     expect(s.hunt.ledger).toHaveLength(0);

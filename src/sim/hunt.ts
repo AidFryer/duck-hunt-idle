@@ -1,3 +1,4 @@
+import { projectFx } from './projects';
 import { masteryBird } from './mastery';
 import { rhythmMiss, rhythmTap, stepRhythm } from './rhythm';
 import { markPace, stepVolley } from './volley';
@@ -6,7 +7,7 @@ import { dogHas, dogSwim } from './training';
 import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
-import { ACRES, BOTS, FIELD_JOBS, GOLDEN, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD_JOBS, GOLDEN, HAND, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -110,6 +111,23 @@ export function canDo(state: GameState, job: ActionJob, targetId?: number): bool
  * (the one the player tapped); otherwise the one that's waited longest.
  */
 export function doAction(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink, targetId?: number): boolean {
+  const ok = doActionInner(state, job, source, events, targetId);
+  if (ok && source === 'manual') payHand(state, job, events);
+  return ok;
+}
+
+/** Your own call, shot or fetch earns a slice of the crew's income. */
+function payHand(state: GameState, job: ActionJob, events: EventSink): void {
+  const step = job === 'log' ? null : JOB_STEP[job]?.step;
+  if (step !== 'call' && step !== 'shoot' && step !== 'retrieve') return;
+  const coins = Math.round(Math.max(HAND.minCoins, state.volley.coinsRate * HAND[step]) * 100) / 100;
+  state.currencies.coins = state.currencies.coins.add(coins);
+  state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(coins);
+  state.season.coins = state.season.coins.add(coins);
+  events.push({ type: 'handBonus', coins });
+}
+
+function doActionInner(state: GameState, job: ActionJob, source: ActionSource | 'keeper', events: EventSink, targetId?: number): boolean {
   if (!canDo(state, job, source === 'manual' ? targetId : undefined)) return false;
   if (source !== 'manual' && !botCanDo(state, job)) return false;
   if (source === 'manual') {
@@ -314,7 +332,7 @@ function stepGolden(state: GameState, dt: number, activity: number, events: Even
   if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
   state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden * (1 + UPGRADE_EFFECTS.mapRoomGolden * (state.upgrades.mapRoom ?? 0));
   if (state.goldenTimer > 0) return;
-  state.goldenTimer = GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap);
+  state.goldenTimer = (GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap)) / projectFx(state).golden;
   const others = GROUND_ORDER.filter((x) => x !== 'marsh' && groundOpen(state, x));
   const g: GroundId = others.length > 0 && rand(state) < GOLDEN.fieldShare ? others[Math.floor(rand(state) * others.length)]! : 'marsh';
   const h = ground(state, g);

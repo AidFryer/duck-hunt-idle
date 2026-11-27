@@ -1,3 +1,5 @@
+import { gearMult } from './gear';
+import { projectFx } from './projects';
 import { dayFx } from './days';
 import { masteryMultiplier } from './mastery';
 import { rhythmMultiplier } from './rhythm';
@@ -67,7 +69,7 @@ export function botPrice(id: BotId, owned: number, count = 1, mult = 1): Price {
 /** Price multiplier for a bot type from Legacy perks. */
 export function botPriceMult(state: GameState, id: BotId): number {
   const shed = 1 - UPGRADE_EFFECTS.carvingShedDiscount * (state.upgrades.carvingShed ?? 0);
-  return (id === 'foreman' && state.legacy.perks.unionRates ? 0.5 : 1) * shed;
+  return (id === 'foreman' && state.legacy.perks.unionRates ? 0.5 : 1) * shed * projectFx(state).botPrice;
 }
 
 /** How many bots the player can afford right now (limited by both currencies). */
@@ -167,7 +169,7 @@ export function spreadSize(state: GameState, g: GroundId = 'marsh'): number {
 export function decoyBagPrice(state: GameState, g: GroundId = 'marsh'): Price {
   const d = DECOYS[g];
   // Cornfield Deals (Legacy) halves goose decoys.
-  const k = Math.pow(d.costGrowth, state.decoyBags[g] ?? 0) * (g === 'field' ? legacyFx(state).fieldDecoys : 1);
+  const k = Math.pow(d.costGrowth, state.decoyBags[g] ?? 0) * (g === 'field' ? legacyFx(state).fieldDecoys : 1) * projectFx(state).decoyPrice;
   return { coins: new Decimal(d.costCoins * k).ceil(), feathers: new Decimal(d.costFeathers * k).ceil() };
 }
 
@@ -191,9 +193,10 @@ export function buyDecoyBag(state: GameState, g: GroundId = 'marsh', events?: Ev
 
 /** Seconds a circling flock waits for a call. */
 export function incomingPatience(state: GameState, g: GroundId = 'marsh'): number {
-  if (g !== 'marsh') return GROUND_PARAMS[g].incomingPatience * rungFx(state, g).patience * dayFx(state).patience;
+  const steady = dayFx(state).patience * gearMult(state, 'blindPaint') * projectFx(state).patience;
+  if (g !== 'marsh') return GROUND_PARAMS[g].incomingPatience * rungFx(state, g).patience * steady;
   const base = HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0) + (state.legacy.perks.keenEyes ? 5 : 0);
-  return base * rungFx(state).patience * dayFx(state).patience;
+  return base * rungFx(state).patience * steady;
 }
 
 /** Seconds a called flock works the decoys before flaring off. */
@@ -204,7 +207,7 @@ export function committedPatience(state: GameState, g: GroundId = 'marsh'): numb
 /** Flocks that can work the decoys at once. */
 export function maxCommitted(state: GameState, g: GroundId = 'marsh'): number {
   const marsh = g !== 'marsh' ? 0 : Math.min(ACRES.maxExtraCommitted, Math.floor((state.acres - ACRES.start) / ACRES.acresPerCommitted));
-  return GROUND_PARAMS[g].maxCommitted + rungFx(state, g).committed + marsh;
+  return GROUND_PARAMS[g].maxCommitted + rungFx(state, g).committed + marsh + (g === 'marsh' ? projectFx(state).committed : 0);
 }
 
 /** How many flocks can circle at once. */
@@ -215,8 +218,9 @@ export function maxIncoming(state: GameState, g: GroundId = 'marsh'): number {
 
 /** Fraction of a flock taken by one shot. */
 export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
-  if (g !== 'marsh') return Math.min(1, GROUND_PARAMS[g].shotFraction + rungFx(state, g).shot);
-  return Math.min(1, HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot);
+  const shells = gearMult(state, 'shells');
+  if (g !== 'marsh') return Math.min(1, (GROUND_PARAMS[g].shotFraction + rungFx(state, g).shot) * shells);
+  return Math.min(1, (HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot) * shells);
 }
 
 /** Extra birds per flock from food plots and weather. */
@@ -234,7 +238,9 @@ export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number 
 /** Flocks per second right now, before the activity curve. */
 /** Flocks per second drawn to a ground (Legacy branches can lift a ground). */
 export function flockDraw(state: GameState, g: GroundId = 'marsh'): number {
-  return baseFlockDraw(state, g) * (legacyFx(state).groundFlocks[g] ?? 1);
+  const pj = projectFx(state);
+  const place = g === 'marsh' ? pj.marshFlocks : g === 'timber' || g === 'bay' ? pj.farFlocks : 1;
+  return baseFlockDraw(state, g) * (legacyFx(state).groundFlocks[g] ?? 1) * gearMult(state, 'decoyPaint') * place;
 }
 
 function baseFlockDraw(state: GameState, g: GroundId): number {
@@ -296,7 +302,7 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   const lgFeathers = lg.feathers * (lg.groundFeathers[home] ?? 1);
   return {
     // Crew Rhythm lifts coins only.
-    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * lgCoins * masteryMultiplier(state) * dayFx(state).coins * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * lgFeathers * dayFx(state).feathers * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
+    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * lgCoins * masteryMultiplier(state) * dayFx(state).coins * gearMult(state, 'lantern') * projectFx(state).coins * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * lgFeathers * dayFx(state).feathers * gearMult(state, 'featherBags') * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
   };
 }
