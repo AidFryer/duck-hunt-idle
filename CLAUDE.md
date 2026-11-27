@@ -18,8 +18,10 @@ and `npm run build` before committing.
   scrolling; lists stay compact and easy to scan.
 - **One popup per moment.** Combine related numbers (coins and feathers from a
   pickup) into a single popup; when lots happen at once, roll them into a tally.
-- **Gentle motion.** Small bounces, sparkles and counters ticking up are good;
+- **Gentle motion.** Sparkles, rows easing in and counters ticking up are good;
   always respect the "Reduce animations" setting.
+- **Numbers never flash.** No color flashes, size bounces, wobbles or pulses on
+  numbers or prices; they just count. The top bar never shifts or resizes.
 
 ## Saves
 
