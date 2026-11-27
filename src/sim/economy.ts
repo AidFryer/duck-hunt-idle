@@ -1,3 +1,5 @@
+import { dayFx } from './days';
+import { masteryMultiplier } from './mastery';
 import { rhythmMultiplier } from './rhythm';
 import { GUESTS } from '../data/guests';
 import { DOG_FX } from '../data/training';
@@ -189,9 +191,9 @@ export function buyDecoyBag(state: GameState, g: GroundId = 'marsh', events?: Ev
 
 /** Seconds a circling flock waits for a call. */
 export function incomingPatience(state: GameState, g: GroundId = 'marsh'): number {
-  if (g !== 'marsh') return GROUND_PARAMS[g].incomingPatience * rungFx(state, g).patience;
+  if (g !== 'marsh') return GROUND_PARAMS[g].incomingPatience * rungFx(state, g).patience * dayFx(state).patience;
   const base = HUNT.incomingPatience + UPGRADE_EFFECTS.decoyQualityPatience * (state.upgrades.decoyQuality ?? 0) + (state.legacy.perks.keenEyes ? 5 : 0);
-  return base * rungFx(state).patience;
+  return base * rungFx(state).patience * dayFx(state).patience;
 }
 
 /** Seconds a called flock works the decoys before flaring off. */
@@ -220,7 +222,7 @@ export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
 /** Extra birds per flock from food plots and weather. */
 export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number {
   const stage = stageFor(state.clock.day).flockSize - 1;
-  const weather = WEATHER[state.environment.weather].flockSize;
+  const weather = WEATHER[state.environment.weather].flockSize + dayFx(state).flockSize;
   if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + weather + stage;
   if (g === 'bay') return UPGRADE_EFFECTS.breakwaterFlockSize * (state.upgrades.breakwater ?? 0) + weather + stage;
   if (g === 'timber') return weather + stage;
@@ -240,7 +242,7 @@ function baseFlockDraw(state: GameState, g: GroundId): number {
   // A bigger spread draws more flocks.
   const spread = Math.pow(spreadSize(state, g) / P.baseSpreadSize, DECOYS.drawExponent);
   const u = state.upgrades;
-  const common = WEATHER[state.environment.weather].flockRate * rungFx(state, g).draw * stageFor(state.clock.day).flockRate;
+  const common = WEATHER[state.environment.weather].flockRate * rungFx(state, g).draw * stageFor(state.clock.day).flockRate * dayFx(state).flockRate;
   if (isField(g)) {
     const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));
     return P.baseFlockRate * spread * field * common * carvingFx(state).fieldRate;
@@ -294,7 +296,7 @@ export function birdValue(state: GameState, species: SpeciesId): { coins: number
   const lgFeathers = lg.feathers * (lg.groundFeathers[home] ?? 1);
   return {
     // Crew Rhythm lifts coins only.
-    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * lgCoins * 100) / 100,
-    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * lgFeathers * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
+    coins: Math.round(s.coins * coinBoost * stars * rhythmMultiplier(state) * lgCoins * masteryMultiplier(state) * dayFx(state).coins * 100) / 100,
+    feathers: Math.round(s.feathers * stars * smoke * carv.feathers * Math.sqrt(coinBoost) * lgFeathers * dayFx(state).feathers * (state.dog.level >= DOG_FX.softMouthLevel ? DOG_FX.softMouthFeathers : 1) * 100) / 100,
   };
 }

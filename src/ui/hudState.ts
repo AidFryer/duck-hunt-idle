@@ -1,3 +1,4 @@
+import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
@@ -25,6 +26,7 @@ import { FLYWAYS, FLYWAY_ORDER, type FlywayId } from '../data/flyways';
 import { PERK_ORDER, PERKS, PRESTIGE, type PerkId } from '../data/legacy';
 import { branchOpen, canBuyPerk, canRespec, coinsForNextStar, nextFlyway, perkCost, perkMaxRank, perkRank, starsFor, starsInPerks } from '../sim/prestige';
 import { BRANCH_ORDER, type BranchId } from '../data/legacy';
+import { masteryRows } from '../sim/mastery';
 import { workflowEval } from '../sim/workflow';
 import { TRAINING_ORDER, DOG_MAX, DOG_SKILLS, type TrainingId } from '../data/training';
 import { canAffordTraining, dogNext, trainingStatus, type TrainingStatus } from '../sim/training';
@@ -266,6 +268,8 @@ export interface HudSnapshot {
     branches: { id: BranchId; open: boolean }[];
     /** The free once-a-season refund: available now, and how many stars it'd return. */
     respec: { can: boolean; stars: number };
+    /** Flyway mastery: each flyway's four challenges. */
+    mastery: Partial<Record<FlywayId, { rows: { id: string; label: string; cur: number; goal: number }[]; mastered: boolean }>>;
   };
   flyways: { id: FlywayId; status: 'current' | 'visited' | 'next' | 'locked' | 'soon' }[];
   acres: number;
@@ -274,6 +278,8 @@ export interface HudSnapshot {
   lifetimeCoins: Decimal;
   goalId: string;
   goalTitle: string;
+  /** Today's named day, if any. */
+  specialDay: SpecialDayId | null;
   /** How far along the current goal is (0–1), when it can be measured. */
   goalProgress: number | null;
   goalGus: string;
@@ -700,6 +706,7 @@ export function snapshot(state: GameState): HudSnapshot {
       })),
       branches: BRANCH_ORDER.map((id) => ({ id, open: branchOpen(state, id) })),
       respec: { can: canRespec(state), stars: starsInPerks(state) },
+      mastery: Object.fromEntries(FLYWAY_ORDER.map((f) => [f, { rows: masteryRows(state, f).map((r) => ({ ...r })), mastered: !!state.mastery[f]?.mastered }])),
     },
     flyways: FLYWAY_ORDER.map((id) => {
       const i = FLYWAY_ORDER.indexOf(id);
@@ -713,6 +720,7 @@ export function snapshot(state: GameState): HudSnapshot {
     lifetimeCoins: state.stats.lifetimeCoins,
     goalId: goal.goal.id,
     goalTitle: goal.goal.title,
+    specialDay: state.environment.special ?? null,
     goalProgress: goal.goal.progress ? Math.max(0, Math.min(1, goal.goal.progress(state))) : null,
     goalGus: goal.goal.gus,
     goalIndex: goal.index,

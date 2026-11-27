@@ -1,4 +1,4 @@
-import { adminPlayers, failureText, onlineEnabled, type AdminRow } from '../app/online';
+import { adminPlayers, adminRemovePlayer, adminSetHidden, failureText, onlineEnabled, type AdminRow } from '../app/online';
 import { LODGE_LEVELS } from '../data/progression';
 import { formatNumber } from '../util/format';
 import './dev.css';
@@ -9,7 +9,7 @@ import './dev.css';
  */
 const KEY = 'duck-hunt-idle.devPassword';
 const root = document.getElementById('dev')!;
-type Sort = 'seen' | 'birds' | 'joined';
+type Sort = 'seen' | 'week' | 'birds' | 'joined';
 let sort: Sort = 'seen';
 let rows: AdminRow[] = [];
 
@@ -71,7 +71,7 @@ function draw(): void {
   const now = Date.now();
   const within = (h: number) => rows.filter((r) => now - new Date(r.last_seen).getTime() < h * 3600_000).length;
   const sorted = [...rows].sort((a, b) =>
-    sort === 'birds' ? b.birds - a.birds : sort === 'joined' ? b.created_at.localeCompare(a.created_at) : b.last_seen.localeCompare(a.last_seen),
+    sort === 'week' ? (b.week_birds ?? 0) - (a.week_birds ?? 0) : sort === 'birds' ? b.birds - a.birds : sort === 'joined' ? b.created_at.localeCompare(a.created_at) : b.last_seen.localeCompare(a.last_seen),
   );
   root.innerHTML = `
     <h1>Players</h1>
@@ -82,17 +82,21 @@ function draw(): void {
     </section>
     <div class="bar">
       <div class="seg">
-        ${(['seen', 'birds', 'joined'] as Sort[]).map((s) => `<button data-sort="${s}" class="${s === sort ? 'on' : ''}">${s === 'seen' ? 'Last played' : s === 'birds' ? 'Most birds' : 'Newest'}</button>`).join('')}
+        ${(['seen', 'week', 'birds', 'joined'] as Sort[]).map((s) => `<button data-sort="${s}" class="${s === sort ? 'on' : ''}">${s === 'seen' ? 'Last played' : s === 'week' ? 'This week' : s === 'birds' ? 'Most birds' : 'Newest'}</button>`).join('')}
       </div>
       <button class="btn small" id="refresh">Refresh</button>
     </div>
     <ul class="list">
       ${sorted.map((r) => `
-        <li class="card player">
-          <div class="top"><strong>${esc(r.name)}</strong><span>${ago(r.last_seen)}</span></div>
+        <li class="card player ${r.hidden ? 'is-hidden' : ''}">
+          <div class="top"><strong>${esc(r.name)}${r.hidden ? ' <em class="tag">Hidden</em>' : ''}</strong><span>${ago(r.last_seen)}</span></div>
           <div class="line">${esc(lodgeName(r.lodge))} · ${formatNumber(r.birds, 'letters')} birds · ${r.species} kinds${r.stars ? ` · ${r.stars} ★` : ''}</div>
           <div class="line dim">Day ${r.day} · ${r.play_hours.toFixed(1)} h played · ${formatNumber(r.coins, 'letters')} coins${r.seasons ? ` · ${r.seasons} seasons` : ''}</div>
-          <div class="line dim">Joined ${day(r.created_at)}${r.flyway ? ` · ${esc(r.flyway)} flyway` : ''}${r.build ? ` · v ${esc(r.build)}` : ''}</div>
+          <div class="line dim">This week: ${formatNumber(r.week_birds ?? 0, 'letters')} birds · Joined ${day(r.created_at)}${r.flyway ? ` · ${esc(r.flyway)} flyway` : ''}${r.build ? ` · v ${esc(r.build)}` : ''}</div>
+          <div class="tools">
+            <button class="btn small soft" data-hide="${r.id}" data-to="${r.hidden ? '0' : '1'}">${r.hidden ? 'Show on board' : 'Hide from board'}</button>
+            <button class="btn small soft danger" data-remove="${r.id}" data-name="${esc(r.name)}">Remove</button>
+          </div>
         </li>`).join('') || '<li class="note">No players yet.</li>'}
     </ul>
     <p class="note"><button class="link" id="logout">Forget password on this device</button></p>`;
@@ -103,6 +107,31 @@ function draw(): void {
     }),
   );
   root.querySelector('#refresh')!.addEventListener('click', () => void load(getSaved()));
+  root.querySelectorAll<HTMLButtonElement>('[data-hide]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        await adminSetHidden(getSaved(), b.dataset.hide!, b.dataset.to === '1');
+        await load(getSaved());
+      } catch (e) {
+        alert(failureText(e));
+        b.disabled = false;
+      }
+    }),
+  );
+  root.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      if (!confirm(`Remove ${b.dataset.name} from the leaderboard for good? Their name becomes free. If they play again, they'll join again.`)) return;
+      b.disabled = true;
+      try {
+        await adminRemovePlayer(getSaved(), b.dataset.remove!);
+        await load(getSaved());
+      } catch (e) {
+        alert(failureText(e));
+        b.disabled = false;
+      }
+    }),
+  );
   root.querySelector('#logout')!.addEventListener('click', () => {
     try {
       localStorage.removeItem(KEY);

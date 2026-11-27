@@ -118,7 +118,7 @@ export interface Progress {
 }
 export const reportProgress = (id: string, secret: string, p: Progress) => rpc<null>('report_progress', { p_id: id, p_secret: secret, p });
 
-export type BoardSort = 'birds' | 'lodge' | 'stars';
+export type BoardSort = 'week' | 'birds' | 'lodge' | 'stars';
 export interface BoardRow {
   rank: number;
   name: string;
@@ -126,11 +126,14 @@ export interface BoardRow {
   birds: number;
   species: number;
   stars: number;
+  /** Birds brought in this week (resets Monday). */
+  week_birds?: number;
   is_me: boolean;
 }
 export const leaderboard = (sort: BoardSort, id: string | null) => rpc<BoardRow[]>('leaderboard', { p_sort: sort, p_limit: 50, p_id: id });
 
 export interface AdminRow {
+  id: string;
   name: string;
   created_at: string;
   last_seen: string;
@@ -144,5 +147,9 @@ export interface AdminRow {
   play_hours: number;
   flyway: string;
   build: string;
+  week_birds?: number;
+  hidden?: boolean;
 }
 export const adminPlayers = (password: string) => rpc<AdminRow[]>('admin_players', { p_password: password });
+export const adminSetHidden = (password: string, id: string, hidden: boolean) => rpc<null>('admin_set_hidden', { p_password: password, p_id: id, p_hidden: hidden });
+export const adminRemovePlayer = (password: string, id: string) => rpc<null>('admin_remove_player', { p_password: password, p_id: id });

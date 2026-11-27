@@ -1,7 +1,8 @@
 -- Duck Hunt Idle: online names, leaderboard and the owner's progress page.
 --
--- Paste all of this into Supabase → SQL Editor → New query, change the
--- admin password on the LAST line, and press Run. Running it again is safe.
+-- Paste all of this into Supabase → SQL Editor → New query and press Run.
+-- First time only: change CHANGE-ME on the LAST line to your admin password.
+-- Running it again later (to pick up updates) is safe and keeps your password.
 --
 -- How it's protected: the game only ever uses the public "anon" key, so
 -- nobody can read or write the players table directly. Everything goes
@@ -37,6 +38,13 @@ create table if not exists public.admin_config (
   password_hash text not null
 );
 
+-- Added in later updates (safe to run again).
+alter table public.players add column if not exists week_key   text not null default '';
+alter table public.players add column if not exists week_base  double precision not null default 0;
+alter table public.players add column if not exists week_birds double precision not null default 0;
+alter table public.players add column if not exists reported   boolean not null default false;
+alter table public.players add column if not exists hidden     boolean not null default false;
+
 -- Nobody touches the tables directly; only the functions below do.
 alter table public.players enable row level security;
 alter table public.admin_config enable row level security;
@@ -48,6 +56,19 @@ revoke all on public.admin_config from anon, authenticated;
 create or replace function public.dhi_hash(p text) returns text
 language sql immutable as $$
   select encode(sha256(convert_to(coalesce(p, ''), 'UTF8')), 'hex')
+$$;
+
+-- This week's key (ISO week, starts Monday 00:00 UTC), e.g. '2026-48'.
+create or replace function public.dhi_week() returns text
+language sql stable as $$
+  select to_char(now() at time zone 'utc', 'IYYY-IW')
+$$;
+
+-- Is this the admin password? (The placeholder never counts.)
+create or replace function public.dhi_admin_ok(p text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(p, '') <> 'CHANGE-ME'
+     and exists (select 1 from admin_config where id = 1 and password_hash = dhi_hash(p))
 $$;
 
 -- Names: 2-20 letters, numbers, spaces and . ' - _ ; compared ignoring case and extra spaces.
@@ -104,13 +125,29 @@ exception when unique_violation then
 end $$;
 
 -- Send your progress. Raises 'not_found' if the id/secret don't match.
+-- Also keeps this week's count: birds since the first report this week.
 create or replace function public.report_progress(p_id uuid, p_secret text, p jsonb) returns void
 language plpgsql security definer set search_path = public as $$
+declare
+  cur text := dhi_week();
+  nb double precision := greatest(coalesce((p->>'birds')::double precision, 0), 0);
 begin
   update players set
+    week_base  = case
+                   when not reported then nb                 -- first report: start counting now
+                   when week_key <> cur then least(birds, nb) -- a new week
+                   when nb < birds then 0                     -- the save started over
+                   else week_base end,
+    week_birds = greatest(0, nb - case
+                   when not reported then nb
+                   when week_key <> cur then least(birds, nb)
+                   when nb < birds then 0
+                   else week_base end),
+    week_key   = cur,
+    reported   = true,
     last_seen  = now(),
     lodge      = least(greatest(coalesce((p->>'lodge')::int, 1), 1), 99),
-    birds      = greatest(coalesce((p->>'birds')::double precision, 0), 0),
+    birds      = nb,
     species    = least(greatest(coalesce((p->>'species')::int, 0), 0), 999),
     stars      = greatest(coalesce((p->>'stars')::int, 0), 0),
     seasons    = greatest(coalesce((p->>'seasons')::int, 0), 0),
@@ -123,18 +160,25 @@ begin
   if not found then raise exception 'not_found'; end if;
 end $$;
 
--- The leaderboard: the top players for one ranking ('birds', 'lodge' or 'stars'),
--- plus your own row (is_me) even when you're further down.
+-- The leaderboard: the top players for one ranking ('week', 'birds', 'lodge' or 'stars'),
+-- plus your own row (is_me) even when you're further down. Hidden players
+-- (set from the owner's page) only ever see themselves.
+drop function if exists public.leaderboard(text, int, uuid);
 create or replace function public.leaderboard(p_sort text, p_limit int default 50, p_id uuid default null)
-returns table (rank bigint, name text, lodge int, birds double precision, species int, stars int, is_me boolean)
+returns table (rank bigint, name text, lodge int, birds double precision, species int, stars int, week_birds double precision, is_me boolean)
 language sql stable security definer set search_path = public as $$
-  with ranked as (
+  with shown as (
+    select p.*, case when p.week_key = dhi_week() then p.week_birds else 0 end as wk
+    from players p
+    where not p.hidden or p.id = p_id
+  ), ranked as (
     select
       rank() over (order by
+        case when p_sort = 'week' then wk else 0 end desc,
         case when p_sort = 'lodge' then lodge when p_sort = 'stars' then stars else 0 end desc,
         birds desc) as rank,
-      p.name, p.lodge, p.birds, p.species, p.stars, coalesce(p.id = p_id, false) as is_me
-    from players p
+      name, lodge, birds, species, stars, wk as week_birds, coalesce(id = p_id, false) as is_me
+    from shown
   )
   select * from ranked
   where rank <= least(greatest(coalesce(p_limit, 50), 1), 200) or is_me
@@ -144,21 +188,37 @@ $$;
 -- ---------------------------------------------------------------- owner's page
 
 -- Every player with full details. Needs the admin password.
+drop function if exists public.admin_players(text);
 create or replace function public.admin_players(p_password text)
 returns table (
-  name text, created_at timestamptz, last_seen timestamptz, lodge int, birds double precision,
+  id uuid, name text, created_at timestamptz, last_seen timestamptz, lodge int, birds double precision,
   species int, stars int, seasons int, coins double precision, day int, play_hours double precision,
-  flyway text, build text
+  flyway text, build text, week_birds double precision, hidden boolean
 )
 language plpgsql stable security definer set search_path = public as $$
 begin
-  if not exists (select 1 from admin_config where id = 1 and password_hash = dhi_hash(p_password)) then
-    raise exception 'wrong_password';
-  end if;
+  if not dhi_admin_ok(p_password) then raise exception 'wrong_password'; end if;
   return query
-    select p.name, p.created_at, p.last_seen, p.lodge, p.birds, p.species, p.stars, p.seasons,
-           p.coins, p.day, p.play_hours, p.flyway, p.build
+    select p.id, p.name, p.created_at, p.last_seen, p.lodge, p.birds, p.species, p.stars, p.seasons,
+           p.coins, p.day, p.play_hours, p.flyway, p.build,
+           case when p.week_key = dhi_week() then p.week_birds else 0 end, p.hidden
     from players p order by p.last_seen desc;
+end $$;
+
+-- Hide a player from the public board (they still see themselves), or show them again.
+create or replace function public.admin_set_hidden(p_password text, p_id uuid, p_hidden boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not dhi_admin_ok(p_password) then raise exception 'wrong_password'; end if;
+  update players set hidden = coalesce(p_hidden, false) where id = p_id;
+end $$;
+
+-- Remove a player for good and free their name. (If they play again, they rejoin.)
+create or replace function public.admin_remove_player(p_password text, p_id uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not dhi_admin_ok(p_password) then raise exception 'wrong_password'; end if;
+  delete from players where id = p_id;
 end $$;
 
 -- Only the dashboard (not the game) may set the admin password.
@@ -171,11 +231,14 @@ $$;
 -- ---------------------------------------------------------------- who may call what
 
 revoke all on function public.dhi_hash(text), public.dhi_name_key(text), public.dhi_check_name(text),
-  public.set_admin_password(text) from public, anon, authenticated;
+  public.dhi_admin_ok(text), public.set_admin_password(text) from public, anon, authenticated;
 grant execute on function public.name_available(text), public.join_game(text, text),
   public.rename_player(uuid, text, text), public.report_progress(uuid, text, jsonb),
-  public.leaderboard(text, int, uuid), public.admin_players(text) to anon, authenticated;
+  public.leaderboard(text, int, uuid), public.admin_players(text),
+  public.admin_set_hidden(text, uuid, boolean), public.admin_remove_player(text, uuid) to anon, authenticated;
 
 -- ---------------------------------------------------------------- your admin password
--- Change CHANGE-ME to a password only you know (you'll type it on the progress page).
-select public.set_admin_password('CHANGE-ME');
+-- First time only: change CHANGE-ME to a password only you know (you'll type
+-- it on the players page). Once a password is set, this line leaves it alone.
+-- To change it later, run on its own:  select public.set_admin_password('new password');
+select public.set_admin_password('CHANGE-ME') where not exists (select 1 from public.admin_config);

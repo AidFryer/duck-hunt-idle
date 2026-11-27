@@ -1,3 +1,8 @@
+import { rollSpecialDay } from '../src/sim/days';
+import { flockDraw } from '../src/sim/economy';
+import { masteryBird, masteryGuest, masteryStar } from '../src/sim/mastery';
+import { MASTERY } from '../src/data/mastery';
+import { SPECIES } from '../src/data/species';
 import { canRespec, perkCost, perkMaxRank, respecPerks } from '../src/sim/prestige';
 import { PRESTIGE } from '../src/data/legacy';
 import Decimal from 'break_infinity.js';
@@ -216,5 +221,45 @@ describe('Legacy tree: ranks, flyway branches and the free refund', () => {
     expect(b.legacy.perks).toEqual({ headStart: 1, keenEyes: 1 });
     expect(b.legacy.flyways).toEqual({ mississippi: true, central: true, pacific: true });
     expect(b.legacy.respecSeason).toBe(-1);
+  });
+});
+
+describe('flyway mastery', () => {
+  it('four challenges on a flyway master it, for +10% coins', () => {
+    const s = createInitialState(6);
+    const ev: SimEvent[] = [];
+    const before = birdValue(s, 'mallard').coins;
+    s.hunt.bag = MASTERY.mississippi.bag;
+    const kinds = Object.keys(SPECIES).slice(0, MASTERY.mississippi.kinds) as (keyof typeof SPECIES)[];
+    for (const k of kinds) masteryBird(s, k, ev);
+    for (let i = 0; i < MASTERY.mississippi.guests; i++) masteryGuest(s, ev);
+    expect(s.mastery.mississippi?.mastered).toBe(false);
+    masteryStar(s, ev);
+    expect(s.mastery.mississippi?.mastered).toBe(true);
+    expect(ev.filter((e) => e.type === 'flywayMastered')).toHaveLength(1);
+    expect(birdValue(s, 'mallard').coins).toBeCloseTo(before * 1.1, 1);
+  });
+});
+
+describe('named days', () => {
+  it('change the hunt for the day and never come two in a row', () => {
+    const s = createInitialState(8);
+    const draw = flockDraw(s);
+    const coins = birdValue(s, 'mallard').coins;
+    s.environment.special = 'coldPush';
+    expect(flockDraw(s)).toBeCloseTo(draw * 1.6, 5);
+    s.environment.special = 'bluebird';
+    expect(birdValue(s, 'mallard').coins).toBeCloseTo(coins * 1.4, 1);
+    let named = 0;
+    let prev = false;
+    for (let d = 0; d < 400; d++) {
+      rollSpecialDay(s, []);
+      const now = s.environment.special !== null;
+      expect(prev && now).toBe(false);
+      if (now) named++;
+      prev = now;
+    }
+    expect(named).toBeGreaterThan(40);
+    expect(named).toBeLessThan(140);
   });
 });

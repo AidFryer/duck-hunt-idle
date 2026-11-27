@@ -1,3 +1,4 @@
+import { rollSpecialDay } from './days';
 import { stageFor, stageIndex } from '../data/calendar';
 import { refreshGuests } from './guests';
 import { DAY_LENGTH_SECONDS } from '../config';
@@ -29,6 +30,7 @@ export function step(state: GameState, dt: number, events: EventSink = []): void
     state.stats.lostToday = 0;
     if (stageIndex(clock.day) !== stageIndex(clock.day - 1)) events.push({ type: 'stageChanged', stage: stageFor(clock.day).id });
     refreshGuests(state, events);
+    rollSpecialDay(state, events);
   }
 
   stepWeather(state, events);

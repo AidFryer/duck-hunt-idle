@@ -1,3 +1,4 @@
+import type { SpecialDayId } from '../data/days';
 import type { GroundId } from '../data/economy';
 /** Events from grounds other than the marsh carry their ground. */
 export type OtherGround = Exclude<GroundId, 'marsh'>;
@@ -62,6 +63,8 @@ export type SimEvent =
   | { type: 'rungBuilt'; rung: RungId }
   | { type: 'dailyBonus'; coins: number; feathers: number }
   | { type: 'drifterClaimed'; coins: number; feathers: number }
+  | { type: 'flywayMastered'; flyway: FlywayId }
+  | { type: 'specialDay'; day: SpecialDayId }
   | { type: 'perkBought'; perk: PerkId }
   | { type: 'seasonClosed'; stars: number; season: number; flyway: FlywayId }
   | { type: 'flockReturned'; flockId: number }

@@ -5,7 +5,8 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 
 const SORTS: { id: BoardSort; label: string }[] = [
-  { id: 'birds', label: 'Most birds' },
+  { id: 'week', label: 'This week' },
+  { id: 'birds', label: 'All time' },
   { id: 'lodge', label: 'Biggest lodge' },
   { id: 'stars', label: 'Most stars' },
 ];
@@ -14,7 +15,7 @@ const lodgeName = (n: number) => LODGE_LEVELS[n - 1]?.name ?? `Lodge ${n}`;
 
 /** The online leaderboard: top hunters, your own spot, and a way to join. */
 export function Leaderboard({ controls, notation }: { controls: GameControls; notation: Notation }) {
-  const [sort, setSort] = useState<BoardSort>('birds');
+  const [sort, setSort] = useState<BoardSort>('week');
   const [rows, setRows] = useState<BoardRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState(controls.onlineStatus());
@@ -44,9 +45,9 @@ export function Leaderboard({ controls, notation }: { controls: GameControls; no
   };
 
   const value = (r: BoardRow) =>
-    sort === 'lodge' ? lodgeName(r.lodge) : sort === 'stars' ? `${r.stars} ★` : `${formatNumber(r.birds, notation)} birds`;
+    sort === 'week' ? `${formatNumber(r.week_birds ?? 0, notation)} birds` : sort === 'lodge' ? lodgeName(r.lodge) : sort === 'stars' ? `${r.stars} ★` : `${formatNumber(r.birds, notation)} birds`;
   const detail = (r: BoardRow) =>
-    sort === 'birds' ? `${lodgeName(r.lodge)} · ${r.species} kinds` : `${formatNumber(r.birds, notation)} birds · ${r.species} kinds`;
+    sort === 'week' ? `${lodgeName(r.lodge)} · ${formatNumber(r.birds, notation)} all time` : sort === 'birds' ? `${lodgeName(r.lodge)} · ${r.species} kinds` : `${formatNumber(r.birds, notation)} birds · ${r.species} kinds`;
   const top = rows?.filter((r) => r.rank <= 50) ?? [];
   const mine = rows?.find((r) => r.is_me && r.rank > 50);
 
@@ -80,6 +81,7 @@ export function Leaderboard({ controls, notation }: { controls: GameControls; no
           <button class={`seg__btn ${sort === s.id ? 'is-on' : ''}`} onClick={() => setSort(s.id)}>{s.label}</button>
         ))}
       </div>
+      {sort === 'week' && <p class="lb__hint">Birds brought in since Monday. Everyone starts even each week.</p>}
       {error ? (
         <p class="lb__note">
           {error} <button class="btn btn--small" onClick={() => void load(sort)}>Try again</button>
@@ -88,6 +90,8 @@ export function Leaderboard({ controls, notation }: { controls: GameControls; no
         <p class="lb__note">Checking the board…</p>
       ) : rows.length === 0 ? (
         <p class="lb__note">Nobody's on the board yet. You could be first.</p>
+      ) : sort === 'week' && rows.every((r) => !r.week_birds) ? (
+        <p class="lb__note">A fresh week: nobody's brought in a bird yet. It starts over every Monday.</p>
       ) : (
         <ol class="lb__list">
           {top.map((r) => <Row r={r} value={value(r)} detail={detail(r)} />)}

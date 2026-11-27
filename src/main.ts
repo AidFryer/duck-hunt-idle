@@ -1,3 +1,4 @@
+import { SPECIAL_DAYS } from './data/days';
 import '@fontsource/zilla-slab/latin-500.css';
 import '@fontsource/zilla-slab/latin-700.css';
 import '@fontsource/nunito/latin-600.css';
@@ -369,6 +370,16 @@ function onEvent(e: SimEvent, at: Point | null): void {
       break;
     case 'perkBought':
       feedback.toast(`Legacy perk: ${PERKS[e.perk].name}.`, 'celebrate');
+      break;
+    case 'specialDay': {
+      const d = SPECIAL_DAYS[e.day];
+      feedback.toast(`${d.name}! ${d.ray}`, 'good', 6000);
+      break;
+    }
+    case 'flywayMastered':
+      buzz('big');
+      audio.play('season');
+      feedback.toast(`${FLYWAYS[e.flyway].name} mastered! A badge for the lodge, and coins +10% for good.`, 'celebrate', 5000);
       break;
 
     case 'logged':

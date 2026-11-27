@@ -1,3 +1,4 @@
+import { masteryBird } from './mastery';
 import { rhythmMiss, rhythmTap, stepRhythm } from './rhythm';
 import { markPace, stepVolley } from './volley';
 import { guestBirds, guestGolden, refreshGuests } from './guests';
@@ -222,6 +223,7 @@ export function doMany(state: GameState, job: ManyJob, count: number, source: Ac
       state.currencies.feathers = state.currencies.feathers.add(v.feathers);
       state.stats.lifetimeFeathers = state.stats.lifetimeFeathers.add(v.feathers);
       h.ledger.push(species);
+      masteryBird(state, species, events);
       const entry = state.guide[species];
       if (entry) entry.count += 1;
       else {

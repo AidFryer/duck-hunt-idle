@@ -279,6 +279,7 @@ export class MarshScene {
       case 'guestServed':
       case 'trainingLearned':
       case 'dogLevel':
+      case 'specialDay':
         return null;
       case 'volley': {
         this.ducks.volley();
@@ -314,6 +315,7 @@ export class MarshScene {
         this.fx.confetti(a.x, a.y - 20 * this.layout.scale, this.layout.scale);
         return a;
       }
+      case 'flywayMastered':
       case 'seasonClosed':
         this.fx.confetti(this.layout.w / 2, this.layout.h * 0.4, this.layout.scale * 1.3, 60);
         return { x: this.layout.w / 2, y: this.layout.h * 0.4 };

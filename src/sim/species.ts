@@ -1,3 +1,4 @@
+import { dayFx } from './days';
 import { legacyFx } from './prestige';
 import { SPECIES, SPECIES_ORDER, SPECIES_PREFERENCE, speciesAt, type SpeciesId } from '../data/species';
 import type { GroundId } from '../data/economy';
@@ -35,7 +36,7 @@ export function speciesWeights(state: GameState, hour: number, g: GroundId = 'ma
     if (inHours(hour, d.hours)) v *= SPECIES_PREFERENCE.inHours;
     if (d.weather.includes(w)) v *= SPECIES_PREFERENCE.inWeather;
     if (d.rarity === 'rare' || d.rarity === 'legendary') {
-      v *= WEATHER[w].rare * wf.rareMult * fx.rare * stage.rare * (state.legacy.perks.birdersLuck ? 1.5 : 1);
+      v *= WEATHER[w].rare * wf.rareMult * fx.rare * stage.rare * dayFx(state).rare * (state.legacy.perks.birdersLuck ? 1.5 : 1);
     }
     if (id === 'kingEider' && state.legacy.perks.legendHunter) v *= 3;
     if (d.rarity === 'legendary') v *= legacyFx(state).legendary;

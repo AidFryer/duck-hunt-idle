@@ -159,6 +159,17 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     legacy.respecSeason = -1;
     return { ...s, legacy, version: 22 };
   },
+  // v23: flyway mastery. Flyways already left behind had a season closed there (a star).
+  22: (s) => {
+    const mastery: Json = {};
+    const legacy = (s.legacy as Json) ?? {};
+    for (const f of Object.keys((legacy.flyways as Json) ?? {})) {
+      if (f !== s.flyway) mastery[f] = { bag: 0, kinds: {}, guests: 0, star: true, mastered: false };
+    }
+    // …and named days (none today).
+    const environment = { ...((s.environment as Json) ?? {}), special: null };
+    return { ...s, mastery, environment, version: 23 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

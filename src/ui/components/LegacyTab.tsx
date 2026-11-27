@@ -69,6 +69,7 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
               <h4>{info.name}</h4>
               <span>{b.open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`}</span>
             </div>
+            <Mastery m={lg.mastery[b.id as FlywayId]} notation={notation} />
             <ol class="branch__chain">
               {perks.map((p) => (
                 <li>{b.open ? <PerkButton p={p} controls={controls} /> : <div class="perk is-locked"><strong>{PERKS[p.id].name}</strong><span>{PERKS[p.id].desc}</span></div>}</li>
@@ -238,6 +239,28 @@ function RespecRow({ hud, controls }: { hud: HudSnapshot; controls: GameControls
           {sure ? `Tap again: refund ★ ${r.stars}` : `Refund ★ ${r.stars}`}
         </button>
       )}
+    </div>
+  );
+}
+
+/** A flyway's four mastery challenges, as short progress rows. */
+function Mastery({ m, notation }: { m: HudSnapshot['legacy']['mastery'][FlywayId]; notation: Notation }) {
+  if (!m) return null;
+  return (
+    <div class={`mastery ${m.mastered ? 'is-mastered' : ''}`}>
+      <div class="mastery__head">
+        <strong>{m.mastered ? '★ Mastered' : 'Mastery'}</strong>
+        <span>{m.mastered ? 'Coins +10% for good' : `${m.rows.filter((r) => r.cur >= r.goal).length} of 4 · coins +10% for good when done`}</span>
+      </div>
+      <ul>
+        {m.rows.map((r) => (
+          <li class={r.cur >= r.goal ? 'is-done' : ''}>
+            <span class="mastery__tick" aria-hidden="true">{r.cur >= r.goal ? '✓' : ''}</span>
+            <span class="mastery__label">{r.label}</span>
+            {r.goal > 1 && <span class="mastery__num">{formatNumber(r.cur, notation)}/{formatNumber(r.goal, notation)}</span>}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

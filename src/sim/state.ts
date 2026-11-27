@@ -1,3 +1,4 @@
+import type { SpecialDayId } from '../data/days';
 import type { TrainingId } from '../data/training';
 import type { BreedId } from '../data/crew';
 import type { CarvingId } from '../data/carvings';
@@ -8,7 +9,19 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
+
+/** One flyway's mastery challenges (see data/mastery.ts). */
+export interface FlywayMastery {
+  /** Best single-day bag here. */
+  bag: number;
+  /** Kinds of bird brought in here. */
+  kinds: Partial<Record<SpeciesId, true>>;
+  guests: number;
+  /** A Flyway Star earned here. */
+  star: boolean;
+  mastered: boolean;
+}
 /**
  * Saves older than this are from before the everyone-starts-over update.
  * They load only when restored by hand; a normal start begins fresh.
@@ -126,6 +139,8 @@ export interface GameState {
     nextWeather: WeatherId;
     /** Wind strength 0–1. */
     wind: number;
+    /** Today's named day (Cold Front Push, Bluebird Day…), if any. */
+    special: SpecialDayId | null;
     /** Seed for deterministic environmental noise. */
     seed: number;
   };
@@ -172,6 +187,8 @@ export interface GameState {
    * proves it's us, and the name it holds there. Null until it joins.
    */
   online: { id: string; secret: string; name: string } | null;
+  /** Flyway mastery progress, per flyway (kept for good). */
+  mastery: Partial<Record<FlywayId, FlywayMastery>>;
   /** Sim time a drifting decoy was last fished out (see sim/drifter.ts). */
   drifterAt: number;
   /** Guest hunting parties: the booking board and the guestbook. */
@@ -340,7 +357,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     tick: 0,
     rng: (seed ^ 0x5bd1e995) >>> 0,
     clock: { dayTime: NEW_GAME_DAY_TIME, day: 1 },
-    environment: { weather: 'clear', weatherUntil: 200, nextWeather: 'fog', wind: 0.35, seed },
+    environment: { weather: 'clear', weatherUntil: 200, nextWeather: 'fog', wind: 0.35, seed, special: null },
     currencies: { coins: new Decimal(START.coins), feathers: new Decimal(START.feathers) },
     hunt: {
       decoys: START.decoys,
@@ -363,6 +380,7 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     profile: { name: '', avatar: 'hunter', dogName: '', breed: 'yellowLab' },
     online: null,
     drifterAt: 0,
+    mastery: {},
     carvings: {},
     guests: { board: [], served: 0, nextId: 1 },
     training: {},

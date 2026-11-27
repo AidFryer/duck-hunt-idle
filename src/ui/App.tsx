@@ -1,3 +1,4 @@
+import { SPECIAL_DAYS } from '../data/days';
 import { GroundPicker } from './components/GroundPicker';
 import { TrophyWall } from './components/TrophyWall';
 import { Leaderboard } from './components/Leaderboard';
@@ -56,6 +57,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [guide, setGuide] = useState(false);
   const [trophies, setTrophies] = useState(false);
   const [board, setBoard] = useState(false);
+  const [dayInfo, setDayInfo] = useState(false);
   const [stageInfo, setStageInfo] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
   const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
@@ -118,6 +120,19 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             >
               <span class="rail-btn__mark" aria-hidden="true">!</span>
               <span>{hud.openProblems}</span>
+            </button>
+          )}
+          {hud.specialDay && (
+            <button class="rail-btn rail-btn--day" onClick={() => setDayInfo(!dayInfo)} aria-expanded={dayInfo} aria-label={`Today: ${SPECIAL_DAYS[hud.specialDay].name}`} title={SPECIAL_DAYS[hud.specialDay].name}>
+              <Icon name={SPECIAL_DAYS[hud.specialDay].icon} size={18} />
+              <span>Today</span>
+            </button>
+          )}
+          {dayInfo && hud.specialDay && (
+            <button class="calendar-pop day-pop" onClick={() => setDayInfo(false)}>
+              <strong>{SPECIAL_DAYS[hud.specialDay].name}</strong>
+              <span>{SPECIAL_DAYS[hud.specialDay].effect}</span>
+              <em>Until tomorrow morning</em>
             </button>
           )}
           {hud.lodge.level >= 2 && (

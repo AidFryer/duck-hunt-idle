@@ -1,3 +1,4 @@
+import { masteryGuest } from './mastery';
 import { GUEST_NAMES, GUESTS } from '../data/guests';
 import { SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER, type WeatherId } from '../data/weather';
@@ -107,6 +108,7 @@ export function claimGuest(state: GameState, id: number, events: EventSink): boo
   state.stats.lifetimeFeathers = state.stats.lifetimeFeathers.add(r.feathers);
   state.season.coins = state.season.coins.add(r.coins);
   events.push({ type: 'guestServed', who: r.who, coins: r.coins, feathers: r.feathers, served: g.served });
+  masteryGuest(state, events);
   return true;
 }
 

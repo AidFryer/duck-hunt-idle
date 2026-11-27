@@ -1,3 +1,4 @@
+import { masteryStar } from './mastery';
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER, BOTS, type GroundId, type JobId } from '../data/economy';
 import { FLYWAYS, type FlywayId } from '../data/flyways';
@@ -154,6 +155,8 @@ export function nextFlyway(state: GameState): FlywayId {
 export function closeSeason(state: GameState, toFlyway: FlywayId, events?: EventSink): number {
   const stars = starsFor(state.season.coins);
   if (stars < 1) return 0;
+  // A star earned here counts toward this flyway's mastery.
+  masteryStar(state, events);
   const fresh = createInitialState(state.environment.seed + state.season.number, state.meta.createdAt);
   state.legacy.stars += stars;
   state.legacy.earned += stars;
