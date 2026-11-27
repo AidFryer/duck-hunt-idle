@@ -37,7 +37,18 @@ interface AppProps {
 export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSceneHost }: AppProps) {
   const hud = useStore(hudStore);
   const prefs = useStore(prefsStore);
-  const [tab, setTab] = useState<TabId>('marsh');
+  const [tab, setTabRaw] = useState<TabId>('marsh');
+  const [sheetOpen, setSheetOpen] = useState(false);
+  /** Open a menu sheet (or close it if it's already showing). */
+  const openTab = (id: TabId, toggle = false) => {
+    if (toggle && sheetOpen && id === tab) {
+      setSheetOpen(false);
+      return;
+    }
+    setTabRaw(id);
+    setSheetOpen(true);
+  };
+  const setTab = (id: TabId) => openTab(id);
   const [settings, setSettings] = useState(false);
   const [problems, setProblems] = useState(false);
   const [guide, setGuide] = useState(false);
@@ -69,7 +80,7 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const ground = hud.field.open ? prefs.ground : 'marsh';
 
   return (
-    <div class={`layout ${tab === 'marsh' ? 'layout--marsh' : ''} ${prefs.tallPanel ? 'is-tall' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
+    <div class={`layout layout--app ${sheetOpen ? 'has-sheet' : ''} ${prefs.reducedMotion ? 'reduce-motion' : ''}`}>
       <section class={`scene ${hud.volley.unlocked ? "has-volley" : ""}`} aria-label="The marsh">
         <div class="scene-host" ref={sceneRef} />
         <div class="floaters" ref={floatRef} aria-hidden="true" />
@@ -122,49 +133,48 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             {ground === 'field' ? '‹ Back to the marsh' : 'To the goose field ›'}
           </button>
         )}
+        {tutorialOn ? (
+          <div class="float-tutorial">
+            <Tutorial
+              step={tStep}
+              onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
+              onSkip={finishTutorial}
+              name={hud.profile.name}
+              onName={(nm) => controls.setProfile(nm, hud.profile.avatar)}
+            />
+          </div>
+        ) : (
+          !sheetOpen && (
+            <button class="goal-strip" onClick={() => openTab('marsh')} key={`gs-${hud.goalId}`}>
+              <span class="goal-strip__tag">Next</span>
+              <span class="goal-strip__text">{hud.goalTitle}</span>
+              {hud.lodge.next && ['cabin', 'lodge3', 'club', 'grand'].includes(hud.goalId) && <span class="goal-strip__pct">{lodgePct(hud)}%</span>}
+              <span class="goal-strip__chev" aria-hidden="true">›</span>
+            </button>
+          )
+        )}
       </section>
 
-      <aside class="panel">
-        <PanelGrip tall={prefs.tallPanel} onChange={(tall) => tall !== prefs.tallPanel && onPrefs({ ...prefs, tallPanel: tall })} />
-        <nav class="tabs" role="tablist" aria-label="Lodge sections">
-          {TABS.map((t) => {
-            const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
-            const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'legacy' && legacyAlert) || (t.id === 'marsh' && !!hud.lodge.next?.affordable);
-            return (
-              <button
-                role="tab"
-                aria-selected={t.id === tab}
-                class={`tab ${t.id === tab ? 'is-active' : ''} ${isOpen(t.id) ? '' : 'is-locked'}`}
-                onClick={() => setTab(t.id)}
-              >
-                <Icon name={t.icon} size={20} />
-                <span>{t.label}</span>
-                {alert && isOpen(t.id) && <span class="tab__dot" aria-label="Something to buy" />}
-                {!isOpen(t.id) && <span class="tab__lock" aria-label="Locked"><Icon name="lock" size={12} /></span>}
-              </button>
-            );
-          })}
-        </nav>
-        <div class="panel__content" role="tabpanel" key={tab}>
+      <aside class={`sheet ${sheetOpen ? 'is-open' : ''} ${prefs.tallPanel ? 'is-tall' : ''}`} aria-hidden={!sheetOpen} aria-label={active.label}>
+        <header class="sheet__head">
+          <button
+            class="sheet__grip"
+            aria-label={prefs.tallPanel ? 'Make the sheet shorter' : 'Make the sheet taller'}
+            onClick={() => onPrefs({ ...prefs, tallPanel: !prefs.tallPanel })}
+          >
+            <span />
+          </button>
+          <h2 class="sheet__title">
+            <Icon name={active.icon} size={20} />
+            {active.label}
+          </h2>
+          <button class="sheet__close" onClick={() => setSheetOpen(false)} aria-label="Close">✕</button>
+        </header>
+        <div class="sheet__content panel__content" role="tabpanel" key={tab}>
           {!activeOpen && activeFeature && <LockedTab tab={active} feature={activeFeature} hud={hud} />}
           {activeOpen && activeFeature && hud.lodge.level < 4 && <TabHelp feature={activeFeature} />}
           {tab === 'marsh' && (
-            <MarshTab
-              hud={hud}
-              controls={controls}
-              devTools={prefs.devTools}
-              notation={n}
-              ground={ground}
-              tutorial={tutorialOn ? (
-                <Tutorial
-                  step={tStep}
-                  onNext={() => (tStep === 'done' ? finishTutorial() : setWelcomed(true))}
-                  onSkip={finishTutorial}
-                  name={hud.profile.name}
-                  onName={(nm) => controls.setProfile(nm, hud.profile.avatar)}
-                />
-              ) : null}
-            />
+            <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} notation={n} ground={ground} tutorial={null} />
           )}
           {activeOpen && tab === 'bots' && <BotsTab hud={hud} controls={controls} notation={n} />}
           {activeOpen && tab === 'upgrades' && <UpgradesTab hud={hud} controls={controls} notation={n} />}
@@ -172,6 +182,29 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
           {activeOpen && tab === 'legacy' && <LegacyTab hud={hud} controls={controls} notation={n} />}
         </div>
       </aside>
+
+      <nav class="dock" role="tablist" aria-label="Lodge menus">
+        {TABS.map((t) => {
+          const legacyAlert = hud.season.starsNow >= 1 || hud.legacy.perks.some((p) => p.canBuy);
+          const alert = (t.id === 'bots' && botsAlert) || (t.id === 'upgrades' && upgradesAlert) || (t.id === 'legacy' && legacyAlert) || (t.id === 'marsh' && !!hud.lodge.next?.affordable);
+          const on = sheetOpen && t.id === tab;
+          return (
+            <button
+              role="tab"
+              aria-selected={on}
+              class={`dock__btn ${on ? 'is-active' : ''} ${isOpen(t.id) ? '' : 'is-locked'}`}
+              onClick={() => openTab(t.id, true)}
+            >
+              <span class="dock__icon">
+                <Icon name={t.icon} size={24} />
+                {alert && isOpen(t.id) && <span class="dock__dot" aria-label="Something to buy" />}
+                {!isOpen(t.id) && <span class="dock__lock" aria-label="Locked"><Icon name="lock" size={11} /></span>}
+              </span>
+              <span class="dock__label">{t.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       <OfflineCard notation={n} />
       <SeasonCeremony />
@@ -203,23 +236,9 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   );
 }
 
-/** The handle on top of the panel: tap, or drag up/down, to make the panel taller or shorter. */
-function PanelGrip({ tall, onChange }: { tall: boolean; onChange: (tall: boolean) => void }) {
-  const start = useRef<number | null>(null);
-  return (
-    <button
-      class="panel-grip"
-      aria-label={tall ? 'Make the panel shorter' : 'Make the panel taller'}
-      aria-pressed={tall}
-      onPointerDown={(e) => (start.current = e.clientY)}
-      onPointerUp={(e) => {
-        const dy = start.current === null ? 0 : e.clientY - start.current;
-        start.current = null;
-        onChange(dy < -12 ? true : dy > 12 ? false : !tall);
-      }}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onChange(!tall)}
-    >
-      <span class="panel-grip__bar" />
-    </button>
-  );
+/** How far along the next lodge is, by its slowest requirement. */
+function lodgePct(hud: HudSnapshot): number {
+  const reqs = hud.lodge.next?.reqs ?? [];
+  if (reqs.length === 0) return 0;
+  return Math.round(Math.min(...reqs.map((r) => Math.min(1, r.cur / Math.max(1, r.goal)))) * 100);
 }

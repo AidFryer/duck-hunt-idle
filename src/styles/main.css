@@ -4488,3 +4488,195 @@ select {
 .ceremony__birds figure { margin: 0; display: grid; justify-items: center; width: 74px; }
 .ceremony__birds img { width: 64px; }
 .ceremony__birds figcaption { font-size: 11px; text-align: center; color: var(--ui-textSoft); }
+
+/* ============================================================ full-screen app
+   The marsh fills the screen; a wooden dock sits at the bottom and each menu
+   slides up over the marsh as a sheet. */
+:root { --dock-h: calc(66px + env(safe-area-inset-bottom)); }
+.layout.layout--app { display: block; }
+.layout--app .scene { position: absolute; top: 0; left: 0; right: 0; bottom: var(--dock-h); }
+
+.dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 16;
+  height: var(--dock-h);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 2px;
+  padding: 6px 8px env(safe-area-inset-bottom);
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.07) 0 1px, transparent 1px 96px),
+    linear-gradient(#6f4c31, #4a3221);
+  box-shadow: 0 -4px 14px rgba(20, 12, 6, 0.35);
+}
+.dock__btn {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #f4e9d4;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.dock__icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 36px;
+  border-radius: 13px;
+  background: rgba(255, 244, 220, 0.09);
+  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1), background 0.2s ease;
+}
+.dock__btn:active .dock__icon { transform: scale(0.92); }
+.dock__btn.is-active .dock__icon {
+  background: linear-gradient(#f6d07e, #c9a04e);
+  color: #2d2520;
+  transform: translateY(-5px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+}
+.dock__btn.is-active .dock__label { color: #ffd98a; }
+.dock__btn.is-locked { opacity: 0.5; }
+.dock__dot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-amber);
+  box-shadow: 0 0 0 2px #4a3221;
+}
+.dock__lock {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #2d2520;
+}
+
+.sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--dock-h);
+  z-index: 15;
+  height: min(64%, calc(100% - var(--dock-h) - 110px));
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    var(--ui-panel);
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 -8px 26px rgba(20, 12, 6, 0.38);
+  transform: translateY(calc(100% + var(--dock-h)));
+  visibility: hidden;
+  transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1), height 0.3s ease, visibility 0s linear 0.34s;
+}
+.sheet.is-open { transform: none; visibility: visible; transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.3, 1), height 0.3s ease, visibility 0s; }
+.sheet.is-tall { height: calc(100% - var(--dock-h) - var(--hud-top, 12px) - 56px); }
+.sheet__head { position: relative; display: flex; align-items: center; gap: 8px; padding: 14px 12px 4px 16px; flex: none; }
+.sheet__grip {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  translate: -50% 0;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.sheet__grip span { width: 40px; height: 5px; border-radius: 5px; background: rgba(107, 74, 47, 0.35); }
+.sheet__title { flex: 1; display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--ui-fontHeading); font-size: 21px; color: var(--ui-text); }
+.sheet__title .icon { color: var(--c-wood); }
+.sheet__close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(45, 37, 32, 0.1);
+  color: var(--ui-text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.sheet__content { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 12px; }
+.sheet__content > .tab-body > .tab-head h3 { display: none; }
+
+.goal-strip {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  z-index: 4;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 7px 12px 7px 7px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(253, 247, 234, 0.95);
+  box-shadow: 0 3px 12px rgba(20, 12, 6, 0.3);
+  color: var(--ui-text);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  animation: strip-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+@keyframes strip-in { from { opacity: 0; transform: translateY(10px); } }
+.goal-strip__tag { flex: none; padding: 3px 8px; border-radius: 999px; background: var(--c-rust); color: var(--c-cream); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.goal-strip__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-strip__pct { flex: none; color: var(--c-sageDark); }
+.goal-strip__chev { flex: none; color: var(--ui-textSoft); font-size: 18px; line-height: 1; }
+
+.float-tutorial { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 6; max-width: 480px; margin: 0 auto; }
+
+/* Things on the marsh sit above the goal strip; messages stay above sheets. */
+.layout--app .tally, .layout--app .volley { bottom: 58px; }
+.layout--app .toasts { z-index: 19; bottom: 64px; }
+.layout--app .scene.has-volley .toasts { bottom: 136px; }
+.layout--app.has-sheet .toasts { bottom: auto; top: calc(var(--hud-top, 12px) + 56px); }
+.layout--app .moment { z-index: 18; }
+.layout--app.has-sheet .tally, .layout--app.has-sheet .volley, .layout--app.has-sheet .goal-strip { visibility: hidden; }
+
+/* Wide screens: the sheet opens as a drawer on the right. */
+@media (min-width: 860px) and (min-aspect-ratio: 1/1) {
+  .sheet {
+    left: auto;
+    top: 0;
+    width: clamp(360px, 32vw, 460px);
+    height: auto;
+    border-radius: 22px 0 0 0;
+    transform: translateX(105%);
+  }
+  .sheet.is-tall { height: auto; }
+  .sheet__grip { display: none; }
+  .dock { grid-template-columns: repeat(5, minmax(0, 110px)); justify-content: center; }
+}
+.reduce-motion .sheet, .reduce-motion .goal-strip { transition: none; animation: none; }
+/* The floating tutorial stays small so birds on the water stay visible. */
+.float-tutorial .tutorial { gap: 8px; }
+.float-tutorial .keeper__portrait { transform: scale(0.72); transform-origin: bottom left; margin-right: -14px; }
+.float-tutorial .tutorial__bubble { padding: 10px 12px; font-size: 14px; line-height: 1.35; }
+.float-tutorial .tutorial__bubble p { margin: 0 0 6px; }
+.float-tutorial .tutorial__name { padding: 6px 10px; font-size: 14px; }

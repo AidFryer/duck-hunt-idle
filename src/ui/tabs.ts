@@ -17,11 +17,11 @@ export interface TabDef {
 }
 
 export type TabId = 'marsh' | 'bots' | 'workflows' | 'upgrades' | 'legacy';
-export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 'star' | 'sun' | 'moon' | 'coin' | 'feather' | 'duck' | 'wind' | 'gear' | 'fog' | 'drop' | 'snow' | 'cloud' | 'lock' | 'trophy' | 'leaf';
+export type IconName = 'marsh' | 'bot' | 'board' | 'rope' | 'hammer' | 'book' | 'star' | 'sun' | 'moon' | 'coin' | 'feather' | 'duck' | 'wind' | 'gear' | 'fog' | 'drop' | 'snow' | 'cloud' | 'lock' | 'trophy' | 'leaf' | 'lodge';
 
 export const TABS: readonly TabDef[] = [
-  { id: 'marsh', label: 'Marsh', icon: 'marsh', comingSoon: '', phase: 1 },
-  { id: 'upgrades', label: 'Upgrades', icon: 'hammer', comingSoon: '', phase: 2 },
+  { id: 'marsh', label: 'Lodge', icon: 'lodge', comingSoon: '', phase: 1 },
+  { id: 'upgrades', label: 'Land', icon: 'marsh', comingSoon: '', phase: 2 },
   { id: 'bots', label: 'Workshop', icon: 'bot', comingSoon: '', phase: 2 },
   { id: 'workflows', label: 'Workflows', icon: 'rope', comingSoon: '', phase: 5 },
   { id: 'legacy', label: 'Legacy', icon: 'star', comingSoon: '', phase: 5 },
