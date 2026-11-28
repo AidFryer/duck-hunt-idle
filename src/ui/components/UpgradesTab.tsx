@@ -4,7 +4,7 @@ import { UPGRADES } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
-import { pulse } from './BotsTab';
+import { gainText, pulse } from './BotsTab';
 import { Cost } from './Cost';
 
 type Up = HudSnapshot['upgrades'][number];
@@ -34,9 +34,12 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
       <ul class="up-list">
         <li class="up-row">
           <div class="up-row__text">
-            <strong>Wetland Acres <span class="up-row__lvl">{hud.acres}</span></strong>
+            <strong>
+              Wetland Acres <span class="up-row__lvl">{hud.acres}</span>
+              {hud.bestBuy === 'acre' && <span class="best-buy">Best buy</span>}
+            </strong>
             <span>
-              Flocks ×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)} · {hud.maxCircling} can circle at once
+              Flocks ×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)} · {hud.maxCircling} can circle · {gainText(hud.acreGain, notation)} next
             </span>
           </div>
           <button class="btn btn--primary btn--buy btn--small" aria-disabled={!hud.acreAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyAcre())}>
@@ -96,6 +99,7 @@ function UpRow({ u, controls, notation, offline }: { u: Up; controls: GameContro
         <span>
           {d.effect}
           {u.id === 'cot' ? ` (now ${offline}h)` : ''}
+          {u.gain >= 0.05 && !maxed ? ` · ${gainText(u.gain, notation)}` : ''}
         </span>
       </div>
       {maxed ? (

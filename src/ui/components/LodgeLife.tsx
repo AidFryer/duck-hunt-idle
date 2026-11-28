@@ -1,4 +1,3 @@
-import { PROJECTS, PROJECTS_LODGE } from '../../data/projects';
 import { UPGRADES, type UpgradeId } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
@@ -100,51 +99,6 @@ export function LodgeRooms({ hud, controls, notation }: { hud: HudSnapshot; cont
             <span class="room__effect">Comes with the {u.lodgeName}</span>
           </div>
         ))}
-      </div>
-    </section>
-  );
-}
-
-/** Lodge projects: big builds you fund bit by bit, four stages each. */
-export function LodgeProjects({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  if (hud.lodge.level < PROJECTS_LODGE) return null;
-  return (
-    <section class="lodge-section" aria-label="Lodge projects">
-      <h4 class="group-head">Projects</h4>
-      <p class="card__hint">Big builds you can chip away at. Put in what you can; every finished stage stays for good.</p>
-      <div class="project-list">
-        {hud.projects.map((p) => {
-          const d = PROJECTS[p.id];
-          const st = d.stages[p.stage];
-          const pct = (cur: number, goal: number) => `${Math.min(100, Math.floor((cur / goal) * 100))}%`;
-          return (
-            <div class={`project ${st ? '' : 'is-done'}`}>
-              <div class="project__head">
-                <strong>{d.name}</strong>
-                <span>{st ? `Stage ${p.stage + 1} of 4` : 'Finished'}</span>
-              </div>
-              {p.stage > 0 && (
-                <ul class="project__done">
-                  {d.stages.slice(0, p.stage).map((x) => <li title={x.does}>✓ {x.name}</li>)}
-                </ul>
-              )}
-              {st && (
-                <>
-                  <p class="project__next"><strong>{st.name}:</strong> {st.does}</p>
-                  <div class="project__bars">
-                    <span class="project__bar"><i style={{ width: pct(p.coins, st.coins) }} /></span>
-                    <span class="project__num">{formatNumber(p.coins, notation)} / {formatNumber(st.coins, notation)} coins</span>
-                    <span class="project__bar project__bar--f"><i style={{ width: pct(p.feathers, st.feathers) }} /></span>
-                    <span class="project__num">{formatNumber(p.feathers, notation)} / {formatNumber(st.feathers, notation)} feathers</span>
-                  </div>
-                  <button class="btn btn--primary btn--small" aria-disabled={!p.canFund} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.fundProject(p.id))}>
-                    Put in
-                  </button>
-                </>
-              )}
-            </div>
-          );
-        })}
       </div>
     </section>
   );

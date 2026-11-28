@@ -6,7 +6,7 @@ import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { HuntPanel } from './HuntPanel';
 import { LodgePanel } from './Lodge';
-import { GuestBoard, LodgeProjects, LodgeRooms } from './LodgeLife';
+import { GuestBoard, LodgeRooms } from './LodgeLife';
 import type { Notation } from '../../util/format';
 import type { GroundId } from '../../data/economy';
 
@@ -29,7 +29,6 @@ export function MarshTab({ hud, controls, devTools, tutorial, notation, ground =
       <HuntPanel hud={hud} ground={ground} />
       {hud.lodge.level >= 2 && <GuestBoard hud={hud} controls={controls} notation={notation} />}
       {hud.lodge.level >= 2 && <LodgeRooms hud={hud} controls={controls} notation={notation} />}
-      <LodgeProjects hud={hud} controls={controls} notation={notation} />
 
       {!tutorial && <div class="keeper">
         <div class="keeper__portrait" aria-hidden="true">

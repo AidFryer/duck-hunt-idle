@@ -49,7 +49,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'cabin',
     title: "Build the Trapper's Cabin",
-    gus: "This old shack won't hold a workbench. Bring in 150 birds, find a second kind of duck, then build a proper cabin from the Marsh tab.",
+    gus: "This old shack won't hold a workbench. Save up 2,000 coins, find a second kind of duck, then build a proper cabin from the Lodge tab.",
     done: (s) => s.lodge >= 2,
   },
   {
@@ -98,7 +98,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'lodge3',
     title: 'Build the Marsh Lodge',
-    gus: "Bring in 5,000 birds and find five kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
+    gus: "Save up 50,000 coins and find five kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
     done: (s) => s.lodge >= 3,
   },
   {
@@ -147,7 +147,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'grand',
     title: 'Build the Grand Lodge',
-    gus: "Stone chimney, three wings, a flag on the roof. Twenty kinds of birds in the book and we can build her.",
+    gus: "Stone chimney, three wings, a flag on the roof. Twenty kinds of birds in the book and the coins saved, and we can build her.",
     done: (s) => s.lodge >= 5,
   },
   {

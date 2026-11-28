@@ -4,10 +4,6 @@
  * buys what the pipeline's bottleneck needs, learns crew skills, trains the dog, serves guests and
  * closes the season when it's worth a star. Pure: drives the sim directly.
  */
-import { GEAR_MAX, GEAR_ORDER } from '../data/gear';
-import { buyGear, gearLevel, gearOpen, gearPrice } from './gear';
-import { PROJECT_ORDER, PROJECTS } from '../data/projects';
-import { fundProject, project, projectFx } from './projects';
 import { TRAINING, TRAINING_ORDER } from '../data/training';
 import { buyTraining, dogNext, trainDog, trainingStatus } from './training';
 import { claimGuest } from './guests';
@@ -162,19 +158,6 @@ function options(s: GameState): Option[] {
   for (const id of CARVING_ORDER) {
     if (carvingStatus(s, id) !== 'ready') continue;
     opts.push({ price: { coins: new Decimal(CARVINGS[id].coins), feathers: new Decimal(CARVINGS[id].feathers) }, buy: () => buyCarving(s, id, []) });
-  }
-  // Crew gear (cheap, many levels).
-  for (const id of GEAR_ORDER) {
-    if (!gearOpen(s, id) || gearLevel(s, id) >= GEAR_MAX) continue;
-    opts.push({ price: gearPrice(id, gearLevel(s, id), projectFx(s).gearPrice), buy: () => buyGear(s, id) });
-  }
-  // Lodge projects: finish a stage once it costs a third or less of what's on hand.
-  if (saveCap === null) {
-    for (const id of PROJECT_ORDER) {
-      const p = project(s, id);
-      const st = PROJECTS[id].stages[p.stage];
-      if (st && s.currencies.coins.gte((st.coins - p.coins) * 3) && s.currencies.feathers.gte((st.feathers - p.feathers) * 3)) fundProject(s, id);
-    }
   }
   // Tune-ups for the most-owned types, when they are cheap relative to the crew.
   for (const id of BOT_ORDER) {

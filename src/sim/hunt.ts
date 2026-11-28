@@ -1,4 +1,3 @@
-import { projectFx } from './projects';
 import { masteryBird } from './mastery';
 import { rhythmMiss, rhythmTap, stepRhythm } from './rhythm';
 import { markPace, stepVolley } from './volley';
@@ -120,7 +119,9 @@ export function doAction(state: GameState, job: ActionJob, source: ActionSource 
 function payHand(state: GameState, job: ActionJob, events: EventSink): void {
   const step = job === 'log' ? null : JOB_STEP[job]?.step;
   if (step !== 'call' && step !== 'shoot' && step !== 'retrieve') return;
-  const coins = Math.round(Math.max(HAND.minCoins, state.volley.coinsRate * HAND[step]) * 100) / 100;
+  // Based on the birds coming in (not on coins, which would count these bonuses too and snowball).
+  const crewIncome = state.volley.birdsRate * birdValue(state, 'mallard').coins;
+  const coins = Math.round(Math.max(HAND.minCoins, crewIncome * HAND[step]) * 100) / 100;
   state.currencies.coins = state.currencies.coins.add(coins);
   state.stats.lifetimeCoins = state.stats.lifetimeCoins.add(coins);
   state.season.coins = state.season.coins.add(coins);
@@ -332,7 +333,7 @@ function stepGolden(state: GameState, dt: number, activity: number, events: Even
   if (state.lodge < GOLDEN.fromLodge || activity < 0.25) return;
   state.goldenTimer -= dt * activity * (FLYWAYS[state.flyway].goldenMult ?? 1) * carvingFx(state).golden * (1 + UPGRADE_EFFECTS.mapRoomGolden * (state.upgrades.mapRoom ?? 0));
   if (state.goldenTimer > 0) return;
-  state.goldenTimer = (GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap)) / projectFx(state).golden;
+  state.goldenTimer = (GOLDEN.minGap + rand(state) * (GOLDEN.maxGap - GOLDEN.minGap));
   const others = GROUND_ORDER.filter((x) => x !== 'marsh' && groundOpen(state, x));
   const g: GroundId = others.length > 0 && rand(state) < GOLDEN.fieldShare ? others[Math.floor(rand(state) * others.length)]! : 'marsh';
   const h = ground(state, g);

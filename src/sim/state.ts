@@ -1,5 +1,3 @@
-import type { GearId } from '../data/gear';
-import type { ProjectId } from '../data/projects';
 import type { SpecialDayId } from '../data/days';
 import type { TrainingId } from '../data/training';
 import type { BreedId } from '../data/crew';
@@ -11,16 +9,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 24;
-
-/** A lodge project's progress. */
-export interface ProjectState {
-  /** Stages finished (0–4). */
-  stage: number;
-  /** Coins and feathers put toward the next stage so far. */
-  coins: number;
-  feathers: number;
-}
+export const SAVE_VERSION = 25;
 
 /** One flyway's mastery challenges (see data/mastery.ts). */
 export interface FlywayMastery {
@@ -198,10 +187,6 @@ export interface GameState {
    * proves it's us, and the name it holds there. Null until it joins.
    */
   online: { id: string; secret: string; name: string } | null;
-  /** Crew gear levels this season (see data/gear.ts). */
-  gear: Partial<Record<GearId, number>>;
-  /** Lodge projects: stages finished, and what's been put toward the next one (kept for good). */
-  projects: Partial<Record<ProjectId, ProjectState>>;
   /** Flyway mastery progress, per flyway (kept for good). */
   mastery: Partial<Record<FlywayId, FlywayMastery>>;
   /** Sim time a drifting decoy was last fished out (see sim/drifter.ts). */
@@ -396,8 +381,6 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     online: null,
     drifterAt: 0,
     mastery: {},
-    gear: {},
-    projects: {},
     carvings: {},
     guests: { board: [], served: 0, nextId: 1 },
     training: {},

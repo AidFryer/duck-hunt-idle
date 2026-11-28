@@ -1,4 +1,3 @@
-import { GEAR } from '../../data/gear';
 import { useState } from 'preact/hooks';
 import { BOT_MILESTONES, BOTS, DECOYS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId, type GroundId } from '../../data/economy';
 import { PLANS } from '../../data/progression';
@@ -32,9 +31,8 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
   const sections = [
     ...groups.slice(0, 1),
     { key: 'decoys', title: 'Decoys', ids: [] },
-    { key: 'gear', title: 'Crew gear', ids: [] },
     ...groups.slice(1),
-  ].filter((g) => g.key === 'decoys' || g.key === 'gear' || g.ids.length > 0);
+  ].filter((g) => g.key === 'decoys' || g.ids.length > 0);
   const jump = (key: string) => document.getElementById(`ws-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
     <div class="tab-body workshop">
@@ -53,16 +51,12 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
           <button class="ws-jump__chip" onClick={() => jump(g.key)}>{g.title}</button>
         ))}
       </nav>
-      <p class={`crew-note ${hud.crewNote ? 'is-busy' : ''}`}>
-        {hud.crewNote ?? 'The crew is keeping up. Every job is moving.'}
-      </p>
+      <p class="crew-note">{limitNote(hud, notation)}</p>
       {sections.map((g) => (
         <section id={`ws-${g.key}`} class="ws-section" aria-label={g.title}>
           <h4 class="group-head">{g.title}</h4>
           {g.key === 'decoys' ? (
             <DecoysSection hud={hud} controls={controls} notation={notation} />
-          ) : g.key === 'gear' ? (
-            <GearSection hud={hud} controls={controls} notation={notation} />
           ) : (
             <ul class="ws-list">
               {g.ids.map((id) => (
@@ -176,10 +170,14 @@ function BotRow({ id, hud, controls, notation, mode, open, onToggle }: { id: Bot
             {rungReady && <span class="ws-row__dot" title="A ladder step is ready" />}
           </div>
           <div class="ws-row__text">
-            <strong>{def.name} <span class="ws-row__tag">Lv {b.level}</span></strong>
+            <strong>
+              {def.name} <span class="ws-row__tag">Lv {b.level}</span>
+              {hud.bestBuy === `bot:${id}` && <span class="best-buy">Best buy</span>}
+            </strong>
             <span>
               {id === 'foreman'
                 ? `Handles ${Math.max(1, Math.floor(b.unitSpeed * b.multiplier))} at a time each`
+                : b.gain !== null && plan.earned ? `${gainText(b.gain, notation)} each${b.owned > 0 ? ` · ${formatRate(b.rate)} working` : ''}`
                 : b.owned > 0 ? `${formatRate(b.rate)} working` : def.blurb}
               {b.stuck > 0 ? ` · ${b.stuck} stuck` : ''}
             </span>
@@ -267,9 +265,12 @@ function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: GroundI
     <section class="spread-card" aria-label={SPREAD_NAME[ground]}>
       <div class="spread-card__head">
         <div>
-          <h4>{SPREAD_NAME[ground]}</h4>
+          <h4>
+            {SPREAD_NAME[ground]}
+            {hud.bestBuy === `decoys:${ground}` && <span class="best-buy">Best buy</span>}
+          </h4>
           <p>
-            {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)}
+            {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)} · {gainText(sp.gain, notation)} a bag
           </p>
         </div>
         <button class="btn btn--primary btn--buy btn--small" aria-disabled={!sp.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyDecoys(ground))}>
@@ -317,37 +318,24 @@ export function pulse(el: HTMLElement, ok: boolean): void {
   if (!ok) audio.play('nope');
 }
 
-/** Crew gear: cheap buys with many levels, a few percent each. */
-function GearSection({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
-  const open = hud.gear.filter((g) => g.open);
-  const later = hud.gear.filter((g) => !g.open);
-  return (
-    <>
-      <p class="card__hint gear-hint">Small buys with lots of levels. Gear starts over each season.</p>
-      <ul class="gear-list">
-        {open.map((g) => {
-          const d = GEAR[g.id];
-          const maxed = g.level >= 25;
-          return (
-            <li class="gear-row">
-              <div class="gear-row__text">
-                <strong>{d.name} <span class="gear-row__lvl">Lv {g.level}</span></strong>
-                <span>{d.per} each{g.level > 0 ? ` · now +${Math.round(d.step * g.level * 100)}%` : ''}</span>
-              </div>
-              {maxed ? (
-                <span class="gear-row__max">Maxed</span>
-              ) : (
-                <button class="btn btn--primary btn--buy btn--small" aria-disabled={!g.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyGear(g.id))}>
-                  <Cost price={g.price} notation={notation} />
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-      {later.length > 0 && (
-        <p class="card__hint">More gear with the {later[0]!.lodgeName}: {later.filter((g) => g.lodgeName === later[0]!.lodgeName).map((g) => GEAR[g.id].name).join(', ')}.</p>
-      )}
-    </>
-  );
+/** "+12 birds/min" (small gains get one decimal). */
+export function gainText(g: number, notation: Notation): string {
+  if (g < 0.05) return '+0 birds/min';
+  return `+${g < 10 ? (Math.round(g * 10) / 10).toString() : formatNumber(g, notation)} birds/min`;
+}
+
+const LIMIT_TEXT: Record<string, string> = {
+  flocks: 'not enough flocks. More decoys or acres bring more',
+  call: 'calling. More Callers',
+  shoot: 'shooting. More Blind Bots',
+  fetch: 'fetching. More Robo-Retrievers',
+  crew: 'the crew there. Hire more',
+};
+
+/** How many birds a minute come in, and what's holding the marsh back. */
+function limitNote(hud: HudSnapshot, notation: Notation): string {
+  const bpm = hud.birdsPerMin;
+  const lim = hud.limits.marsh;
+  if (bpm < 0.05) return 'Carve your first crew and the marsh starts hunting on its own.';
+  return `The lodge brings in about ${formatNumber(bpm, notation)} birds a minute. Holding the marsh back: ${LIMIT_TEXT[lim ?? 'flocks']}.`;
 }

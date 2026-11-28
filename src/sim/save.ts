@@ -172,6 +172,46 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v24: crew gear and lodge projects.
   23: (s) => ({ ...s, gear: s.gear ?? {}, projects: s.projects ?? {}, version: 24 }),
+  // v25: Crew Gear and Lodge Projects are gone; everything spent on them comes back.
+  24: (s) => {
+    let coins = 0;
+    let feathers = 0;
+    const gear: Record<string, [number, number]> = {
+      shells: [40, 4], calls: [60, 6], vests: [800, 80], blindPaint: [1200, 100],
+      ink: [15000, 1200], decoyPaint: [20000, 1500], lantern: [300000, 25000], featherBags: [250000, 20000],
+    };
+    for (const [id, lvl] of Object.entries((s.gear as Json) ?? {})) {
+      const b = gear[id];
+      if (!b || typeof lvl !== 'number') continue;
+      for (let i = 0; i < lvl; i++) {
+        coins += Math.ceil(b[0] * Math.pow(1.32, i));
+        feathers += Math.ceil(b[1] * Math.pow(1.32, i));
+      }
+    }
+    const stages: Record<string, [number, number][]> = {
+      boathouse: [[5e4, 5e3], [5e6, 3e5], [5e8, 2e7], [5e10, 1.5e9]],
+      carvingShop: [[2e4, 2e3], [2e6, 1.5e5], [2e8, 1e7], [2e10, 1e9]],
+      lookout: [[3e4, 3e3], [3e6, 2e5], [3e8, 1.5e7], [3e10, 1.2e9]],
+    };
+    for (const [id, p] of Object.entries((s.projects as Json) ?? {})) {
+      const list = stages[id];
+      const pj = p as { stage?: number; coins?: number; feathers?: number };
+      if (!list) continue;
+      for (let i = 0; i < (pj.stage ?? 0); i++) {
+        coins += list[i]?.[0] ?? 0;
+        feathers += list[i]?.[1] ?? 0;
+      }
+      coins += pj.coins ?? 0;
+      feathers += pj.feathers ?? 0;
+    }
+    const cur = { ...((s.currencies as Json) ?? {}) };
+    cur.coins = String(Number(cur.coins ?? 0) + coins);
+    cur.feathers = String(Number(cur.feathers ?? 0) + feathers);
+    const out: Json = { ...s, currencies: cur, version: 25 };
+    delete out.gear;
+    delete out.projects;
+    return out;
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

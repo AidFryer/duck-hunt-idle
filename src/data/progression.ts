@@ -64,7 +64,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 2, name: "Trapper's Cabin",
     gus: "Four real walls and a workbench. Now we can start carving help.",
-    birds: 150, species: 2, coins: 400, feathers: 60, opens: ['bots', 'upgrades', 'workflows'],
+    birds: 0, species: 2, coins: 2_000, feathers: 200, opens: ['bots', 'upgrades', 'workflows'],
     points: [
       'The Workshop: do a job by hand enough times and you earn the plans for its bot. Then carve bots with coins.',
       'Your first food plot: plant millet and more on the far bank. What grows depends on the flyway.',
@@ -74,7 +74,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 3, name: 'Marsh Lodge',
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
-    birds: 5_000, species: 5, coins: 15_000, feathers: 1_500, opens: [],
+    birds: 0, species: 5, coins: 50_000, feathers: 5_000, opens: [],
     points: [
       'Ledger Bot plans, so Ray gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
@@ -85,7 +85,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 4, name: 'Sporting Club',
     gus: "A real club now. Members, a trophy room, the works. Time to run this place like a well-oiled call.",
-    birds: 200_000, species: 12, coins: 3_000_000, feathers: 200_000, opens: ['field'],
+    birds: 0, species: 12, coins: 8_000_000, feathers: 500_000, opens: ['field'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch grounds from the button at the top of the screen.',
       'Scout and Foreman plans.',
@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 2_500_000, species: 20, coins: 350_000_000, feathers: 10_000_000, opens: ['legacy'],
+    birds: 0, species: 20, coins: 600_000_000, feathers: 20_000_000, opens: ['legacy'],
     points: [
       'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks. Hire a Bay Boatman to run it.',
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',

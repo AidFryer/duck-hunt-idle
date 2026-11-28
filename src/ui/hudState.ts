@@ -1,7 +1,4 @@
-import { GEAR, GEAR_ORDER, type GearId } from '../data/gear';
-import { canBuyGear, gearLevel, gearOpen, gearPrice } from '../sim/gear';
-import { PROJECT_ORDER, PROJECTS, PROJECTS_LODGE, type ProjectId } from '../data/projects';
-import { project, projectFx } from '../sim/projects';
+import { acreGain, botGain, calibrate, decoyGain, groundBirdsPerMinute, upgradeGain } from '../sim/estimate';
 import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -110,6 +107,8 @@ export interface BotSnapshot {
   revealed: boolean;
   stuck: number;
   bench: number;
+  /** Birds a minute one more would add (null for crew that doesn't bring birds in). */
+  gain: number | null;
 }
 
 export interface JobToken {
@@ -200,7 +199,7 @@ export interface HudSnapshot {
   speciesFound: number;
   achievements: { id: string; unlocked: boolean }[];
   patches: number;
-  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string; lodge: number }[];
+  upgrades: { id: UpgradeId; level: number; max: number; price: Price; affordable: boolean; revealed: boolean; lodgeName: string; lodge: number; gain: number }[];
   lodge: LodgeSnapshot;
   profile: { name: string; avatar: string; dogName: string; breed: BreedId };
   /** Coins-per-bird bonus from patches (e.g. 0.36 for +36%). */
@@ -227,7 +226,14 @@ export interface HudSnapshot {
   calendar: { id: StageId; name: string; blurb: string; day: number; of: number; nextName: string };
   carvings: { id: CarvingId; status: CarvingStatus; affordable: boolean }[];
   maxCircling: number;
-  spreads: Record<GroundId, { decoys: number; draw: number; price: Price; affordable: boolean }>;
+  spreads: Record<GroundId, { decoys: number; draw: number; price: Price; affordable: boolean; gain: number }>;
+  /** Birds a minute the whole lodge brings in, and what's holding each ground back. */
+  birdsPerMin: number;
+  limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>>;
+  /** Birds a minute one more acre would add. */
+  acreGain: number;
+  /** The best-value buy right now (most birds a minute per coin), e.g. 'bot:caller', 'decoys:marsh', 'acre'. */
+  bestBuy: string | null;
   /** Every hunting ground, open or not, in the order they open. */
   grounds: { id: GroundId; name: string; open: boolean; lodgeName: string }[];
   plots: {
@@ -282,10 +288,6 @@ export interface HudSnapshot {
   lifetimeCoins: Decimal;
   goalId: string;
   goalTitle: string;
-  /** Crew gear on the shelf (open ones, plus the next to open). */
-  gear: { id: GearId; level: number; open: boolean; price: Price; affordable: boolean; lodgeName: string }[];
-  /** Lodge projects: stage, the next stage's cost and how much is in. */
-  projects: { id: ProjectId; stage: number; coins: number; feathers: number; canFund: boolean }[];
   /** Today's named day, if any. */
   specialDay: SpecialDayId | null;
   /** How far along the current goal is (0–1), when it can be measured. */
@@ -363,7 +365,12 @@ function lodgeSnap(state: GameState): LodgeSnapshot {
     next: {
       level: n.level,
       name: n.name,
-      reqs: [req(state, 'birds', n.birds), req(state, 'species', n.species)],
+      // Coins (and feathers) are the gate, plus kinds of bird to keep exploring worthwhile.
+      reqs: [
+        { label: `Save ${n.coins.toLocaleString('en-US')} coins`, cur: Math.min(state.currencies.coins.toNumber(), n.coins), goal: n.coins },
+        { label: `Save ${n.feathers.toLocaleString('en-US')} feathers`, cur: Math.min(state.currencies.feathers.toNumber(), n.feathers), goal: n.feathers },
+        req(state, 'species', n.species),
+      ],
       price,
       ready: lodgeReady(state),
       affordable: canBuildLodge(state),
@@ -381,7 +388,7 @@ function spreadSnap(state: GameState, g: GroundId): HudSnapshot['spreads']['mars
   const decoys = spreadSize(state, g);
   const base = GROUND_PARAMS[g].baseSpreadSize;
   const price = decoyBagPrice(state, g);
-  return { decoys, draw: Math.pow(decoys / base, DECOYS.drawExponent), price, affordable: canAfford(state, price) && groundOpen(state, g) };
+  return { decoys, draw: Math.pow(decoys / base, DECOYS.drawExponent), price, affordable: canAfford(state, price) && groundOpen(state, g), gain: groundOpen(state, g) ? decoyGain(state, g) : 0 };
 }
 
 function rungSnap(state: GameState, id: RungId): RungSnapshot {
@@ -455,6 +462,7 @@ function closePreview(state: GameState, starsNow: number): ClosePreview {
 }
 
 export function snapshot(state: GameState): HudSnapshot {
+  const realBirdsPerMin = calibrate(state);
   const c = clockAt(state.clock.dayTime);
   const bots = {} as Record<BotId, BotSnapshot>;
   for (const id of BOT_ORDER) {
@@ -482,6 +490,7 @@ export function snapshot(state: GameState): HudSnapshot {
       revealed: b.owned > 0 || state.stats.lifetimeCoins.gte(BOTS[id].revealAtCoins),
       stuck: st,
       bench: assigned(state, id, 'bench'),
+      gain: BIRD_JOBS.has(BOTS[id].job) ? botGain(state, id) : null,
     };
   }
 
@@ -623,6 +632,7 @@ export function snapshot(state: GameState): HudSnapshot {
         revealed: level > 0 || state.lodge >= UPGRADES[id].lodge,
         lodgeName: lodgeDef(UPGRADES[id].lodge).name,
         lodge: UPGRADES[id].lodge,
+        gain: level < max && (level > 0 || state.lodge >= UPGRADES[id].lodge) ? upgradeGain(state, id) : 0,
       };
     }),
     lodge: lodgeSnap(state),
@@ -724,22 +734,13 @@ export function snapshot(state: GameState): HudSnapshot {
     }),
     acres: state.acres,
     acrePrice: ap,
+    birdsPerMin: realBirdsPerMin,
+    ...buyGuide(state, bots, ap),
     acreAffordable: canAfford(state, ap),
     lifetimeCoins: state.stats.lifetimeCoins,
     goalId: goal.goal.id,
     goalTitle: goal.goal.title,
     specialDay: state.environment.special ?? null,
-    gear: GEAR_ORDER.map((id) => {
-      const level = gearLevel(state, id);
-      const price = gearPrice(id, level, projectFx(state).gearPrice);
-      return { id, level, open: gearOpen(state, id), price, affordable: canBuyGear(state, id), lodgeName: lodgeDef(GEAR[id].lodge).name };
-    }),
-    projects: PROJECT_ORDER.map((id) => {
-      const p = project(state, id);
-      const st = PROJECTS[id].stages[p.stage];
-      const canFund = !!st && state.lodge >= PROJECTS_LODGE && ((st.coins > p.coins && state.currencies.coins.gte(1)) || (st.feathers > p.feathers && state.currencies.feathers.gte(1)));
-      return { id, stage: p.stage, coins: p.coins, feathers: p.feathers, canFund };
-    }),
     goalProgress: goal.goal.progress ? Math.max(0, Math.min(1, goal.goal.progress(state))) : null,
     goalGus: goal.goal.gus,
     goalIndex: goal.index,
@@ -792,4 +793,34 @@ function trainingSnap(state: GameState): HudSnapshot['training'] {
     skills: TRAINING_ORDER.map((id) => ({ id, status: trainingStatus(state, id), affordable: canAffordTraining(state, id) })),
     effects,
   };
+}
+
+/** Crew whose work brings birds in (the rest keep the lodge running). */
+const BIRD_JOBS = new Set<JobId>(['scout', 'call', 'shoot', 'retrieve', 'flag', 'fShoot', 'fRetrieve', 'tHunt', 'bHunt']);
+
+/** Birds a minute, what limits each ground, and the best-value buy. */
+function buyGuide(state: GameState, bots: Record<BotId, BotSnapshot>, acrePrice: Price) {
+  const limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>> = {};
+  for (const g of GROUND_ORDER) if (groundOpen(state, g)) limits[g] = groundBirdsPerMinute(state, g).limit;
+  const acre = acreGain(state);
+  const options: { key: string; gain: number; coins: number }[] = [];
+  for (const id of BOT_ORDER) {
+    const b = bots[id];
+    if (b.gain && state.plans[id]) options.push({ key: `bot:${id}`, gain: b.gain, coins: b.price.coins.toNumber() });
+  }
+  for (const g of GROUND_ORDER) {
+    if (!groundOpen(state, g)) continue;
+    options.push({ key: `decoys:${g}`, gain: decoyGain(state, g), coins: decoyBagPrice(state, g).coins.toNumber() });
+  }
+  if (state.unlocks.upgrades !== undefined) options.push({ key: 'acre', gain: acre, coins: acrePrice.coins.toNumber() });
+  let best: string | null = null;
+  let bestValue = 0;
+  for (const o of options) {
+    const v = o.gain / Math.max(1, o.coins);
+    if (o.gain > 0.05 && v > bestValue) {
+      bestValue = v;
+      best = o.key;
+    }
+  }
+  return { limits, acreGain: acre, bestBuy: best };
 }

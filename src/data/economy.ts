@@ -122,7 +122,7 @@ export const GOLDEN = {
  */
 export const DECOYS = {
   /** Flock draw ∝ (spread ÷ starting spread) ^ this. */
-  drawExponent: 0.5,
+  drawExponent: 1,
   marsh: { perBag: 2, costCoins: 60, costFeathers: 4, costGrowth: 1.6 },
   field: { perBag: 4, costCoins: 30_000, costFeathers: 1_800, costGrowth: 1.6 },
   timber: { perBag: 2, costCoins: 4_000, costFeathers: 400, costGrowth: 1.6 },
