@@ -48,7 +48,6 @@ export function LodgePanel({ hud, controls, notation }: { hud: HudSnapshot; cont
           <div class="reqs">
             {n.reqs.map((r) => <ReqBar r={r} notation={notation} />)}
           </div>
-          <p class="lodge-eta">{n.eta}</p>
           <details class="lodge-panel__what">
             <summary>What the {n.name} brings</summary>
             <ul>

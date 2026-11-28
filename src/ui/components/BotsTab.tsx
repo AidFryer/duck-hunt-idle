@@ -52,12 +52,6 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
         ))}
       </nav>
       <p class="crew-note">{limitNote(hud, notation)}</p>
-      {hud.best && (
-        <button class="btn btn--primary btn--buy best-btn" aria-disabled={!hud.best.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyBest())}>
-          <span>Buy best: {hud.best.label}</span>
-          <Cost price={hud.best.price} notation={notation} />
-        </button>
-      )}
       {sections.map((g) => (
         <section id={`ws-${g.key}`} class="ws-section" aria-label={g.title}>
           <h4 class="group-head">{g.title}</h4>
