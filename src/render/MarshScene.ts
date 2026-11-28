@@ -145,6 +145,7 @@ export class MarshScene {
       // Its own crew stands in for the marsh's caller, shooter and retriever.
       const [caller, blindBot, pup] = GROUND_CREW[variant];
       this.crew.crewMap = { caller, blind: blindBot, retriever: pup };
+      this.crew.dressFor(tex, variant);
       this.timber.stand = variant === 'timber';
       // The bay is always salt water and open coast.
       if (variant === 'bay') this.flyway = 'atlantic';

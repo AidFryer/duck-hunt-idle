@@ -78,6 +78,64 @@ class Dog {
     return this.stuck || (this.state !== 'home' && this.state !== 'toHome');
   }
 
+  /** On the bay this "dog" is a Pickup Skiff: moored by the dock, it motors straight out and back. */
+  private skiff: Sprite | null = null;
+  makeSkiff(tex: TextureLibrary): void {
+    if (this.skiff) return;
+    this.skiff = new Sprite(tex.get('skiff'));
+    this.skiff.anchor.set(0.5, 26 / 30);
+    this.root.removeChildren();
+    this.root.addChild(this.skiff, this.carry);
+  }
+
+  private updateSkiff(dt: number, time: number, c: CrewLayout, ducks: DuckLayer, fx: EffectsLayer): void {
+    const a = c.a;
+    const i = (this.seed - 1) % 2;
+    const home = { x: c.entry.x + (i ? 34 : 12) * a, y: c.entry.y + (i ? 10 : 4) * a };
+    if (this.state === 'toEdge') this.state = 'swimOut';
+    if (this.state === 'home') {
+      this.x = home.x;
+      this.y = home.y;
+      this.facing = -1;
+    } else {
+      const goal = this.state === 'swimOut' && this.target ? { x: this.target.x, y: this.target.y } : home;
+      const dx = goal.x - this.x;
+      const dy = goal.y - this.y;
+      const dist = Math.hypot(dx, dy);
+      const step = 95 * a * dt;
+      if (Math.abs(dx) > 1) this.facing = dx < 0 ? -1 : 1;
+      this.wakeT -= dt;
+      if (this.wakeT <= 0) {
+        this.wakeT = 0.3;
+        fx.ripple(this.x - this.facing * 14 * a, this.y + a, 0.6, 1.6);
+      }
+      if (dist <= step) {
+        this.x = goal.x;
+        this.y = goal.y;
+        if (this.state === 'swimOut') {
+          if (this.target) ducks.removeFloater(this.target);
+          this.target = null;
+          this.carry.visible = true;
+          this.state = 'swimBack';
+        } else {
+          this.carry.visible = false;
+          this.state = 'home';
+        }
+      } else {
+        this.x += (dx / dist) * step;
+        this.y += (dy / dist) * step;
+      }
+    }
+    const s = a * 0.55 * this.appear;
+    const bob = Math.sin(time * 2.2 + this.seed) * 0.8 * a;
+    this.root.position.set(this.x, this.y + bob - Math.sin(this.hop * Math.PI) * 6 * a);
+    this.root.scale.set(-s * this.facing, s);
+    this.root.rotation = this.stuck && this.state === 'home' ? Math.sin(time * 10) * 0.06 : Math.sin(time * 1.7 + this.seed) * 0.03;
+    this.carry.position.set(4, -12);
+    this.carry.scale.set(0.34);
+    this.carry.rotation = 0;
+  }
+
   /** World position of the top of the head (for "!" bubbles). */
   get headPoint(): Point {
     return { x: this.x, y: this.y - 34 * this.scaleHint };
@@ -95,6 +153,10 @@ class Dog {
     this.t += dt;
     this.appear = Math.min(1, this.appear + dt * 2.5);
     this.hop = Math.max(0, this.hop - dt * 2.2);
+    if (this.skiff) {
+      this.updateSkiff(dt, time, c, ducks, fx);
+      return;
+    }
     const a = c.a;
     this.scaleHint = a * 0.62;
     const home = this.kind === 'lab' ? c.labHome : c.roboHomes[(this.seed - 1) % 2]!;
@@ -323,6 +385,11 @@ class DecoyBot {
   }
 
   readonly trims: Sprite[];
+
+  /** Wear another look (the timber and bay crews play the marsh crew's parts). */
+  setLook(tex: TextureLibrary, key: string): void {
+    this.body.texture = tex.get(key);
+  }
 
   /** Scarf at the Marsh Lodge, cap at the Sporting Club, medal at the Grand Lodge. */
   setLodge(level: number): void {
@@ -590,6 +657,14 @@ export class CrewLayer implements Layer {
   outpost = false;
   /** At a far ground: which of its bots plays each marsh crew part. */
   crewMap: Partial<Record<BotId, BotId>> = {};
+
+  /** Dress the crew for a far ground: its own hats, and skiffs instead of pups on the bay. */
+  dressFor(tex: TextureLibrary, g: 'timber' | 'bay'): void {
+    const p = g === 'timber' ? 't' : 'b';
+    for (const b of this.bots.caller) b.setLook(tex, `bot.${p}Caller`);
+    for (const b of this.bots.blind) b.setLook(tex, `bot.${p}Blind`);
+    if (g === 'bay') for (const r of this.robos) r.makeSkiff(tex);
+  }
 
   /** A far ground's bot as the marsh part it plays (others unchanged). */
   local<T extends string>(id: T): T {

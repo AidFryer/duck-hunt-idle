@@ -14,7 +14,7 @@ export const TICK_SECONDS = 1 / TICK_RATE;
 export const DAY_LENGTH_SECONDS = 600;
 
 /** Render resolution cap — protects mid-range phones from 3x DPR fill cost. */
-export const MAX_RENDER_RESOLUTION = 3;
+export const MAX_RENDER_RESOLUTION = 2;
 
 /** Save storage key (versioned format lives in src/sim/save.ts from Phase 2). */
 export const SAVE_KEY = 'duck-hunt-idle.save';

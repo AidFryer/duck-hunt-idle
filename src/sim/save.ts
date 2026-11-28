@@ -238,6 +238,13 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     if (Array.isArray(problems.open)) problems.open = problems.open.filter((p) => p.bot !== 'guide' && p.bot !== 'boatman');
     return { ...s, bots, assign, plans, problems, version: 27 };
   },
+  // v28: count birds from the timber and the bay (for their crews' ladders).
+  27: (s) => {
+    const stats = { ...((s.stats as Json) ?? {}) } as Record<string, unknown>;
+    stats.timberBirds = typeof stats.timberBirds === 'number' ? stats.timberBirds : 0;
+    stats.bayBirds = typeof stats.bayBirds === 'number' ? stats.bayBirds : 0;
+    return { ...s, stats, version: 28 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

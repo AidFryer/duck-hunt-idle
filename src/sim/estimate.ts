@@ -1,4 +1,4 @@
-import { ACRES, BOTS, GROUND_ORDER, SCOUT, type BotId, type GroundId, type JobId } from '../data/economy';
+import { ACRES, BOT_ORDER, BOTS, GROUND_ORDER, SCOUT, type BotId, type GroundId, type JobId } from '../data/economy';
 import { FLYWAYS } from '../data/flyways';
 import type { UpgradeId } from '../data/upgrades';
 import { extraFlockSize, flockDraw, GROUND_PARAMS, groundOpen, shotFraction } from './economy';
@@ -59,9 +59,46 @@ export function groundBirdsNow(state: GameState, g: GroundId): number {
   return groundBirdsPerMinute(state, g).birds * scale;
 }
 
+// Gains are worked out for every buy button on each HUD update. They only
+// change when something is bought (or slowly with weather and time of day),
+// so they're kept for up to a second unless the crew or land changes.
+const memo = new Map<string, number>();
+let memoKey = '';
+let memoAt = 0;
+let memoState: GameState | null = null;
+
+/** A cheap fingerprint of everything a purchase changes. */
+function shapeKey(state: GameState): string {
+  let k = `${state.lodge}|${state.acres}|${state.stands}|${state.decoyBags.marsh},${state.decoyBags.field},${state.decoyBags.timber},${state.decoyBags.bay}|`;
+  for (const id of BOT_ORDER) {
+    const b = state.bots[id];
+    if (b.owned) k += `${b.owned}.${b.level},`;
+  }
+  for (const [u, n] of Object.entries(state.upgrades)) k += `${u[0]}${n}`;
+  k += `|${Object.keys(state.rungs).length}|${Object.keys(state.training).length}|${state.environment.weather}`;
+  return k;
+}
+
+function remember(name: string, state: GameState, f: () => number): number {
+  const now = Date.now();
+  const key = shapeKey(state);
+  if (state !== memoState || key !== memoKey || now - memoAt > 1000 || now < memoAt) {
+    memo.clear();
+    memoKey = key;
+    memoAt = now;
+    memoState = state;
+  }
+  let v = memo.get(name);
+  if (v === undefined) {
+    v = f();
+    memo.set(name, v);
+  }
+  return v;
+}
+
 /** How many more birds a minute a change would bring (the change is undone after). */
 function gainFrom(state: GameState, change: () => () => void): number {
-  const before = birdsPerMinute(state);
+  const before = remember('now', state, () => birdsPerMinute(state));
   const undo = change();
   const after = birdsPerMinute(state);
   undo();
@@ -70,48 +107,48 @@ function gainFrom(state: GameState, change: () => () => void): number {
 
 export function botGain(state: GameState, bot: BotId): number {
   const home = BOTS[bot].job;
-  return gainFrom(state, () => {
+  return remember(`bot:${bot}`, state, () => gainFrom(state, () => {
     state.bots[bot].owned += 1;
     state.assign[bot][home] = (state.assign[bot][home] ?? 0) + 1;
     return () => {
       state.bots[bot].owned -= 1;
       state.assign[bot][home] = (state.assign[bot][home] ?? 1) - 1;
     };
-  });
+  }));
 }
 
 export function decoyGain(state: GameState, g: GroundId): number {
-  return gainFrom(state, () => {
+  return remember(`decoys:${g}`, state, () => gainFrom(state, () => {
     state.decoyBags[g] = (state.decoyBags[g] ?? 0) + 1;
     return () => {
       state.decoyBags[g] = (state.decoyBags[g] ?? 1) - 1;
     };
-  });
+  }));
 }
 
 export function standGain(state: GameState): number {
-  return gainFrom(state, () => {
+  return remember('stand', state, () => gainFrom(state, () => {
     state.stands += 1;
     return () => {
       state.stands -= 1;
     };
-  });
+  }));
 }
 
 export function acreGain(state: GameState): number {
-  return gainFrom(state, () => {
+  return remember('acre', state, () => gainFrom(state, () => {
     state.acres += 1;
     return () => {
       state.acres -= 1;
     };
-  });
+  }));
 }
 
 export function upgradeGain(state: GameState, u: UpgradeId): number {
-  return gainFrom(state, () => {
+  return remember(`up:${u}`, state, () => gainFrom(state, () => {
     state.upgrades[u] = (state.upgrades[u] ?? 0) + 1;
     return () => {
       state.upgrades[u] = (state.upgrades[u] ?? 1) - 1;
     };
-  });
+  }));
 }

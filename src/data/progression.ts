@@ -17,7 +17,8 @@ export type CounterId =
   | 'handDecoys' | 'handCalls' | 'handShots' | 'handFetches' | 'handFixes'
   | 'birds' | 'flocksCalled' | 'shots' | 'logged' | 'species' | 'bots'
   | 'handStakes' | 'handFlags' | 'handFieldShots' | 'handPickups' | 'geese'
-  | 'handTCalls' | 'handTShots' | 'handTFetches' | 'handBCalls' | 'handBShots' | 'handBFetches';
+  | 'handTCalls' | 'handTShots' | 'handTFetches' | 'handBCalls' | 'handBShots' | 'handBFetches'
+  | 'timberBirds' | 'bayBirds';
 
 export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   handDecoys: (n) => `Set ${n} decoys by hand`,
@@ -36,6 +37,8 @@ export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   handFieldShots: (n) => `Take ${n} shots from the layout blind`,
   handPickups: (n) => `Pick up ${n} geese by hand`,
   geese: (n) => `Bring in ${n} geese and cranes`,
+  timberBirds: (n) => `Bring in ${n} birds from the timber`,
+  bayBirds: (n) => `Bring in ${n} birds from the bay`,
   handTCalls: (n) => `Call in ${n} flocks by hand in the timber`,
   handTShots: (n) => `Take ${n} shots by hand in the timber`,
   handTFetches: (n) => `Fetch ${n} birds by hand in the timber`,
@@ -158,7 +161,9 @@ export type RungId =
   | 'silhouetteSpread' | 'fullBodyFleet'
   | 'kiteFlag' | 'honkerChorus'
   | 'stubbleBlinds' | 'pitBlind'
-  | 'fieldKennel' | 'muleCart';
+  | 'fieldKennel' | 'muleCart'
+  | 'woodDuckWhistle' | 'cypressChorus' | 'stumpRest' | 'treeStand' | 'snorkelPack' | 'pirogue'
+  | 'foghornCall' | 'raftCaller' | 'layoutBoat' | 'sneakBoat' | 'tenderLine' | 'harborTender';
 
 export interface RungEffect {
   /** × the job's bot output. */
@@ -185,8 +190,8 @@ export interface RungDef {
   id: RungId;
   /** A spread rig: bought in Upgrades, needs no bots. */
   rig?: boolean;
-  /** Which hunt its marsh-wide effects apply to (default: the marsh). */
-  ground?: 'field';
+  /** Which hunt its ground-wide effects apply to (default: the marsh). */
+  ground?: 'field' | 'timber' | 'bay';
   job: JobId;
   /** The bot whose crew this rung improves. */
   bot: BotId;
@@ -213,6 +218,12 @@ const T4 = { lodge: 5, owned: 50, coins: 60_000_000, feathers: 2_000_000 } as co
 /** Field rungs: the field opens at lodge 4, so its ladder is shorter and pricier. */
 const F2 = { ground: 'field', tier: 2, lodge: 4, owned: 10, coins: 1_800_000, feathers: 90_000 } as const;
 const F3 = { ground: 'field', tier: 3, lodge: 5, owned: 25, coins: 120_000_000, feathers: 4_000_000 } as const;
+/** Flooded Timber rungs: the feather ground, so they lean on feathers. */
+const W2 = { ground: 'timber', tier: 2, lodge: 3, owned: 10, coins: 60_000, feathers: 8_000 } as const;
+const W3 = { ground: 'timber', tier: 3, lodge: 4, owned: 25, coins: 3_000_000, feathers: 300_000 } as const;
+/** Coastal Bay rungs: the bay opens with the last lodge, so both steps come then. */
+const B2 = { ground: 'bay', tier: 2, lodge: 5, owned: 10, coins: 40_000_000, feathers: 2_000_000 } as const;
+const B3 = { ground: 'bay', tier: 3, lodge: 5, owned: 25, coins: 600_000_000, feathers: 25_000_000 } as const;
 
 export const RUNGS: Record<RungId, RungDef> = {
   spinningWing: {
@@ -330,6 +341,67 @@ export const RUNGS: Record<RungId, RungDef> = {
     name: 'Mule Cart', blurb: 'A patient clockwork mule pulls a cart along the rows. The pups just load it up.',
     effect: 'Field Pups ×3', fx: { mult: 3 },
   },
+
+  woodDuckWhistle: {
+    id: 'woodDuckWhistle', job: 'tCall', bot: 'tCaller', ...W2, counter: 'timberBirds', count: 8_000,
+    name: 'Wood Duck Whistle', blurb: 'A thin squealing whistle, just like a wood duck hen. Flocks drop down through the branches to look.',
+    effect: 'Cypress Callers ×2 · flocks circle 40% longer', fx: { mult: 2, patience: 1.4 },
+  },
+  cypressChorus: {
+    id: 'cypressChorus', job: 'tCall', bot: 'tCaller', ...W3, owned: 30, counter: 'timberBirds', count: 90_000,
+    name: 'Cypress Chorus', blurb: 'Callers spread through the trees, so the whole timber sounds alive with ducks.',
+    effect: 'Cypress Callers ×3 · one more flock over the decoys', fx: { mult: 3, committed: 1 },
+  },
+  stumpRest: {
+    id: 'stumpRest', job: 'tShoot', bot: 'tBlind', ...W2, counter: 'timberBirds', count: 9_000,
+    name: 'Stump Rest', blurb: 'A notch cut in an old oak stump makes a steady rest for the shot.',
+    effect: 'Stump Blinds ×2 · +6% of each flock per shot', fx: { mult: 2, shot: 0.06 },
+  },
+  treeStand: {
+    id: 'treeStand', job: 'tShoot', bot: 'tBlind', ...W3, owned: 30, counter: 'timberBirds', count: 100_000,
+    name: 'Tree Stand', blurb: 'A little platform up in a cypress, out of sight of ducks coming in low.',
+    effect: 'Stump Blinds ×3 · called flocks stay 50% longer', fx: { mult: 3, committedPatience: 1.5 },
+  },
+  snorkelPack: {
+    id: 'snorkelPack', job: 'tRetrieve', bot: 'tPup', ...W2, owned: 12, counter: 'timberBirds', count: 10_000,
+    name: 'Snorkel Pack', blurb: 'The Timber Pups learn to work as a pack, one nose up and the rest fetching.',
+    effect: 'Timber Pups ×2', fx: { mult: 2 },
+  },
+  pirogue: {
+    id: 'pirogue', job: 'tRetrieve', bot: 'tPup', ...W3, owned: 35, counter: 'timberBirds', count: 110_000,
+    name: 'Pirogue', blurb: 'A long, narrow cypress boat the pups paddle between the trunks, loaded to the gunwales.',
+    effect: 'Timber Pups ×3', fx: { mult: 3 },
+  },
+  foghornCall: {
+    id: 'foghornCall', job: 'bCall', bot: 'bCaller', ...B2, counter: 'bayBirds', count: 5_000,
+    name: 'Foghorn Call', blurb: 'A deep brass call that carries over the swell. Rafts of sea ducks turn to look.',
+    effect: 'Sea Callers ×2 · sea ducks circle 40% longer', fx: { mult: 2, patience: 1.4 },
+  },
+  raftCaller: {
+    id: 'raftCaller', job: 'bCall', bot: 'bCaller', ...B3, counter: 'bayBirds', count: 60_000,
+    name: 'Raft Caller', blurb: 'A caller that sounds like a whole raft of eiders feeding. Rare birds come in close.',
+    effect: 'Sea Callers ×3 · rare birds ×1.5', fx: { mult: 3, rare: 1.5 },
+  },
+  layoutBoat: {
+    id: 'layoutBoat', job: 'bShoot', bot: 'bBlind', ...B2, counter: 'bayBirds', count: 5_500,
+    name: 'Layout Boat', blurb: 'A low, flat boat painted like the sea. Ducks don\'t see it until it\'s too late.',
+    effect: 'Boat Blinds ×2 · +6% of each flock per shot', fx: { mult: 2, shot: 0.06 },
+  },
+  sneakBoat: {
+    id: 'sneakBoat', job: 'bShoot', bot: 'bBlind', ...B3, counter: 'bayBirds', count: 66_000,
+    name: 'Sneak Boat', blurb: 'A brushed-in boat that drifts right up to the rig.',
+    effect: 'Boat Blinds ×3 · called flocks stay 50% longer', fx: { mult: 3, committedPatience: 1.5 },
+  },
+  tenderLine: {
+    id: 'tenderLine', job: 'bRetrieve', bot: 'bPup', ...B2, owned: 12, counter: 'bayBirds', count: 6_000,
+    name: 'Tender Line', blurb: 'The Pickup Skiffs run on a line from the rig, so nobody loses the way in the chop.',
+    effect: 'Pickup Skiffs ×2', fx: { mult: 2 },
+  },
+  harborTender: {
+    id: 'harborTender', job: 'bRetrieve', bot: 'bPup', ...B3, owned: 30, counter: 'bayBirds', count: 72_000,
+    name: 'Harbor Tender', blurb: 'A proper tender with a winch and a warm cabin. The skiffs unload straight onto it.',
+    effect: 'Pickup Skiffs ×3', fx: { mult: 3 },
+  },
 };
 
 export const RUNG_ORDER: readonly RungId[] = [
@@ -339,6 +411,8 @@ export const RUNG_ORDER: readonly RungId[] = [
   'kennelPack', 'retrieverSkiff', 'retrieverBoat',
   'frontDesk', 'guestWing', 'lookoutTower',
   'silhouetteSpread', 'fullBodyFleet', 'kiteFlag', 'honkerChorus', 'stubbleBlinds', 'pitBlind', 'fieldKennel', 'muleCart',
+  'woodDuckWhistle', 'cypressChorus', 'stumpRest', 'treeStand', 'snorkelPack', 'pirogue',
+  'foghornCall', 'raftCaller', 'layoutBoat', 'sneakBoat', 'tenderLine', 'harborTender',
 ];
 
 /** The automation ladder for each bot, bottom to top. */

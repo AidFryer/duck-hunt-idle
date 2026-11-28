@@ -35,6 +35,8 @@ export function counter(s: GameState, id: CounterId): number {
     case 'handFieldShots': return hand.fShoot ?? 0;
     case 'handPickups': return hand.fRetrieve ?? 0;
     case 'geese': return s.stats.geese;
+    case 'timberBirds': return s.stats.timberBirds;
+    case 'bayBirds': return s.stats.bayBirds;
     case 'handTCalls': return hand.tCall ?? 0;
     case 'handTShots': return hand.tShoot ?? 0;
     case 'handTFetches': return hand.tRetrieve ?? 0;
@@ -176,7 +178,9 @@ const fxCache: Record<GroundId, Fx | null> = { marsh: null, field: null, timber:
  */
 export function rungFx(s: GameState, g: GroundId = 'marsh'): Fx {
   let key = '';
-  for (const id of RUNG_ORDER) if (s.rungs[id]) key += id[0]! + id.length;
+  RUNG_ORDER.forEach((id, i) => {
+    if (s.rungs[id]) key += `${i},`;
+  });
   const cached = fxCache[g];
   if (cached && cached.key === key) return cached;
   const fx: Fx = { key, jobMult: {}, draw: 1, spread: 0, committed: 0, patience: 1, committedPatience: 1, shot: 0, rare: 1, coins: 1 };

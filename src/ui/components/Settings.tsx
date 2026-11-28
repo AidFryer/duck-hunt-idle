@@ -223,6 +223,15 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
               }}
             />
           </label>
+          <label class="row" for="opt-battery">
+            <span>Battery saver (cooler phone, slightly less smooth)</span>
+            <input
+              id="opt-battery"
+              type="checkbox"
+              checked={prefs.batterySaver}
+              onChange={(e) => onPrefs({ ...prefs, batterySaver: (e.currentTarget as HTMLInputElement).checked })}
+            />
+          </label>
           <label class="row" for="opt-shake">
             <span>Screen shake on big moments</span>
             <input

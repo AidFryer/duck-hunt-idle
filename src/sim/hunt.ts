@@ -261,6 +261,8 @@ export function doMany(state: GameState, job: ManyJob, count: number, source: Ac
     state.stats.lifetimeBirds += n;
     guestBirds(state, birds, g === 'field');
     if (g === 'field') state.stats.geese += n;
+    else if (g === 'timber') state.stats.timberBirds += n;
+    else if (g === 'bay') state.stats.bayBirds += n;
     h.bag += n;
     state.stats.birdsByWeather[w] = (state.stats.birdsByWeather[w] ?? 0) + n;
     if (night) state.stats.nightBirds += n;

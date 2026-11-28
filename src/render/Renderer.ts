@@ -136,6 +136,7 @@ export class Renderer {
 
     this.app.ticker.add((ticker) => this.frame(Math.min(ticker.deltaMS / 1000, 0.1)));
     this.ready = true;
+    this.applyFrameCap();
     // Fonts settle the top bar's height a moment later; re-measure once.
     setTimeout(() => this.handleResize(), 1500);
   }
@@ -146,6 +147,25 @@ export class Renderer {
   /** A gentle shake for big moments (0–1 strength). */
   shake(strength: number): void {
     this.shakeAmt = Math.max(this.shakeAmt, strength);
+  }
+
+  // ---- frame rate: full speed while you watch, half while a menu covers the marsh
+  private batterySaver = false;
+  private covered = false;
+  /** Battery saver (from Settings): always 30 frames a second. */
+  setBatterySaver(on: boolean): void {
+    this.batterySaver = on;
+    this.applyFrameCap();
+  }
+  /** A menu sheet is open over most of the marsh. */
+  setCovered(on: boolean): void {
+    if (on === this.covered) return;
+    this.covered = on;
+    this.applyFrameCap();
+  }
+  private applyFrameCap(): void {
+    if (!this.ready) return;
+    this.app.ticker.maxFPS = this.batterySaver || this.covered ? 30 : 0;
   }
 
   // ---- adaptive resolution: step down if the device can't keep ~45 fps

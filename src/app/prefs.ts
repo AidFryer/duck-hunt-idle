@@ -24,6 +24,8 @@ export interface Prefs {
   installTip: boolean;
   /** The bottom panel is pulled up tall (more room for lists, smaller marsh). */
   tallPanel: boolean;
+  /** Draw the marsh at 30 frames a second (cooler phone, longer battery). */
+  batterySaver: boolean;
 }
 
 const KEY = 'duck-hunt-idle.prefs';
@@ -44,6 +46,7 @@ export function loadPrefs(): Prefs {
     haptics: true,
     installTip: false,
     tallPanel: false,
+    batterySaver: false,
   };
   try {
     const raw = localStorage.getItem(KEY);

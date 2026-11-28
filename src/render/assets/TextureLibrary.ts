@@ -64,6 +64,11 @@ const recipes: Record<string, Recipe> = {
   'bot.staker': { paint: () => P.paintDecoyBot('staker'), resolution: PAINT_SCALE },
   'bot.flagger': { paint: () => P.paintDecoyBot('flagger'), resolution: PAINT_SCALE },
   'bot.layout': { paint: () => P.paintDecoyBot('layout'), resolution: PAINT_SCALE },
+  'bot.tCaller': { paint: () => P.paintDecoyBot('tCaller'), resolution: PAINT_SCALE },
+  'bot.tBlind': { paint: () => P.paintDecoyBot('tBlind'), resolution: PAINT_SCALE },
+  'bot.bCaller': { paint: () => P.paintDecoyBot('bCaller'), resolution: PAINT_SCALE },
+  'bot.bBlind': { paint: () => P.paintDecoyBot('bBlind'), resolution: PAINT_SCALE },
+  skiff: { paint: P.paintSkiff, resolution: PAINT_SCALE },
   alert: { paint: P.paintAlertBubble, resolution: PAINT_SCALE },
   rain: { paint: P.paintRainStreak, resolution: 2 },
 };

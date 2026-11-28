@@ -9,7 +9,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, STANDS, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 /** One flyway's mastery challenges (see data/mastery.ts). */
 export interface FlywayMastery {
@@ -301,6 +301,9 @@ export interface GameState {
     manualActions: number;
     /** Geese and cranes brought in from the field. */
     geese: number;
+    /** Birds brought in from the flooded timber and from the bay. */
+    timberBirds: number;
+    bayBirds: number;
     /** Golden flocks shot by hand. */
     goldenShot: number;
     /** Hand actions per hunt step (the on-marsh hints stop after a couple each). */
@@ -423,6 +426,8 @@ export function createInitialState(seed = 1337, now = 0): GameState {
       shots: 0,
       manualActions: 0,
       geese: 0,
+      timberBirds: 0,
+      bayBirds: 0,
       goldenShot: 0,
       manualByJob: {},
       botMoves: 0,

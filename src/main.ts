@@ -147,6 +147,8 @@ async function catchUp(away: number): Promise<void> {
 }
 setInterval(() => {
   hud.set(snapshot(state));
+  // With a menu open over the marsh, it's drawn at half speed (cooler phone).
+  renderer?.setCovered(document.querySelector('.layout--app.has-sheet') !== null);
   // Words next to the hint ring until the player has the hang of it.
   if (renderer?.scene) renderer.scene.hintLabels = true;
   // Leaving the field open after a reset or import is not possible: fall back.
@@ -873,6 +875,7 @@ function updatePrefs(p: Prefs): void {
   setHaptics(p.haptics);
   audio.setLevels({ music: p.music, ambience: p.ambience, effects: p.effects, muted: p.muted });
   feedback.reducedMotion = p.reducedMotion;
+  renderer?.setBatterySaver(p.batterySaver);
 }
 
 // --- Audio: starts on the first tap (browser rule), follows the marsh ---------
@@ -909,6 +912,7 @@ function updatePrefs(p: Prefs): void {
 async function startScene(host: HTMLElement): Promise<void> {
   renderer = new Renderer(host, runner);
   renderer.options.motion = prefs.get().reducedMotion ? 0.35 : 1;
+  renderer.setBatterySaver(prefs.get().batterySaver);
   renderer.onEvent = onEvent;
   renderer.onFix = (bot) => controls.fixBot(bot);
   renderer.onTap = onSceneTap;
