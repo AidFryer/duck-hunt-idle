@@ -17,7 +17,8 @@ import { groundOpen, acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDeco
 import type { SimEvent } from './events';
 import { doAction, canDo, fieldOpen, ground, type ActionJob } from './hunt';
 import { fixAll } from './problems';
-import { closeSeason, nextFlyway, starsFor } from './prestige';
+import { buyPerk, canBuyPerk, closeSeason, nextFlyway, perkCost, perkRank, starsFor } from './prestige';
+import { PERK_ORDER } from '../data/legacy';
 import type { GameState } from './state';
 import { step } from './tick';
 import { buyUpgrade, upgradePrice } from './upgrades';
@@ -223,7 +224,16 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
     // Shopping and planning, about once a second.
     if (i % Math.max(1, Math.round(1 / dt)) === 0) {
       shop(s);
-      if (opts.prestige && starsFor(s.season.coins) >= 1) closeSeason(s, nextFlyway(s));
+      if (opts.prestige) {
+        // Close once this season is worth at least half the stars earned so far.
+        const gain = starsFor(s.season.coins);
+        if (gain >= Math.max(1, Math.ceil(s.legacy.earned * 0.5))) closeSeason(s, nextFlyway(s));
+        // Spend stars: the cheapest perk (or next rank) that's open.
+        for (let k = 0; k < 40; k++) {
+          const buy = PERK_ORDER.filter((id) => canBuyPerk(s, id)).sort((x, y) => perkCost(x, perkRank(s, x)) - perkCost(y, perkRank(s, y)))[0];
+          if (!buy || !buyPerk(s, buy)) break;
+        }
+      }
     }
 
     const sc = s.season.coins;
