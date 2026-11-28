@@ -6,7 +6,7 @@ import { formatNumber, formatRate, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot, RungSnapshot } from '../hudState';
 import { ReqBar } from './Lodge';
-import { Cost } from './Cost';
+import { BuyButton, Finished, Row, RowNote } from './Kit';
 import { carvingPortrait, portrait } from '../portraits';
 import { CARVINGS } from '../../data/carvings';
 import { SPECIES } from '../../data/species';
@@ -73,10 +73,12 @@ function DecoysSection({ hud, controls, notation }: { hud: HudSnapshot; controls
   const open = (g: GroundId) => hud.grounds.some((x) => x.id === g && x.open);
   return (
     <>
-      <SpreadCard ground="marsh" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.setter} />
-      {open('timber') && <SpreadCard ground="timber" hud={hud} controls={controls} notation={notation} rigs={[]} />}
-      {hud.field.open && <SpreadCard ground="field" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.staker} />}
-      {open('bay') && <SpreadCard ground="bay" hud={hud} controls={controls} notation={notation} rigs={[]} />}
+      <ul class="up-list">
+        <SpreadCard ground="marsh" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.setter} />
+        {open('timber') && <SpreadCard ground="timber" hud={hud} controls={controls} notation={notation} rigs={[]} />}
+        {hud.field.open && <SpreadCard ground="field" hud={hud} controls={controls} notation={notation} rigs={hud.ladder.staker} />}
+        {open('bay') && <SpreadCard ground="bay" hud={hud} controls={controls} notation={notation} rigs={[]} />}
+      </ul>
       <DecoyCollection hud={hud} controls={controls} notation={notation} />
     </>
   );
@@ -86,40 +88,37 @@ function DecoysSection({ hud, controls, notation }: { hud: HudSnapshot; controls
 function DecoyCollection({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   if (hud.lodge.level < 2) {
     return (
-      <section class="spread-card is-locked">
-        <h4>Decoy collection</h4>
-        <p>Carve one-of-a-kind decoys for the lodge shelf. The carving bench opens with the Trapper's Cabin.</p>
-      </section>
+      <ul class="up-list">
+        <Row cls="is-locked" title="Decoy collection" sub="One-of-a-kind decoys for the lodge shelf. The carving bench opens with the Trapper's Cabin." />
+      </ul>
     );
   }
-  const owned = hud.carvings.filter((c) => c.status === 'owned').length;
+  const owned = hud.carvings.filter((c) => c.status === 'owned');
+  const rest = hud.carvings.filter((c) => c.status !== 'owned');
+  const row = (c: HudSnapshot['carvings'][number]) => {
+    const d = CARVINGS[c.id];
+    const known = c.status !== 'needsLodge';
+    return (
+      <Row
+        cls={c.status === 'owned' ? 'is-maxed' : c.status === 'needsLodge' ? 'is-locked' : ''}
+        pic={known ? <img src={carvingPortrait(c.id)} alt="" /> : <span class="carving__mystery">?</span>}
+        title={known ? d.name : 'Unknown carving'}
+        sub={known ? d.effect : `Opens with lodge level ${d.lodge}`}
+        right={
+          c.status === 'owned' ? <RowNote done>On the shelf</RowNote>
+          : c.status === 'needsBird' ? <RowNote>Find a {SPECIES[d.needs!].name}</RowNote>
+          : c.status === 'ready' ? <BuyButton price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} affordable={c.affordable} label={`Carve ${d.name}`} onBuy={() => controls.buyCarving(c.id)} />
+          : null
+        }
+      />
+    );
+  };
   return (
     <section class="carvings" aria-label="Decoy collection">
-      <h4 class="group-head">Decoy collection · {owned}/{hud.carvings.length}</h4>
+      <h4 class="group-head">Decoy collection · {owned.length}/{hud.carvings.length}</h4>
       <p class="card__hint">One-of-a-kind carvings. Each keeps its bonus for good, even after you move flyways.</p>
-      <ul class="carving-grid">
-        {hud.carvings.map((c) => {
-          const d = CARVINGS[c.id];
-          const known = c.status !== 'needsLodge';
-          return (
-            <li class={`carving carving--${c.status}`}>
-              <div class="carving__art">
-                {known ? <img src={carvingPortrait(c.id)} alt="" /> : <span class="carving__mystery" aria-hidden="true">?</span>}
-              </div>
-              <strong>{known ? d.name : 'Unknown carving'}</strong>
-              <span class="carving__effect">{known ? d.effect : `Opens with lodge level ${d.lodge}`}</span>
-              {c.status === 'owned' && <span class="carving__owned">On the shelf</span>}
-              {c.status === 'needsBird' && <span class="carving__need">Bring in a {SPECIES[d.needs!].name} first</span>}
-              {c.status === 'ready' && (
-                <button class="btn btn--primary btn--buy btn--small" aria-disabled={!c.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyCarving(c.id))}>
-                  <span>Carve</span>
-                  <Cost price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} />
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+      <ul class="up-list">{rest.map(row)}</ul>
+      <Finished count={owned.length} label="On the shelf">{owned.map(row)}</Finished>
     </section>
   );
 }
@@ -187,14 +186,7 @@ function BotRow({ id, hud, controls, notation, mode, open, onToggle }: { id: Bot
           </div>
           <span class="ws-row__chev" aria-hidden="true">{open ? '▴' : '▾'}</span>
         </button>
-        <button
-          class="btn btn--primary btn--buy btn--small ws-row__buy"
-          aria-disabled={!affordable}
-          onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyBot(id, count) > 0)}
-        >
-          <span>Carve{count > 1 ? ` ×${count}` : ''}</span>
-          <Cost price={price} notation={notation} />
-        </button>
+        <BuyButton price={price} notation={notation} affordable={affordable} label={`Carve ${count > 1 ? `${count} ` : 'a '}${def.name}`} onBuy={() => controls.buyBot(id, count) > 0} />
       </div>
       {open && (
         <div class="ws-row__more">
@@ -235,14 +227,7 @@ function Ladder({ rungs, owned, controls, notation }: { rungs: RungSnapshot[]; o
                 <div class="reqs">
                   {r.reqs.map((q) => <ReqBar r={q} notation={notation} />)}
                 </div>
-                <button
-                  class="btn btn--primary btn--buy"
-                  aria-disabled={!r.affordable}
-                  onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyRung(r.id))}
-                >
-                  <span>{r.ready ? 'Build it' : 'Not ready yet'}</span>
-                  <Cost price={r.price} notation={notation} />
-                </button>
+                <BuyButton price={r.price} notation={notation} affordable={r.affordable} label={`Build ${r.name}`} onBuy={() => controls.buyRung(r.id)} />
               </div>
             )}
           </li>
@@ -260,45 +245,26 @@ function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: GroundI
   const next = rigs.find((r) => !r.built);
   const per = DECOYS[ground].perBag;
   return (
-    <section class="spread-card" aria-label={SPREAD_NAME[ground]}>
-      <div class="spread-card__head">
-        <div>
-          <h4>
-            {SPREAD_NAME[ground]}
-            {hud.bestBuy === `decoys:${ground}` && <span class="best-buy">Best buy</span>}
-          </h4>
-          <p>
-            {sp.decoys} decoys out · flocks ×{formatNumber(sp.draw, notation)} · {gainText(sp.gain, notation)} a bag
-          </p>
-        </div>
-        <button class="btn btn--primary btn--buy btn--small" aria-disabled={!sp.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyDecoys(ground))}>
-          <span>+{per} decoys</span>
-          <Cost price={sp.price} notation={notation} />
-        </button>
-      </div>
-      {rigs.length > 0 && (
-        <ol class="ladder__rungs spread-card__rigs">
-          {rigs.map((r) => (
-            <li class={`rung ${r.built ? 'is-built' : r === next ? 'is-next' : 'is-later'}`}>
-              <span class="rung__tick" aria-hidden="true">{r.built ? '✓' : ''}</span>
-              <span class="rung__name">{r.name}</span>
-              <span class="rung__effect">{r.effect}</span>
-              {r === next && (
-                <div class="rung__next">
-                  <div class="reqs">
-                    {r.reqs.map((q) => <ReqBar r={q} notation={notation} />)}
-                  </div>
-                  <button class="btn btn--primary btn--buy" aria-disabled={!r.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyRung(r.id))}>
-                    <span>{r.ready ? 'Build it' : 'Not ready yet'}</span>
-                    <Cost price={r.price} notation={notation} />
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ol>
+    <>
+      <Row
+        title={<>{SPREAD_NAME[ground]}{hud.bestBuy === `decoys:${ground}` && <span class="best-buy">Best buy</span>}</>}
+        tag={sp.decoys}
+        sub={`+${per} decoys a bag · flocks ×${formatNumber(sp.draw, notation)} · ${gainText(sp.gain, notation)}`}
+        right={<BuyButton price={sp.price} notation={notation} affordable={sp.affordable} label={`Buy ${per} decoys`} onBuy={() => controls.buyDecoys(ground)} />}
+      />
+      {next && (
+        <li class="up-row rig-next">
+          <div class="up-row__text">
+            <strong>
+              {next.name} <span class="up-row__lvl">rig</span>
+            </strong>
+            <span>{next.effect}</span>
+            <div class="reqs">{next.reqs.map((q) => <ReqBar r={q} notation={notation} />)}</div>
+          </div>
+          <BuyButton price={next.price} notation={notation} affordable={next.affordable} label={`Build ${next.name}`} onBuy={() => controls.buyRung(next.id)} />
+        </li>
       )}
-    </section>
+    </>
   );
 }
 

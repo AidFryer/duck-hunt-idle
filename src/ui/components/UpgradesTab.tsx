@@ -5,8 +5,8 @@ import { UPGRADES } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
-import { gainText, pulse } from './BotsTab';
-import { Cost } from './Cost';
+import { gainText } from './BotsTab';
+import { BuyButton, Finished, JumpChips, Row, RowNote } from './Kit';
 
 type Up = HudSnapshot['upgrades'][number];
 
@@ -22,85 +22,75 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
     open: groundOpen(g),
     ups: hud.upgrades.filter((u) => UPGRADES[u.id].ground === g && u.revealed).sort(byWhen),
   }));
-  const field = hud.upgrades.filter((u) => UPGRADES[u.id].field);
+  const field = hud.upgrades.filter((u) => UPGRADES[u.id].field && u.revealed).sort(byWhen);
   const open = marsh.filter((u) => u.revealed).sort(byWhen);
-  const ready = open.filter((u) => u.level < u.max);
-  const maxed = open.filter((u) => u.level >= u.max);
-  const soon = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room && !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
+  const soon = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room && !UPGRADES[u.id].ground && !u.revealed && u.lodge === hud.lodge.level + 1).sort(byWhen);
+  const rep = { now: hud.reputation, next: hud.reputationNextDock };
+  const up = (u: Up) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={rep} />;
+  const notDone = (list: Up[]) => list.filter((u) => u.level < u.max);
+  const done = [...open, ...field, ...far.flatMap((f) => f.ups)].filter((u) => u.level >= u.max);
+  const jumps = [
+    { key: 'plots', label: 'Plots' },
+    { key: 'marsh', label: 'Marsh' },
+    ...(far[0]!.open ? [{ key: 'timber', label: 'Timber' }] : []),
+    ...(hud.field.open ? [{ key: 'field', label: 'Goose Field' }] : []),
+    ...(far[1]!.open ? [{ key: 'bay', label: 'Bay' }] : []),
+  ];
+  const groundSection = (key: string, title: string, children: preact.ComponentChildren, hint?: preact.ComponentChildren) => (
+    <section id={`land-${key}`} class="jump-target land-section">
+      <h4 class="group-head">{title}</h4>
+      {hint}
+      <ul class="up-list">{children}</ul>
+    </section>
+  );
   return (
     <div class="tab-body upgrades-tab">
-      <FoodPlots hud={hud} controls={controls} notation={notation} />
+      {hud.plots.open > 0 && <JumpChips prefix="land" items={jumps} />}
+      <div id="land-plots" class="jump-target">
+        <FoodPlots hud={hud} controls={controls} notation={notation} />
+      </div>
 
-      <h4 class="group-head">Marsh & habitat</h4>
-      <ul class="up-list">
-        <li class="up-row">
-          <div class="up-row__text">
-            <strong>
-              Wetland Acres <span class="up-row__lvl">{hud.acres}</span>
-              {hud.bestBuy === 'acre' && <span class="best-buy">Best buy</span>}
-            </strong>
-            <span>
-              Flocks ×{formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)} · {hud.maxCircling} can circle · {gainText(hud.acreGain, notation)} next
-            </span>
-          </div>
-          <button class="btn btn--primary btn--buy btn--small" aria-disabled={!hud.acreAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyAcre())}>
-            <Cost price={hud.acrePrice} notation={notation} />
-          </button>
-        </li>
-        {ready.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
-        {maxed.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
-      </ul>
-
-      {soon.length > 0 && (
+      {groundSection('marsh', 'The Marsh', (
         <>
-          <h4 class="group-head">Coming with the {soon[0]!.lodgeName}</h4>
-          <ul class="up-list is-soon">
-            {soon.map((u) => (
-              <li class="up-row is-locked">
-                <div class="up-row__text">
-                  <strong>{UPGRADES[u.id].name}</strong>
-                  <span>{UPGRADES[u.id].effect}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {hud.field.open && (
-        <>
-          <h4 class="group-head">Goose field</h4>
-          <ul class="up-list">
-            <FarPlotRow hud={hud} g="field" controls={controls} notation={notation} />
-            {field.filter((u) => u.revealed).sort(byWhen).map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
-          </ul>
-        </>
-      )}
-
-      {far.filter((f) => f.open).map((f) => (
-        <>
-          <h4 class="group-head">{f.name}</h4>
-          {f.g === 'timber' && <p class="card__hint up-hint">The feather ground: birds here give {STANDS.feathers}× feathers{hud.stands.feathersPerMin >= 1 ? ` (about ${formatNumber(hud.stands.feathersPerMin, notation)} a minute now)` : ''}.</p>}
-          <ul class="up-list">
-            <FarPlotRow hud={hud} g={f.g} controls={controls} notation={notation} />
-            {f.g === 'timber' && (
-              <li class="up-row">
-                <div class="up-row__text">
-                  <strong>
-                    Flooded Stands <span class="up-row__lvl">{hud.stands.count}</span>
-                    {hud.bestBuy === 'stand' && <span class="best-buy">Best buy</span>}
-                  </strong>
-                  <span>Flood another stand: +{Math.round((STANDS.flockRateGrowth - 1) * 100)}% timber flocks, bigger flocks{hud.stands.gain >= 0.05 ? ` · ${gainText(hud.stands.gain, notation)}` : ''}</span>
-                </div>
-                <button class="btn btn--primary btn--buy btn--small" aria-disabled={!hud.stands.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyStand())}>
-                  <Cost price={hud.stands.price} notation={notation} />
-                </button>
-              </li>
-            )}
-            {f.ups.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
-          </ul>
+          <Row
+            title={<>Wetland Acres{hud.bestBuy === 'acre' && <span class="best-buy">Best buy</span>}</>}
+            tag={hud.acres}
+            sub={`Flocks ×${formatNumber(Math.pow(ACRES.flockRateGrowth, hud.acres - 1), notation)} · ${hud.maxCircling} can circle · ${gainText(hud.acreGain, notation)}`}
+            right={<BuyButton price={hud.acrePrice} notation={notation} affordable={hud.acreAffordable} onBuy={() => controls.buyAcre()} />}
+          />
+          {notDone(open).map(up)}
+          {soon.map((u) => <Row cls="is-locked" title={UPGRADES[u.id].name} sub={`${UPGRADES[u.id].effect} · comes with the ${u.lodgeName}`} />)}
         </>
       ))}
+
+      {far[0]!.open && groundSection('timber', far[0]!.name, (
+        <>
+          <FarPlotRow hud={hud} g="timber" controls={controls} notation={notation} />
+          <Row
+            title={<>Flooded Stands{hud.bestBuy === 'stand' && <span class="best-buy">Best buy</span>}</>}
+            tag={hud.stands.count}
+            sub={`+${Math.round((STANDS.flockRateGrowth - 1) * 100)}% timber flocks, bigger flocks${hud.stands.gain >= 0.05 ? ` · ${gainText(hud.stands.gain, notation)}` : ''}`}
+            right={<BuyButton price={hud.stands.price} notation={notation} affordable={hud.stands.affordable} onBuy={() => controls.buyStand()} />}
+          />
+          {notDone(far[0]!.ups).map(up)}
+        </>
+      ), <p class="card__hint up-hint">The feather ground: birds here give {STANDS.feathers}× feathers{hud.stands.feathersPerMin >= 1 ? ` (about ${formatNumber(hud.stands.feathersPerMin, notation)} a minute)` : ''}.</p>)}
+
+      {hud.field.open && groundSection('field', 'Goose Field', (
+        <>
+          <FarPlotRow hud={hud} g="field" controls={controls} notation={notation} />
+          {notDone(field).map(up)}
+        </>
+      ))}
+
+      {far[1]!.open && groundSection('bay', far[1]!.name, (
+        <>
+          <FarPlotRow hud={hud} g="bay" controls={controls} notation={notation} />
+          {notDone(far[1]!.ups).map(up)}
+        </>
+      ))}
+
+      <Finished count={done.length}>{done.map(up)}</Finished>
     </div>
   );
 }
@@ -109,26 +99,14 @@ function UpRow({ u, controls, notation, offline, rep }: { u: Up; controls: GameC
   const d = UPGRADES[u.id];
   const maxed = u.level >= u.max;
   return (
-    <li class={`up-row ${maxed ? 'is-maxed' : ''}`} title={d.blurb}>
-      <div class="up-row__text">
-        <strong>
-          {d.name} <span class="up-row__lvl">{u.level}/{u.max}</span>
-        </strong>
-        <span>
-          {d.effect}
-          {u.id === 'cot' ? ` (now ${offline}h)` : ''}
-          {u.id === 'guestDock' && !maxed && rep ? ` (coins +${Math.round((rep.now - 1) * 100)}% → +${Math.round((rep.next - 1) * 100)}%)` : ''}
-          {u.gain >= 0.05 && !maxed ? ` · ${gainText(u.gain, notation)}` : ''}
-        </span>
-      </div>
-      {maxed ? (
-        <span class="maxed">Max</span>
-      ) : (
-        <button class="btn btn--primary btn--buy btn--small" aria-disabled={!u.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyUpgrade(u.id))}>
-          <Cost price={u.price} notation={notation} />
-        </button>
-      )}
-    </li>
+    <Row
+      cls={maxed ? 'is-maxed' : ''}
+      hint={d.blurb}
+      title={d.name}
+      tag={`${u.level}/${u.max}`}
+      sub={`${d.effect}${u.id === 'cot' ? ` (now ${offline}h)` : ''}${u.id === 'guestDock' && !maxed && rep ? ` (coins +${Math.round((rep.now - 1) * 100)}% → +${Math.round((rep.next - 1) * 100)}%)` : ''}${u.gain >= 0.05 && !maxed ? ` · ${gainText(u.gain, notation)}` : ''}`}
+      right={maxed ? <RowNote done>Max</RowNote> : <BuyButton price={u.price} notation={notation} affordable={u.affordable} onBuy={() => controls.buyUpgrade(u.id)} />}
+    />
   );
 }
 
@@ -169,11 +147,7 @@ function FoodPlots({ hud, controls, notation }: { hud: HudSnapshot; controls: Ga
                     </button>
                   )}
                 </div>
-                {plot.crop && (
-                  <button class="btn btn--primary btn--buy btn--small" aria-disabled={!plot.levelAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.levelPlot(i))}>
-                    <Cost price={plot.levelPrice} notation={notation} />
-                  </button>
-                )}
+                {plot.crop && <BuyButton price={plot.levelPrice} notation={notation} affordable={plot.levelAffordable} onBuy={() => controls.levelPlot(i)} />}
               </li>
               {open && (
                 <li class="crop-picker">
@@ -195,18 +169,17 @@ function FoodPlots({ hud, controls, notation }: { hud: HudSnapshot; controls: Ga
                         {on ? (
                           <span class="maxed">Planted</span>
                         ) : (
-                          <button
-                            class="btn btn--buy btn--small"
-                            aria-disabled={!o.affordable}
-                            onClick={(e) => {
+                          <BuyButton
+                            price={o.price}
+                            notation={notation}
+                            affordable={o.affordable}
+                            label={`Plant ${CROPS[o.crop].name}`}
+                            onBuy={() => {
                               const ok = controls.plantCrop(i, o.crop);
-                              pulse(e.currentTarget as HTMLElement, ok);
                               if (ok) setPicking(null);
+                              return ok;
                             }}
-                          >
-                            <span>Plant</span>
-                            <Cost price={o.price} notation={notation} />
-                          </button>
+                          />
                         )}
                       </div>
                     );
@@ -240,20 +213,12 @@ function FarPlotRow({ hud, g, controls, notation }: { hud: HudSnapshot; g: FarPl
   const f = hud.plots.far.find((x) => x.g === g);
   if (!f?.open) return null;
   return (
-    <li class="up-row" title={FAR_PLOTS[g].blurb}>
-      <div class="up-row__text">
-        <strong>
-          {f.name} {f.level > 0 && <span class="up-row__lvl">Lv {f.level}</span>}
-          {hud.bestBuy === `farPlot:${g}` && <span class="best-buy">Best buy</span>}
-        </strong>
-        <span>
-          {f.level > 0 ? `Flocks here +${pct(f.flocks)}%` : `Plant it: +${Math.round((FAR_PLOTS[g].flockRateGrowth - 1) * 100)}% flocks a level`}
-          {f.gain >= 0.05 ? ` · ${gainText(f.gain, notation)}` : ''}
-        </span>
-      </div>
-      <button class="btn btn--primary btn--buy btn--small" aria-disabled={!f.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.levelFarPlot(g))}>
-        <Cost price={f.price} notation={notation} />
-      </button>
-    </li>
+    <Row
+      hint={FAR_PLOTS[g].blurb}
+      title={<>{f.name}{hud.bestBuy === `farPlot:${g}` && <span class="best-buy">Best buy</span>}</>}
+      tag={f.level > 0 ? `Lv ${f.level}` : 'new'}
+      sub={`${f.level > 0 ? `Flocks +${pct(f.flocks)}%` : `Food plot: +${Math.round((FAR_PLOTS[g].flockRateGrowth - 1) * 100)}% flocks a level`}${f.gain >= 0.05 ? ` · ${gainText(f.gain, notation)}` : ''}`}
+      right={<BuyButton price={f.price} notation={notation} affordable={f.affordable} onBuy={() => controls.levelFarPlot(g)} />}
+    />
   );
 }

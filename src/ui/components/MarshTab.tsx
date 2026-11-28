@@ -1,10 +1,10 @@
 import { useState } from 'preact/hooks';
 import type { DayPhaseId } from '../../data/dayCycle';
 import type { ComponentChildren } from 'preact';
-import { KEEPER_NAME } from '../../data/goals';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { HuntPanel } from './HuntPanel';
+import { JumpChips } from './Kit';
 import { LodgePanel } from './Lodge';
 import { GuestBoard, LodgeRooms } from './LodgeLife';
 import type { Notation } from '../../util/format';
@@ -25,22 +25,14 @@ export function MarshTab({ hud, controls, devTools, tutorial, notation, ground =
   return (
     <div class="tab-body">
       {tutorial}
-      {!tutorial && <LodgePanel hud={hud} controls={controls} notation={notation} />}
+      {!tutorial && hud.lodge.level >= 2 && (
+        <JumpChips prefix="lodge" items={[{ key: 'card', label: 'Lodge' }, { key: 'guests', label: 'Guests' }, { key: 'rooms', label: 'Rooms' }]} />
+      )}
+      {!tutorial && <div id="lodge-card" class="jump-target"><LodgePanel hud={hud} controls={controls} notation={notation} /></div>}
       <HuntPanel hud={hud} ground={ground} />
       {hud.lodge.level >= 2 && <GuestBoard hud={hud} controls={controls} notation={notation} />}
       {hud.lodge.level >= 2 && <LodgeRooms hud={hud} controls={controls} notation={notation} />}
 
-      {!tutorial && <div class="keeper">
-        <div class="keeper__portrait" aria-hidden="true">
-          <span class="keeper__hat" />
-          <span class="keeper__face" />
-          <span class="keeper__beard" />
-        </div>
-        <div class="speech" key={hud.goalId}>
-          <p class="speech__name">{KEEPER_NAME}, old lodge keeper</p>
-          <p>{hud.goalGus}</p>
-        </div>
-      </div>}
 
       {devTools && (
         <section class="card">

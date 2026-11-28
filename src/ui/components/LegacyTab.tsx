@@ -6,6 +6,7 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { pulse } from './BotsTab';
+import { Finished, JumpChips, Row, RowNote, StarButton } from './Kit';
 
 export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const [confirming, setConfirming] = useState(false);
@@ -13,7 +14,11 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
   const lg = hud.legacy;
   return (
     <div class="tab-body legacy-tab">
-      <section class="season-card">
+      <JumpChips
+        prefix="legacy"
+        items={[{ key: 'season', label: 'Season' }, ...lg.branches.map((b) => ({ key: b.id, label: BRANCH_INFO[b.id].name.replace(' branch', '') })), { key: 'map', label: 'Map' }]}
+      />
+      <section id="legacy-season" class="season-card jump-target">
         <div class="season-card__head">
           <div>
             <span class="goal__tag">Season {se.number}</span>
@@ -48,38 +53,30 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
       </section>
       <RespecRow hud={hud} controls={controls} />
 
-      <section class="branch branch--lodge" aria-label={BRANCH_INFO.lodge.name}>
-        <h4 class="group-head">{BRANCH_INFO.lodge.name}</h4>
-        <p class="card__hint">{BRANCH_INFO.lodge.blurb}</p>
-        <div class="perk-tree">
-          {[0, 1, 2, 3, 4].map((t) => (
-            <div class="perk-tier">
-              {lg.perks.filter((p) => PERKS[p.id].branch === 'lodge' && PERKS[p.id].tier === t).map((p) => <PerkButton p={p} controls={controls} />)}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {lg.branches.filter((b) => b.id !== 'lodge').map((b) => {
+      {lg.branches.map((b) => {
         const info = BRANCH_INFO[b.id];
         const perks = lg.perks.filter((p) => PERKS[p.id].branch === b.id).sort((x, y) => PERKS[x.id].tier - PERKS[y.id].tier);
+        const done = perks.filter((p) => p.rank >= p.maxRank);
+        const open = b.id === 'lodge' || b.open;
+        const notDone = perks.filter((p) => p.rank < p.maxRank);
+        // What you can buy now, plus the next locked step; the rest of the chain folds away.
+        const buyable = notDone.filter((p) => open && p.prereqsMet);
+        const locked = notDone.filter((p) => !(open && p.prereqsMet));
+        const rest = [...buyable, ...locked.slice(0, 1)];
+        const later = locked.slice(1);
         return (
-          <section class={`branch branch--${b.id} ${b.open ? '' : 'is-locked'}`} aria-label={info.name}>
-            <div class="branch__head">
-              <h4>{info.name}</h4>
-              <span>{b.open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`}</span>
-            </div>
-            <Mastery m={lg.mastery[b.id as FlywayId]} notation={notation} />
-            <ol class="branch__chain">
-              {perks.map((p) => (
-                <li>{b.open ? <PerkButton p={p} controls={controls} /> : <div class="perk is-locked"><strong>{PERKS[p.id].name}</strong><span>{PERKS[p.id].desc}</span></div>}</li>
-              ))}
-            </ol>
+          <section id={`legacy-${b.id}`} class="jump-target" aria-label={info.name}>
+            <h4 class="group-head">{info.name}</h4>
+            <p class="card__hint">{open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`}</p>
+            {b.id !== 'lodge' && <Mastery m={lg.mastery[b.id as FlywayId]} notation={notation} />}
+            <ul class="up-list">{rest.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</ul>
+            <Finished count={later.length} label="Later">{later.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</Finished>
+            <Finished count={done.length} label="Owned">{done.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</Finished>
           </section>
         );
       })}
 
-      <section class="card">
+      <section id="legacy-map" class="card jump-target">
         <h3>Flyway map</h3>
         <ol class="flyway-map">
           {hud.flyways.map((f) => (
@@ -195,33 +192,24 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
 
 type PerkRow = HudSnapshot['legacy']['perks'][number];
 
-/** One perk: buy it, or rank it up if it has ranks. */
-function PerkButton({ p, controls }: { p: PerkRow; controls: GameControls }) {
+/** One perk as a row: buy it, or rank it up if it has ranks. */
+function PerkRowView({ p, open, controls }: { p: PerkRow; open: boolean; controls: GameControls }) {
   const d = PERKS[p.id];
   const ranked = p.maxRank > 1;
   const maxed = p.rank >= p.maxRank;
-  const label = maxed
-    ? ranked ? `Rank ${p.rank}/${p.maxRank}` : 'Owned'
-    : !p.prereqsMet
-      ? `Needs ${d.requires.map((r) => PERKS[r].name).join(', ')}`
-      : ranked
-        ? `${p.rank > 0 ? `Rank ${p.rank}/${p.maxRank} · ` : ''}★ ${p.nextCost}`
-        : `★ ${p.nextCost}`;
   return (
-    <button
-      class={`perk ${p.owned ? 'is-owned' : ''} ${maxed ? 'is-maxed' : ''} ${p.canBuy ? 'is-buyable' : ''} ${!p.prereqsMet ? 'is-locked' : ''}`}
-      aria-disabled={!p.canBuy}
-      onClick={(e) => !maxed && pulse(e.currentTarget as HTMLElement, controls.buyPerk(p.id))}
-    >
-      <strong>{d.name}</strong>
-      <span>{d.desc}</span>
-      {ranked && p.rank > 0 && (
-        <span class="perk__ranks" aria-hidden="true">
-          {Array.from({ length: p.maxRank }, (_, i) => <i class={i < p.rank ? 'is-on' : ''} />)}
-        </span>
-      )}
-      <em>{label}</em>
-    </button>
+    <Row
+      cls={maxed ? 'is-maxed' : !open || !p.prereqsMet ? 'is-locked' : ''}
+      title={d.name}
+      tag={ranked ? `${p.rank}/${p.maxRank}` : undefined}
+      sub={d.desc}
+      right={
+        maxed ? <RowNote done>{ranked ? 'Max' : 'Owned'}</RowNote>
+        : !open ? <RowNote>Locked</RowNote>
+        : !p.prereqsMet ? <RowNote>After {d.requires.map((r) => PERKS[r].name).join(', ')}</RowNote>
+        : <StarButton cost={p.nextCost} affordable={p.canBuy} label={`Buy ${d.name}`} onBuy={() => controls.buyPerk(p.id)} />
+      }
+    />
   );
 }
 

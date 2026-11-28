@@ -5138,3 +5138,27 @@ img { object-fit: contain; max-width: 100%; }
 .crop-birds { display: flex; flex-wrap: wrap; gap: 4px; }
 .crop-bird { padding: 1px 7px; border-radius: 999px; background: rgba(74, 50, 33, 0.08); font-size: 11.5px; color: var(--ui-textSoft); }
 .crop-bird.is-found { background: rgba(122, 143, 90, 0.2); color: #4f6a35; font-weight: 700; }
+
+/* ---- Shared tab kit: rows, price buttons, notes, folds ------------------- */
+.buy-btn { min-width: 96px; justify-content: center; align-items: center; min-height: 44px; }
+.buy-btn .cost { justify-content: center; flex-wrap: wrap; row-gap: 0; column-gap: 8px; }
+.up-row__pic { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: rgba(184, 140, 60, 0.12); color: var(--c-wood); }
+.up-row__pic img { max-width: 36px; max-height: 36px; object-fit: contain; }
+.up-row .up-row__text > .req__bar, .up-row .up-row__text > .guest__bar { margin-top: 3px; }
+.row-note { flex: none; max-width: 40%; text-align: right; font-size: 12px; font-weight: 700; color: var(--ui-textSoft); }
+.row-note.is-done { color: #4f6a35; }
+.finished { margin-top: 2px; }
+.finished > summary { list-style: none; cursor: pointer; padding: 7px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.35); font-size: 13px; font-weight: 700; color: var(--ui-textSoft); }
+.finished > summary::-webkit-details-marker { display: none; }
+.finished > summary::after { content: ' ▾'; }
+.finished[open] > summary::after { content: ' ▴'; }
+.finished[open] > summary { margin-bottom: 6px; }
+.finished .up-row { opacity: 0.75; }
+.jump-target { scroll-margin-top: 52px; }
+.sheet__help { display: grid; place-items: center; width: 32px; height: 32px; margin-right: 6px; border: 0; border-radius: 50%; background: rgba(45, 37, 32, 0.1); color: var(--c-wood); font: 800 16px/1 inherit; cursor: pointer; }
+.sheet__help.is-on { background: var(--c-wood); color: var(--c-cream); }
+.tab-help { margin: 0 0 10px; padding: 10px 12px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, 0.45); box-shadow: 0 1px 2px rgba(40, 26, 14, 0.1); }
+.tab-help ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.45; color: var(--ui-textSoft); }
+.tab-help .keeper--small { margin: 0 0 6px; }
+.tab-help .keeper--small + ul { margin-top: 4px; }
+.finished + .finished { margin-top: 6px; }

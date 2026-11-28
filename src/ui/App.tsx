@@ -58,6 +58,9 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
   const [trophies, setTrophies] = useState(false);
   const [board, setBoard] = useState(false);
   const [dayInfo, setDayInfo] = useState(false);
+  /** The ? in the sheet header: this tab's help, closed again on every tab switch. */
+  const [help, setHelp] = useState(false);
+  useEffect(() => setHelp(false), [tab]);
   const [stageInfo, setStageInfo] = useState(false);
   const [welcomed, setWelcomed] = useState(false);
   const tutorialOn = !prefs.tutorialDone && hud.lifetimeBirds < 5 && hud.season.number === 1;
@@ -189,11 +192,16 @@ export function App({ hud: hudStore, prefs: prefsStore, controls, onPrefs, onSce
             <Icon name={active.icon} size={20} />
             {active.label}
           </h2>
+          {(activeOpen || tab === 'marsh') && (
+            <button class={`sheet__help ${help ? 'is-on' : ''}`} onClick={() => setHelp(!help)} aria-expanded={help} aria-label={`What's the ${active.label} tab for?`}>
+              ?
+            </button>
+          )}
           <button class="sheet__close" onClick={() => setSheetOpen(false)} aria-label="Close">✕</button>
         </header>
         <div class="sheet__content panel__content" role="tabpanel" key={tab}>
           {!activeOpen && activeFeature && <LockedTab tab={active} feature={activeFeature} hud={hud} />}
-          {activeOpen && activeFeature && hud.lodge.level < 4 && <TabHelp feature={activeFeature} />}
+          {help && (activeOpen || tab === 'marsh') && <TabHelp feature={activeFeature ?? null} ray={tab === 'marsh' ? hud.goalGus : undefined} />}
           {tab === 'marsh' && (
             <MarshTab hud={hud} controls={controls} devTools={prefs.devTools} notation={n} ground={ground} tutorial={null} />
           )}
