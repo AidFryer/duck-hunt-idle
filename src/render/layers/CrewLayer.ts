@@ -744,19 +744,22 @@ export class CrewLayer implements Layer {
    * or (when everyone's busy) collect it with a sparkle. Returns where the
    * bird was, for floating feedback.
    */
-  retrieve(source: ActionSource): Point {
+  retrieve(source: ActionSource, count = 1): Point {
     const c = this.c;
-    const dogs = source === 'manual' ? [this.lab, ...this.visibleRobos()] : [...this.visibleRobos(), this.lab];
-    const free = dogs.find((d) => !d.busy);
-    const f = this.ducks.claimFloater();
-    if (!f) return { x: c.labHome.x, y: c.labHome.y - 20 * c.a };
-    const where = { x: f.x, y: f.y - 10 * c.a };
-    if (free) free.fetch(f);
-    else {
-      this.ducks.removeFloater(f);
-      this.fx.sparkle(f.x, f.y - 4 * c.a, c.a * 0.7, 6);
+    // Your own fetch: your dog goes for the bird you tapped (or the next one) right away.
+    if (source === 'manual') {
+      const f = this.ducks.claimFloater();
+      if (f) {
+        const dog = [this.lab, ...this.visibleRobos()].find((d) => !d.busy);
+        if (dog) dog.fetch(f);
+        else this.ducks.collect(f);
+        return { x: f.x, y: f.y - 10 * c.a };
+      }
     }
-    return where;
+    // The crew's fetches are shown as birds land and rest (see update).
+    this.ducks.owe(count);
+    const next = this.ducks.firstFreeFloater();
+    return next ? { x: next.x, y: next.y - 10 * c.a } : { x: c.labHome.x, y: c.labHome.y - 20 * c.a };
   }
 
   private visibleRobos(): Dog[] {
@@ -772,6 +775,13 @@ export class CrewLayer implements Layer {
     this.deckRefl.tint = lerpColor(shadeColor(lit, 0.5), f.sky.waterTop, 0.5);
     this.deckRefl.alpha = 0.35;
 
+    // Owed pickups: free robo-pups (then the Lab) swim out; the rest are collected gently.
+    this.ducks.servePickups(dt, (fl) => {
+      const dog = [...this.visibleRobos(), this.lab].find((d) => !d.busy);
+      if (!dog) return false;
+      dog.fetch(fl);
+      return true;
+    });
     this.lab.update(dt, this.time, c, this.ducks, this.fx, f.motion);
     this.lab.tint(lit);
     for (const r of this.robos) {

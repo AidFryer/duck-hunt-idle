@@ -75,6 +75,8 @@ export interface Floater {
   reserved: boolean;
   /** >0 while fading out. */
   fade: number;
+  /** Seconds since it landed. */
+  age: number;
 }
 
 /** What a tap on the scene landed on. */
@@ -88,6 +90,14 @@ const MAX_VISIBLE_PER_FLOCK = 6;
 const CALM_FLOCKS = 3;
 const CALM_PER_FLOCK = 8;
 const MAX_FLOATERS = 14;
+/** A bird floats at least this long before the crew picks it up, so every fall is seen to land. */
+const FLOAT_REST = 1.1;
+/** How many shot birds may land each second, at most (a busy marsh stays readable). */
+const LANDINGS_PER_SECOND = 5;
+/** Busy marsh: how often a new flock is drawn flying in (the rest hunt unseen). */
+const CALM_FLOCKS_PER_SECOND = 0.6;
+/** Seconds between pickups the crew makes without a dog (birds collected off-screen). */
+const PICKUP_GAP = 0.18;
 /** Downward pull on a shot bird (px/s² at scale 1). */
 const FALL_G = 340;
 const FOLLOW_LAG = 0.22;
@@ -177,13 +187,15 @@ export class DuckLayer implements Layer {
     if (this.findHunt(id)) return;
     // Busy marsh: only a few flocks are drawn; the rest still hunt, unseen,
     // and their birds drop out of the sky over the decoys when shot.
-    if (this.calm && !golden && this.flocks.filter((f) => f.kind === 'hunt' && f.ducks.length > 0).length >= CALM_FLOCKS) {
+    // A new drawn flock at most every so often, so each one can be watched in.
+    if (this.calm && !golden && (this.flocks.filter((f) => f.kind === 'hunt' && f.ducks.length > 0).length >= CALM_FLOCKS || this.flockSlots < 1)) {
       this.unseen.set(id, species);
       if (this.unseen.size > 200) this.unseen.delete(this.unseen.keys().next().value!);
       return;
     }
     const ducks = this.take(Math.min(size, this.calm ? CALM_PER_FLOCK : MAX_VISIBLE_PER_FLOCK));
     if (ducks.length === 0) return;
+    if (this.calm && !golden) this.flockSlots -= 1;
     const l = this.l;
     const f = this.newFlock('hunt', ducks, this.rnd() > 0.5 ? 1 : -1);
     f.id = id;
@@ -236,10 +248,11 @@ export class DuckLayer implements Layer {
       this.unseen.delete(id);
       return;
     }
-    const species = f.species;
     const live = f.ducks.filter((d) => d.flock === f && d.mode === 'fly');
-    let toDrop = Math.min(downed, live.length);
-    const extra = downed - toDrop;
+    // Every shot drops at least one bird; past that, only as many as the
+    // crew can be seen picking up (the rest are counted, unseen).
+    let toDrop = Math.min(downed, live.length, Math.max(1, Math.floor(this.skyDrops)));
+    this.skyDrops -= toDrop;
     for (const d of live) {
       if (toDrop > 0) {
         toDrop--;
@@ -259,7 +272,6 @@ export class DuckLayer implements Layer {
         this.exit(d, true);
       }
     }
-    for (let i = 0; i < Math.min(extra, 3); i++) this.addFloater(this.randomWaterPoint(), true, species);
     f.ducks.length = 0;
   }
 
@@ -314,18 +326,27 @@ export class DuckLayer implements Layer {
     for (const f of this.flocks) if (f.kind === 'hunt' && !live.has(f.id) && f.ducks.length) this.leave(f.id);
 
     // Floating birds: match the sim count (capped), unless tumbles are in flight.
-    const tumbling = this.ducks.some((d) => d.mode === 'tumble');
+    // Birds the sim already fetched are picked up by the crew at a watchable
+    // pace (see servePickups), so they aren't faded here.
+    // Only top up birds with no fall (after loading, or coming back to the tab):
+    // while the hunt is running, every bird on the water fell there.
+    const tumbling = this.ducks.filter((d) => d.mode === 'tumble').length;
     const want = Math.min(h.downed.length, MAX_FLOATERS);
-    const have = this.floaters.filter((f) => f.fade === 0).length;
-    if (!tumbling && have < want) for (let i = have; i < want; i++) this.addFloater(this.randomWaterPoint(), false, h.downed[i]);
-    if (have > h.downed.length) {
-      let extra = have - h.downed.length;
-      for (const f of this.floaters) {
-        if (extra <= 0) break;
-        if (!f.reserved && f.fade === 0) {
-          f.fade = 1;
-          extra--;
-        }
+    const free = this.floaters.filter((f) => f.fade === 0 && !f.reserved);
+    const quiet = this.time - this.lastLand > 6;
+    if (tumbling === 0 && quiet && free.length + this.floaters.filter((f) => f.reserved && f.fade === 0).length < want) {
+      for (let i = free.length; i < want; i++) this.addFloater(this.randomWaterPoint(), false, h.downed[i]);
+      this.lastLand = this.time;
+    }
+    // Never owe more pickups than there are birds to show.
+    this.owed = Math.min(this.owed, free.length + tumbling);
+    // Safety net (e.g. after the tab was hidden): long-stale birds the sim no longer has.
+    let extra = free.length - Math.min(h.downed.length, MAX_FLOATERS) - this.owed;
+    for (const f of free) {
+      if (extra <= 0) break;
+      if (f.age > 8) {
+        f.fade = 1;
+        extra--;
       }
     }
   }
@@ -354,7 +375,10 @@ export class DuckLayer implements Layer {
     this.preferred = f;
   }
 
-  /** Oldest unclaimed floating bird, now reserved for a retriever. */
+  /**
+   * Oldest unclaimed floating bird that has rested a moment, now reserved for a
+   * retriever. A bird the player tapped is taken straight away.
+   */
   claimFloater(): Floater | null {
     const p = this.preferred;
     this.preferred = null;
@@ -363,12 +387,69 @@ export class DuckLayer implements Layer {
       return p;
     }
     for (const f of this.floaters) {
-      if (!f.reserved && f.fade === 0) {
+      if (!f.reserved && f.fade === 0 && f.age >= FLOAT_REST) {
         f.reserved = true;
         return f;
       }
     }
     return null;
+  }
+
+  /**
+   * Birds the sim has retrieved that the scene still owes a pickup for. The
+   * crew works these off at a watchable pace as birds land and rest.
+   */
+  owed = 0;
+  private pickupWait = 0;
+  /** When a bird last landed (scene time). */
+  private lastLand = -100;
+  /** Shot birds allowed to land right now (refills each second). */
+  private skyDrops = 8;
+  /** Busy marsh: new flocks allowed to be drawn right now (refills slowly). */
+  private flockSlots = 2;
+
+  /** The sim retrieved a bird: pick one up here once one has landed and rested. */
+  owe(n = 1): void {
+    this.owed = Math.min(this.owed + n, MAX_FLOATERS * 2);
+  }
+
+  /**
+   * Work off owed pickups. `send` tries to dispatch a dog for the bird and
+   * returns false when none is free; then the bird is collected with a soft
+   * fade, one at a time.
+   */
+  servePickups(dt: number, send: (f: Floater) => boolean): void {
+    this.pickupWait = Math.max(0, this.pickupWait - dt);
+    while (this.owed > 0) {
+      const f = this.peekRested();
+      if (!f) return;
+      f.reserved = true;
+      if (send(f)) {
+        this.owed--;
+        continue;
+      }
+      if (this.pickupWait > 0) {
+        f.reserved = false;
+        return;
+      }
+      this.owed--;
+      this.collect(f);
+      // Quicker when the water is getting full.
+      this.pickupWait = this.floaters.length > MAX_FLOATERS * 0.7 ? PICKUP_GAP * 0.5 : PICKUP_GAP;
+    }
+  }
+
+  private peekRested(): Floater | null {
+    for (const f of this.floaters) if (!f.reserved && f.fade === 0 && f.age >= FLOAT_REST) return f;
+    return null;
+  }
+
+  /** Picked up by the crew off-screen: a little sparkle and a gentle fade. */
+  collect(f: Floater): void {
+    f.reserved = true;
+    f.fade = 1;
+    if (!this.onGround) this.fx.ripple(f.x, f.y, 0.5, 1.4);
+    this.fx.sparkle(f.x, f.y - 4 * this.l.scale, this.l.scale * 0.6, 5);
   }
 
   /** Remove a floater (picked up or retrieved off-screen). */
@@ -520,7 +601,7 @@ export class DuckLayer implements Layer {
     const s = new Sprite(this.tex.get(`duck.swim.${species}.${drake ? 'drake' : 'hen'}`));
     s.anchor.set(0.45, 30 / 34);
     this.waterView.addChild(s);
-    const f: Floater = { s, x: p.x, y: p.y, phase: this.rnd() * 10, reserved: false, fade: 0 };
+    const f: Floater = { s, x: p.x, y: p.y, phase: this.rnd() * 10, reserved: false, fade: 0, age: 0 };
     const k = waterDepthScale(this.l, p.y) * 0.5 * SPECIES[species].size;
     s.scale.set(k * (this.rnd() > 0.5 ? 1 : -1), k * 0.8);
     this.floaters.push(f);
@@ -543,8 +624,12 @@ export class DuckLayer implements Layer {
   /** Shot birds from a flock that wasn't drawn: they tumble down from the sky onto the spread. */
   private dropFromSky(n: number, species: SpeciesId): void {
     const l = this.l;
-    const ducks = this.take(n);
-    for (let i = ducks.length; i < n; i++) this.addFloater(this.randomWaterPoint(), true, species);
+    // Keep the water readable: only so many extra birds fall each second, and
+    // never more than the water has room for (the rest are counted, unseen).
+    const room = MAX_FLOATERS - this.floaters.filter((f) => f.fade === 0).length - this.ducks.filter((d) => d.mode === 'tumble').length;
+    const k = Math.max(0, Math.min(n, Math.floor(this.skyDrops), room));
+    this.skyDrops -= k;
+    const ducks = this.take(k);
     for (const d of ducks) {
       this.setLook(d, species);
       const p = this.randomWaterPoint();
@@ -648,6 +733,8 @@ export class DuckLayer implements Layer {
   }
 
   update(f: FrameContext): void {
+    this.skyDrops = Math.min(8, this.skyDrops + f.dt * LANDINGS_PER_SECOND);
+    this.flockSlots = Math.min(2, this.flockSlots + f.dt * CALM_FLOCKS_PER_SECOND);
     const dt = f.dt;
     this.time += dt;
     const l = this.l;
@@ -677,6 +764,7 @@ export class DuckLayer implements Layer {
         d.root.rotation += d.spin * dt;
         if (d.y >= d.landY) {
           this.addFloater({ x: d.x, y: d.landY }, true, d.species, d.drake);
+          this.lastLand = this.time;
           this.retire(d);
         }
       } else if (d.mode === 'exit') {
@@ -727,6 +815,7 @@ export class DuckLayer implements Layer {
     // Floating birds: bob gently, drift a little.
     for (let i = this.floaters.length - 1; i >= 0; i--) {
       const fl = this.floaters[i]!;
+      fl.age += dt;
       if (fl.fade > 0) {
         fl.fade -= dt * 1.5;
         if (fl.fade <= 0) {

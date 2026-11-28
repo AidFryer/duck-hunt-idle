@@ -284,20 +284,23 @@ class FieldCrewLayer implements Layer {
   }
 
   /** Send a dog for a goose: Biscuit for you, pups for the crew. */
-  retrieve(manual: boolean): Point {
-    const f = this.ducks.claimFloater();
+  retrieve(manual: boolean, count = 1): Point {
     const home = this.lab.home;
-    if (!f) return { x: home.x, y: home.y - 20 * this.l.scale };
-    const pool = manual ? [this.lab, ...this.pups] : [...this.pups.filter((p) => p.s.visible), this.lab];
-    const dog = pool.find((d) => d.state === 'home' && d.s.visible !== false);
-    if (dog) {
-      dog.target = f;
-      dog.state = 'out';
-    } else {
-      this.ducks.removeFloater(f, false);
-      this.fx.sparkle(f.x, f.y - 4 * this.l.scale, this.l.scale * 0.7, 6);
+    if (manual) {
+      const f = this.ducks.claimFloater();
+      if (f) {
+        const dog = [this.lab, ...this.pups].find((d) => d.state === 'home' && d.s.visible !== false);
+        if (dog) {
+          dog.target = f;
+          dog.state = 'out';
+        } else this.ducks.collect(f);
+        return { x: f.x, y: f.y - 10 * this.l.scale };
+      }
     }
-    return { x: f.x, y: f.y - 10 * this.l.scale };
+    // The crew's pickups are shown as geese land and rest (see update).
+    this.ducks.owe(count);
+    const next = this.ducks.firstFreeFloater();
+    return next ? { x: next.x, y: next.y - 10 * this.l.scale } : { x: home.x, y: home.y - 20 * this.l.scale };
   }
 
   update(f: FrameContext): void {
@@ -334,6 +337,14 @@ class FieldCrewLayer implements Layer {
       fg.moveTo(p.x, p.y - 6 * k).lineTo(tipX, p.y - 30 * k).stroke({ width: 1.4 * k, color: 0x5a4632 });
       fg.poly([tipX, p.y - 30 * k, tipX + 10 * k, p.y - 27 * k, tipX + 1 * k, p.y - 23 * k]).fill(0x1e1a18);
     }
+    // Owed pickups: a free pup (then the Lab) trots out; the rest are collected gently.
+    this.ducks.servePickups(dt, (fl) => {
+      const dog = [...this.pups.filter((p) => p.s.visible), this.lab].find((d) => d.state === 'home');
+      if (!dog) return false;
+      dog.target = fl;
+      dog.state = 'out';
+      return true;
+    });
     // Dogs
     for (const d of [this.lab, ...this.pups]) {
       if (!d.s.visible && d !== this.lab) continue;
@@ -470,7 +481,7 @@ export class FieldScene {
         return p;
       }
       case 'retrieved':
-        return this.crew.retrieve(e.source === 'manual');
+        return this.crew.retrieve(e.source === 'manual', e.count);
       case 'botBought':
       case 'botLevel':
       case 'botMilestone':

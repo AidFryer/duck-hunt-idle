@@ -237,7 +237,7 @@ export class MarshScene {
         return p;
       }
       case 'retrieved':
-        return this.crew.retrieve(this.crew.local(e.source));
+        return this.crew.retrieve(this.crew.local(e.source), e.count);
       case 'logged':
         return this.crew.logged(e.source);
       case 'scouted':
