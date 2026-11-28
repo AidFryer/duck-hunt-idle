@@ -8,6 +8,7 @@ import { BlindLayer } from './layers/BlindLayer';
 import { DrifterLayer } from './layers/DrifterLayer';
 import { CloudLayer } from './layers/CloudLayer';
 import { CrewLayer } from './layers/CrewLayer';
+import { SkeinLayer } from './layers/SkeinLayer';
 import { DuckLayer } from './layers/DuckLayer';
 import { HintLayer, chooseHint } from './layers/HintLayer';
 import type { Floater } from './layers/DuckLayer';
@@ -69,6 +70,9 @@ export class MarshScene {
   readonly fx: EffectsLayer;
   readonly blind: BlindLayer;
   readonly crew: CrewLayer;
+  private readonly skeins: SkeinLayer;
+  /** Called with "+N birds" for a visible shot that stands for many. */
+  onTally: ((birds: number, at: Point) => void) | null = null;
   readonly weather: WeatherLayer;
   readonly hint: HintLayer;
   /** A stray decoy drifting by, to tap for a gift. */
@@ -133,8 +137,9 @@ export class MarshScene {
 
     // Back-to-front draw order.
     this.hint = new HintLayer(this.ducks);
+    this.skeins = new SkeinLayer(tex);
     this.layers = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.life, this.timber, this.props, midReeds, blind,
+      this.sky, clouds, this.skeins, farFog, land, this.water, this.plots, shore, this.life, this.timber, this.props, midReeds, blind,
       this.drifter, this.ducks, this.crew, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
     for (const layer of this.layers) this.root.addChild(layer.view);
@@ -156,7 +161,7 @@ export class MarshScene {
     }
     // Anchors flow forward: shore & blind publish positions the reeds use.
     this.layoutOrder = [
-      this.sky, clouds, farFog, land, this.water, this.plots, shore, this.timber, blind, this.drifter, this.crew, this.props, this.life, midReeds,
+      this.sky, clouds, this.skeins, farFog, land, this.water, this.plots, shore, this.timber, blind, this.drifter, this.crew, this.props, this.life, midReeds,
       this.ducks, nearFog, this.fx, fgReeds, this.weather, this.hint, overlay,
     ];
   }
@@ -234,7 +239,9 @@ export class MarshScene {
         return this.ducks.flare(e.flockId);
       case 'shot': {
         const p = this.crew.shoot(this.crew.local(e.source));
-        this.ducks.shoot(e.flockId, e.downed);
+        const tally = this.ducks.shoot(e.flockId, e.downed);
+        // Busy marsh: one shot you can see stands for many; say how many.
+        if (tally && this.ducks.calm && tally.birds > e.downed) this.onTally?.(tally.birds, tally.at);
         return p;
       }
       case 'retrieved':
@@ -346,6 +353,8 @@ export class MarshScene {
     this.blind.setCarvings(g === 'marsh' ? CARVING_ORDER.filter((id) => state.carvings[id] && !CARVINGS[id].look.goose) : []);
     // A busy marsh draws fewer, bigger flocks (the rest hunt unseen).
     this.ducks.calm = busyMarsh(state);
+    // Far-off skeins show how busy the hunt is (a far ground shows a share of it).
+    this.skeins.rate = state.volley.birdsRate * 60 * (g === 'marsh' ? 1 : 0.35);
     this.ducks.reconcileGround(h, state, g);
     if (g !== 'bay' && state.flyway !== this.flyway) {
       this.flyway = state.flyway;

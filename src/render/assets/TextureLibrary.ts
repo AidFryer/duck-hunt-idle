@@ -72,6 +72,10 @@ const recipes: Record<string, Recipe> = {
   alert: { paint: P.paintAlertBubble, resolution: PAINT_SCALE },
   rain: { paint: P.paintRainStreak, resolution: 2 },
 };
+for (let v = 0; v < 3; v++) {
+  recipes[`skein.${v}.up`] = { paint: () => P.paintSkein(v, true), resolution: 2 };
+  recipes[`skein.${v}.down`] = { paint: () => P.paintSkein(v, false), resolution: 2 };
+}
 for (const k of ['lab', 'robo'] as const) {
   recipes[`dog.${k}.body`] = { paint: () => P.paintDogBody(k), resolution: PAINT_SCALE };
   recipes[`dog.${k}.leg`] = { paint: () => P.paintDogLeg(k), resolution: PAINT_SCALE };

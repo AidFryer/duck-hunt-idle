@@ -925,6 +925,11 @@ async function startScene(host: HTMLElement): Promise<void> {
   renderer.setBatterySaver(prefs.get().batterySaver);
   renderer.onEvent = onEvent;
   renderer.onFix = (bot) => controls.fixBot(bot);
+  // Busy marsh: a shot you can see stands for many; show how many birds it took.
+  renderer.onTally = (birds, at) => {
+    if (prefs.get().reducedMotion && birds < 10) return;
+    feedback.float(`+${formatNumber(birds, prefs.get().notation)} birds`, at.x, at.y - 10, 'tally');
+  };
   renderer.onTap = onSceneTap;
   await renderer.init();
   const lastGround = prefs.get().ground;

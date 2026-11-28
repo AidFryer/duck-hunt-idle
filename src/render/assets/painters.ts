@@ -2101,3 +2101,52 @@ export function paintTrimMedal(): Canvas {
   ctx.fill();
   return t.canvas;
 }
+
+/**
+ * A distant skein of ducks: little "m"-shaped silhouettes in a loose V,
+ * painted white (tinted to the sky at draw time). Two frames for a wingbeat.
+ * `variant` changes the count and spacing so skeins don't all look alike.
+ */
+export function paintSkein(variant: number, wingsUp: boolean): Canvas {
+  const W = 160;
+  const H = 70;
+  const t = createPaintTarget(W, H);
+  const { ctx } = t;
+  const counts = [9, 14, 20];
+  const n = counts[variant % counts.length]!;
+  const rnd = seeded(17 + variant * 31);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < n; i++) {
+    // Alternate arms of the V, with a little jitter so it looks alive.
+    const arm = i === 0 ? 0 : i % 2 === 0 ? 1 : -1;
+    const k = Math.ceil(i / 2);
+    const x = W - 14 - k * (9 + variant * 1.5) + (rnd() - 0.5) * 3;
+    const y = H / 2 + arm * k * (3.4 + variant * 0.4) + (rnd() - 0.5) * 3;
+    const s = 0.85 + rnd() * 0.3;
+    const lift = (wingsUp ? -2.6 : 1.4) * s + (rnd() - 0.5) * 0.8;
+    ctx.lineWidth = 1.5 * s;
+    ctx.beginPath();
+    ctx.moveTo(x - 4 * s, y + lift);
+    ctx.quadraticCurveTo(x - 2 * s, y - 0.4, x, y + 0.6);
+    ctx.quadraticCurveTo(x + 2 * s, y - 0.4, x + 4 * s, y + lift);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(x + 0.6, y + 0.9, 1.6 * s, 0.9 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  return t.canvas;
+}
+
+function seeded(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}

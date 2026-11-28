@@ -4,7 +4,7 @@ import gsap from 'gsap';
  * DOM feedback over the scene: floating "+5" numbers and cozy toasts.
  * Kept out of Pixi so it can use the UI fonts and CSS.
  */
-export type FloatKind = 'coins' | 'feathers' | 'info' | 'alert';
+export type FloatKind = 'coins' | 'feathers' | 'info' | 'alert' | 'tally';
 export type ToastTone = 'info' | 'good' | 'celebrate';
 
 class Feedback {

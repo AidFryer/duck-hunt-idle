@@ -5289,3 +5289,5 @@ img { object-fit: contain; max-width: 100%; }
 .path .row-note { width: auto; max-width: 42%; }
 .ws-row__text > strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ws-row__text > span:first-of-type { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* "+N birds" over a shot on a busy marsh: a soft dark pill so it reads on any sky. */
+.floater--tally { padding: 2px 9px; border-radius: 999px; background: rgba(35, 28, 22, 0.55); color: #fff6e2; font-size: 13px; font-weight: 800; text-shadow: none; }

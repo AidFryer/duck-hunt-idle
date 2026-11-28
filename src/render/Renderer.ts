@@ -44,6 +44,8 @@ export class Renderer {
   options: RendererOptions = { motion: 1 };
   /** Called for each sim event after the scene animates it. */
   onEvent: ((e: SimEvent, at: Point | null) => void) | null = null;
+  /** A visible shot that stood for many birds on a busy marsh ("+N birds"). */
+  onTally: ((birds: number, at: Point) => void) | null = null;
   /** Called when the player taps a stuck bot's "!" bubble. */
   onFix: ((bot: BotId) => void) | null = null;
   /** Called when the player taps the marsh itself. */
@@ -75,6 +77,7 @@ export class Renderer {
       old.tex.destroy();
       this.scene = new MarshScene();
       this.scene.crew.onFix = (b) => this.onFix?.(b);
+      this.scene.onTally = (n, at) => this.onTally?.(n, at);
       this.app.stage.addChild(this.scene.root);
       this.lastW = this.lastH = 0;
       // Lay the new scene out before anything draws into it.
@@ -99,6 +102,7 @@ export class Renderer {
 
     this.scene = new MarshScene();
     this.scene.crew.onFix = (b) => this.onFix?.(b);
+    this.scene.onTally = (n, at) => this.onTally?.(n, at);
     this.app.stage.addChild(this.scene.root);
     this.handleResize();
     this.scene.sync(this.runner.state);
@@ -260,7 +264,10 @@ export class Renderer {
   setGround(g: GroundId): void {
     if (g !== 'marsh' && !this.others.has(g) && this.ready) {
       const sc = g === 'field' ? new FieldScene(this.scene.tex) : new MarshScene(g, this.scene.tex);
-      if (sc instanceof MarshScene) sc.crew.onFix = (b) => this.onFix?.(b);
+      if (sc instanceof MarshScene) {
+        sc.crew.onFix = (b) => this.onFix?.(b);
+        sc.onTally = (n, at) => this.onTally?.(n, at);
+      }
       sc.layout.skyTop = this.scene.layout.skyTop;
       sc.resize(this.app.screen.width, this.app.screen.height);
       this.app.stage.addChildAt(sc.root, 0);

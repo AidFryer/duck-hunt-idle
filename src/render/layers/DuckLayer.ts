@@ -239,15 +239,22 @@ export class DuckLayer implements Layer {
   }
 
   /** A shot: `downed` birds tumble to the water, the rest flare off. */
-  shoot(id: number, downed: number): void {
+  /**
+   * A shot. Returns, for a flock you can see, how many birds it and the
+   * unseen shots since the last one took (for a "+N" over it); null otherwise.
+   */
+  shoot(id: number, downed: number): { birds: number; at: Point } | null {
     const f = this.findHunt(id);
     const l = this.l;
     if (!f) {
-      // A flock that wasn't drawn: its birds still fall from the sky over the spread.
-      this.dropFromSky(Math.min(downed, 4), this.unseen.get(id) ?? 'mallard');
+      // A flock that wasn't drawn: nothing falls out of an empty sky; its
+      // birds are added to the next shot you can see.
+      this.unseenDowned += downed;
       this.unseen.delete(id);
-      return;
+      return null;
     }
+    const tally = { birds: downed + this.unseenDowned, at: { x: f.lx, y: f.ly } };
+    this.unseenDowned = 0;
     const live = f.ducks.filter((d) => d.flock === f && d.mode === 'fly');
     // Every shot drops at least one bird; past that, only as many as the
     // crew can be seen picking up (the rest are counted, unseen).
@@ -273,7 +280,11 @@ export class DuckLayer implements Layer {
       }
     }
     f.ducks.length = 0;
+    return tally;
   }
+
+  /** Birds shot from flocks that weren't drawn, since the last shot you could see. */
+  private unseenDowned = 0;
 
   /** The called flock waited too long: flare off. Returns where it was. */
   flare(id: number): Point | null {
@@ -621,36 +632,7 @@ export class DuckLayer implements Layer {
     };
   }
 
-  /** Shot birds from a flock that wasn't drawn: they tumble down from the sky onto the spread. */
-  private dropFromSky(n: number, species: SpeciesId): void {
-    const l = this.l;
-    // Keep the water readable: only so many extra birds fall each second, and
-    // never more than the water has room for (the rest are counted, unseen).
-    const room = MAX_FLOATERS - this.floaters.filter((f) => f.fade === 0).length - this.ducks.filter((d) => d.mode === 'tumble').length;
-    const k = Math.max(0, Math.min(n, Math.floor(this.skyDrops), room));
-    this.skyDrops -= k;
-    const ducks = this.take(k);
-    for (const d of ducks) {
-      this.setLook(d, species);
-      const p = this.randomWaterPoint();
-      const top = l.skyTop ?? 0;
-      d.flock = null;
-      d.mode = 'tumble';
-      d.depth = 0.8 + this.rnd() * 0.2;
-      d.facing = d.targetFacing = this.rnd() > 0.5 ? 1 : -1;
-      d.x = p.x + (this.rnd() - 0.5) * 80 * l.scale;
-      d.y = top + (l.horizon - top) * (0.45 + this.rnd() * 0.3);
-      d.root.visible = true;
-      d.root.rotation = 0;
-      d.vy = -25 * l.scale;
-      d.spin = (this.rnd() > 0.5 ? 1 : -1) * (3 + this.rnd() * 3);
-      d.landY = Math.max(p.y, d.y + 30 * l.scale);
-      const g = FALL_G * l.scale;
-      const t = (-d.vy + Math.sqrt(d.vy * d.vy + 2 * g * Math.max(0, d.landY - d.y))) / g;
-      d.vx = clamp((p.x - d.x) / Math.max(0.3, t), -200 * l.scale, 200 * l.scale);
-      this.fx.featherPuff(d.x, d.y, l.scale * d.depth);
-    }
-  }
+
 
   // ------------------------------------------------------------------ internals
 
