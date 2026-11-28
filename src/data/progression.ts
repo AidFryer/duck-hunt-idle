@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 0, species: 20, coins: 70_000_000, feathers: 2_500_000, opens: ['legacy'],
+    birds: 0, species: 20, coins: 100_000_000, feathers: 4_000_000, opens: ['legacy'],
     points: [
       'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks. Hire a Bay Boatman to run it.',
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',
@@ -132,7 +132,7 @@ export const PLANS: Record<BotId, PlanDef> = {
   flagger: { lodge: 4, counter: 'handFlags', count: 40 },
   layout: { lodge: 4, counter: 'handFieldShots', count: 40 },
   fieldDog: { lodge: 4, counter: 'handPickups', count: 100 },
-  guide: { lodge: 3, counter: 'birds', count: 6_000 },
+  guide: { lodge: 3, counter: 'birds', count: 1_500 },
   boatman: { lodge: 5, counter: 'birds', count: 1_400_000 },
 };
 

@@ -64,6 +64,7 @@ export type SimEvent =
   | { type: 'dailyBonus'; coins: number; feathers: number }
   | { type: 'drifterClaimed'; coins: number; feathers: number }
   | { type: 'handBonus'; coins: number }
+  | { type: 'standFlooded'; stands: number }
   | { type: 'flywayMastered'; flyway: FlywayId }
   | { type: 'specialDay'; day: SpecialDayId }
   | { type: 'perkBought'; perk: PerkId }

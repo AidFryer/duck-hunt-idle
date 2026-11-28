@@ -45,7 +45,7 @@ export const FIELD = {
   /** Full-body decoys blow over far less often than marsh decoys drift. */
   decoyDriftSeconds: 240,
   decoyDriftWind: 1.2,
-  baseFlockRate: 1 / 10,
+  baseFlockRate: 1 / 7,
   spreadExponent: 0.8,
   emptySpreadFloor: 0.05,
   flockSizeMin: 6,
@@ -257,7 +257,7 @@ export const BOTS: Record<BotId, BotDef> = {
   caller: {
     id: 'caller', name: 'Caller Bot', job: 'call', crossJobs: others('call'),
     blurb: 'A carved mallard with a brass reed in its beak. Calls circling flocks in.',
-    baseSpeed: 0.2, reliability: 0.96,
+    baseSpeed: 0.3, reliability: 0.96,
     costCoins: 75, costFeathers: 12, costGrowth: 1.17,
     levelCostCoins: 450, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
@@ -514,6 +514,26 @@ export const TINKER = {
 } as const;
 
 // ---------------------------------------------------------------- acres
+
+/**
+ * The Flooded Timber is the feather ground: birds brought in there give
+ * extra feathers, and flooding more stands draws more flocks.
+ */
+export const STANDS = {
+  /** You start with one stand flooded. */
+  start: 1,
+  costCoins: 5_000,
+  costFeathers: 500,
+  costGrowth: 1.75,
+  /** Timber flocks multiply by this for every stand beyond the first. */
+  flockRateGrowth: 1.12,
+  /** Average extra birds per timber flock per stand beyond the first. */
+  flockSizePerStand: 0.5,
+  /** Feathers from every bird brought in at the timber, × this. */
+  feathers: 3,
+  /** How much of the marsh's acre and food-plot boosts carry over (as a power: 0.5 = square root). */
+  sharedBoost: 0.5,
+} as const;
 
 export const ACRES = {
   /** You start with one restored acre. */

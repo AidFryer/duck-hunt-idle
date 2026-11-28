@@ -19,6 +19,8 @@ export interface GameControls {
   buyBot(id: BotId, count: number): number;
   levelUp(id: BotId): boolean;
   buyAcre(): boolean;
+  /** Flood another stand of timber. */
+  buyStand(): boolean;
   buyUpgrade(id: UpgradeId): boolean;
   /** Hand over a filled guest booking. */
   claimGuest(id: number): boolean;

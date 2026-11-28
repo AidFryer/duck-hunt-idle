@@ -5104,3 +5104,4 @@ img { object-fit: contain; max-width: 100%; }
   vertical-align: middle;
   white-space: nowrap;
 }
+.up-hint { margin: -4px 0 6px; }

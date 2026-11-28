@@ -5,7 +5,8 @@ export type UpgradeId =
   | 'timber' | 'rice' | 'millet' | 'blinds' | 'decoyQuality' | 'lodgeRooms' | 'coffee' | 'cot'
   | 'nestBoxes' | 'weathervane' | 'celeryBeds' | 'boatHouse' | 'lanterns' | 'deepPool' | 'guestDock' | 'smokehouse' | 'carvingShed'
   | 'cornStubble' | 'winterWheat' | 'roostPond' | 'trophyRoom' | 'mapRoom'
-  | 'musselBeds' | 'kelpLine' | 'breakwater';
+  | 'musselBeds' | 'kelpLine' | 'breakwater'
+  | 'duckweed' | 'cypressBlind' | 'jonBoat';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -69,6 +70,21 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     id: 'cot', name: 'Bunkhouse', room: true, blurb: 'Bunks for a caretaker who keeps the crew working while you sleep.',
     effect: '+1 hour of offline progress', maxLevel: 4,
     costCoins: 90_000, costFeathers: 4500, costGrowth: 3, revealAtCoins: 1000, lodge: 4,
+  },
+  duckweed: {
+    id: 'duckweed', name: 'Duckweed Flats', ground: 'timber', blurb: 'Let the duckweed spread in the still water between the trunks.',
+    effect: '+12% timber flocks', maxLevel: 6,
+    costCoins: 2000, costFeathers: 3000, costGrowth: 2.2, revealAtCoins: 0, lodge: 3,
+  },
+  cypressBlind: {
+    id: 'cypressBlind', name: 'Cypress Blind', ground: 'timber', blurb: 'A blind built right into a hollow cypress, close enough to touch the birds.',
+    effect: '+4% of each timber flock per shot', maxLevel: 5,
+    costCoins: 4000, costFeathers: 6000, costGrowth: 2.3, revealAtCoins: 0, lodge: 3,
+  },
+  jonBoat: {
+    id: 'jonBoat', name: 'Old Jon Boat', ground: 'timber', blurb: 'A flat-bottomed boat that slips between the trees. The guides love it.',
+    effect: 'Timber Guides +20% faster', maxLevel: 5,
+    costCoins: 8000, costFeathers: 12000, costGrowth: 2.4, revealAtCoins: 0, lodge: 3,
   },
   nestBoxes: {
     id: 'nestBoxes', name: 'Nest Boxes', ground: 'timber', blurb: 'Cedar boxes on posts along the bank, each with a little round door.',
@@ -163,6 +179,7 @@ export const UPGRADE_ORDER: readonly UpgradeId[] = [
   'deepPool', 'guestDock', 'smokehouse', 'cot',
   'carvingShed', 'cornStubble', 'winterWheat', 'roostPond', 'trophyRoom', 'mapRoom',
   'musselBeds', 'kelpLine', 'breakwater',
+  'duckweed', 'cypressBlind', 'jonBoat',
 ];
 
 /** Per-level effect sizes (sim reads these). */
@@ -177,6 +194,9 @@ export const UPGRADE_EFFECTS = {
   coffeeSpeed: 0.04,
   cotHours: 1,
   nestBoxesFlockRate: 0.05,
+  duckweedFlockRate: 0.12,
+  cypressBlindShot: 0.04,
+  jonBoatGuides: 0.2,
   weathervaneDrift: 0.15,
   celeryFlockRate: 0.06,
   boatHouseRetrieve: 0.15,

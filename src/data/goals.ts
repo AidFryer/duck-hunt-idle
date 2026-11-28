@@ -159,7 +159,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'season',
     title: 'Close your first season',
-    gus: "Earn 1.2 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
+    gus: "Earn 2.4 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
     done: (s) => s.stats.seasonsClosed > 0,
     progress: (s) => s.season.coins.toNumber() / PRESTIGE.divisor,
   },

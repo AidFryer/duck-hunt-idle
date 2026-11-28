@@ -50,7 +50,8 @@ export function jobGear(state: GameState, job: JobId): number {
   const rung = rungFx(state).jobMult[job] ?? 1;
   const boat = job === 'retrieve' ? 1 + UPGRADE_EFFECTS.boatHouseRetrieve * (state.upgrades.boatHouse ?? 0) : 1;
   const champ = (job === 'retrieve' || job === 'fRetrieve') && state.dog.level >= DOG_FX.championLevel ? DOG_FX.championRetrieve : 1;
-  return rung * boat * champ;
+  const jon = job === 'tHunt' ? 1 + UPGRADE_EFFECTS.jonBoatGuides * (state.upgrades.jonBoat ?? 0) : 1;
+  return rung * boat * champ * jon;
 }
 
 /** Workflow chain bonus (and Dawn Rush) for hunt jobs. */

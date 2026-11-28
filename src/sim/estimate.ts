@@ -90,6 +90,15 @@ export function decoyGain(state: GameState, g: GroundId): number {
   });
 }
 
+export function standGain(state: GameState): number {
+  return gainFrom(state, () => {
+    state.stands += 1;
+    return () => {
+      state.stands -= 1;
+    };
+  });
+}
+
 export function acreGain(state: GameState): number {
   return gainFrom(state, () => {
     state.acres += 1;

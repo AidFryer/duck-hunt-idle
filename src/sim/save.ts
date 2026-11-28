@@ -212,6 +212,8 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     delete out.projects;
     return out;
   },
+  // v26: Flooded Timber stands.
+  25: (s) => ({ ...s, stands: typeof s.stands === 'number' ? s.stands : 1, version: 26 }),
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

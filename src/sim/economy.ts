@@ -8,7 +8,7 @@ import { stageFor } from '../data/calendar';
 import { PATCH_COIN_BONUS } from '../data/achievements';
 import Decimal from 'break_infinity.js';
 import {
-  ACRES, BAY, BOT_MILESTONES, BOTS, DECOYS, FIELD, GROUND_LODGE, HUNT, TIMBER, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
+  ACRES, STANDS, BAY, BOT_MILESTONES, BOTS, DECOYS, FIELD, GROUND_LODGE, HUNT, TIMBER, LEDGER, MILESTONE_MULTIPLIER, RELIABILITY_CAP, RELIABILITY_PER_LEVEL, SPECIES,
   type BotId, type GroundId, type SpeciesId,
 } from '../data/economy';
 import type { EventSink } from './events';
@@ -151,6 +151,22 @@ export function buyAcre(state: GameState, events?: EventSink): boolean {
   return true;
 }
 
+/** Price of flooding the next timber stand. */
+export function standPrice(stands: number): Price {
+  const k = Decimal.pow(STANDS.costGrowth, stands - STANDS.start);
+  return { coins: new Decimal(STANDS.costCoins).mul(k).floor(), feathers: new Decimal(STANDS.costFeathers).mul(k).floor() };
+}
+
+export function buyStand(state: GameState, events?: EventSink): boolean {
+  if (!groundOpen(state, 'timber')) return false;
+  const price = standPrice(state.stands);
+  if (!canAfford(state, price)) return false;
+  pay(state, price);
+  state.stands += 1;
+  events?.push({ type: 'standFlooded', stands: state.stands });
+  return true;
+}
+
 // ---------------------------------------------------------------- marsh
 
 /** Is a ground the goose field? (keeps the call sites short) */
@@ -211,11 +227,13 @@ export function maxCommitted(state: GameState, g: GroundId = 'marsh'): number {
 /** How many flocks can circle at once. */
 export function maxIncoming(state: GameState, g: GroundId = 'marsh'): number {
   const marsh = g !== 'marsh' ? 0 : Math.min(ACRES.maxExtraCircling, Math.floor((state.acres - ACRES.start) / ACRES.acresPerCircling));
-  return GROUND_PARAMS[g].maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0) + (legacyFx(state).incoming[g] ?? 0) + marsh;
+  const stands = g === 'timber' ? Math.min(4, Math.floor((state.stands - STANDS.start) / 2)) : 0;
+  return GROUND_PARAMS[g].maxIncoming + (state.legacy.perks.keenEyes ? 1 : 0) + (legacyFx(state).incoming[g] ?? 0) + marsh + stands;
 }
 
 /** Fraction of a flock taken by one shot. */
 export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
+  if (g === 'timber') return Math.min(1, GROUND_PARAMS[g].shotFraction + rungFx(state, g).shot + UPGRADE_EFFECTS.cypressBlindShot * (state.upgrades.cypressBlind ?? 0));
   if (g !== 'marsh') return Math.min(1, GROUND_PARAMS[g].shotFraction + rungFx(state, g).shot);
   return Math.min(1, HUNT.shotFraction + UPGRADE_EFFECTS.blindsShotFraction * (state.upgrades.blinds ?? 0) + rungFx(state).shot);
 }
@@ -226,7 +244,7 @@ export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number 
   const weather = WEATHER[state.environment.weather].flockSize + dayFx(state).flockSize;
   if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + weather + stage;
   if (g === 'bay') return UPGRADE_EFFECTS.breakwaterFlockSize * (state.upgrades.breakwater ?? 0) + weather + stage;
-  if (g === 'timber') return weather + stage;
+  if (g === 'timber') return STANDS.flockSizePerStand * (state.stands - STANDS.start) + weather + stage;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
   const flyway = FLYWAYS[state.flyway].flockSizeBonus ?? 0;
   return cropFlockSize(state) + weather + cold + flyway + stage;
@@ -249,8 +267,11 @@ function baseFlockDraw(state: GameState, g: GroundId): number {
     return P.baseFlockRate * spread * field * common * carvingFx(state).fieldRate;
   }
   if (g === 'timber') {
-    const timber = (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) * (1 + UPGRADE_EFFECTS.nestBoxesFlockRate * (u.nestBoxes ?? 0));
-    return P.baseFlockRate * spread * timber * common * carvingFx(state).flockRate;
+    const timber = (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) * (1 + UPGRADE_EFFECTS.nestBoxesFlockRate * (u.nestBoxes ?? 0)) * (1 + UPGRADE_EFFECTS.duckweedFlockRate * (u.duckweed ?? 0));
+    // Its own line (flooded stands), plus part of the marsh's acres and food plots.
+    const stands = Math.pow(STANDS.flockRateGrowth, state.stands - STANDS.start);
+    const shared = Math.pow(Math.pow(ACRES.flockRateGrowth, state.acres - ACRES.start) * cropFlockRate(state), STANDS.sharedBoost);
+    return P.baseFlockRate * spread * timber * stands * shared * common * carvingFx(state).flockRate;
   }
   if (g === 'bay') {
     const bay = (1 + UPGRADE_EFFECTS.musselBedsFlockRate * (u.musselBeds ?? 0)) * (1 + UPGRADE_EFFECTS.kelpLineFlockRate * (u.kelpLine ?? 0));

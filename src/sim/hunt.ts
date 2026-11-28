@@ -6,7 +6,7 @@ import { dogHas, dogSwim } from './training';
 import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
-import { ACRES, BOTS, FIELD_JOBS, GOLDEN, HAND, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD_JOBS, GOLDEN, HAND, STANDS, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -238,7 +238,9 @@ export function doMany(state: GameState, job: ManyJob, count: number, source: Ac
     let restSpecies = birds[0]!;
     for (let i = 0; i < n; i++) {
       const species = birds[i]!;
-      const v = birdValue(state, species);
+      const base = birdValue(state, species);
+      // The Flooded Timber is the feather ground.
+      const v = g === 'timber' ? { ...base, feathers: Math.round(base.feathers * STANDS.feathers * 100) / 100 } : base;
       state.currencies.feathers = state.currencies.feathers.add(v.feathers);
       state.stats.lifetimeFeathers = state.stats.lifetimeFeathers.add(v.feathers);
       h.ledger.push(species);

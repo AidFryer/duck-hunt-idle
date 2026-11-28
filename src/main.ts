@@ -15,7 +15,7 @@ import { applyCssTokens } from './data/palette';
 import { Renderer } from './render/Renderer';
 import type { Point } from './render/types';
 import { jumpToPhase } from './sim/actions';
-import { buyAcre, buyBot, buyDecoyBag, groundOpen, levelUpBot } from './sim/economy';
+import { buyAcre, buyBot, buyDecoyBag, buyStand, groundOpen, levelUpBot } from './sim/economy';
 import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
@@ -585,6 +585,11 @@ const controls: GameControls = {
     hud.set(snapshot(state));
     return ok;
   },
+  buyStand() {
+    const ok = buyStand(state, runner.sink);
+    if (ok) hud.set(snapshot(state));
+    return ok;
+  },
   buyAcre() {
     const ok = buyAcre(state, runner.sink);
     hud.set(snapshot(state));
@@ -835,6 +840,7 @@ function updatePrefs(p: Prefs): void {
       rain: state.environment.weather === 'drizzle',
       hour,
       special: state.environment.special ?? null,
+      place: renderer?.ground ?? 'marsh',
     });
   }, 500);
 }

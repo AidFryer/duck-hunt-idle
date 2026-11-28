@@ -3,7 +3,7 @@ import type { FlywayId } from './flyways';
 
 export const PRESTIGE = {
   /** Season coins needed before a season can close at all. */
-  divisor: 1.2e9,
+  divisor: 2.4e9,
   /** Stars at that mark; after it, stars = floor(this × sqrt(seasonCoins / divisor)). */
   starsAtClose: 3,
   /** Permanent production bonus per star ever earned. */

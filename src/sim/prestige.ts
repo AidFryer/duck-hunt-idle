@@ -177,6 +177,7 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
   state.tinkerWork = 0;
   state.metrics = { sec: Math.floor(state.elapsed), jobs: createJobMetrics() };
   state.acres = fresh.acres;
+  state.stands = fresh.stands;
   state.upgrades = Object.fromEntries(UPGRADE_ORDER.map((u) => [u, 0])) as Record<UpgradeId, number>;
   state.rungs = {};
   state.plots = fresh.plots;

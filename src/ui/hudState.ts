@@ -1,9 +1,9 @@
-import { acreGain, botGain, calibrate, decoyGain, groundBirdsPerMinute, upgradeGain } from '../sim/estimate';
+import { acreGain, botGain, calibrate, decoyGain, groundBirdsPerMinute, standGain, upgradeGain } from '../sim/estimate';
 import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
 import {
-  BOT_ORDER, BOTS, DECOYS, FOREMAN, GROUND_LODGE, GROUND_NAMES, GROUND_ORDER, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
+  BOT_ORDER, BOTS, DECOYS, FOREMAN, STANDS, GROUND_LODGE, GROUND_NAMES, GROUND_ORDER, HUNT, JOB_ORDER, JOBS, LEDGER, PROBLEMS, TINKER, type Step,
   type GroundId,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
@@ -35,7 +35,7 @@ import { clockAt, duckActivityAt, formatClock } from '../sim/clock';
 import {
   acrePrice, decoyBagPrice, botPrice, botReliability, botUnitSpeed, canAfford, levelPrice, maxAffordableBots,
   milestoneMultiplier, nextMilestone, reputationMultiplier, spreadSize, maxIncoming, maxCommitted, botPriceMult, type Price,
-  patchMultiplier, groundOpen, GROUND_PARAMS,
+  patchMultiplier, groundOpen, GROUND_PARAMS, standPrice, birdValue,
 } from '../sim/economy';
 import { canDo, fieldOpen } from '../sim/hunt';
 import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
@@ -232,6 +232,8 @@ export interface HudSnapshot {
   limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>>;
   /** Birds a minute one more acre would add. */
   acreGain: number;
+  /** Flooded Timber stands: how many, the next one's price, and what it adds. */
+  stands: { count: number; price: Price; affordable: boolean; gain: number; feathersPerMin: number };
   /** The best-value buy right now (most birds a minute per coin), e.g. 'bot:caller', 'decoys:marsh', 'acre'. */
   bestBuy: string | null;
   /** Every hunting ground, open or not, in the order they open. */
@@ -734,6 +736,11 @@ export function snapshot(state: GameState): HudSnapshot {
     }),
     acres: state.acres,
     acrePrice: ap,
+    stands: (() => {
+      const price = standPrice(state.stands);
+      const t = groundBirdsPerMinute(state, 'timber').birds;
+      return { count: state.stands, price, affordable: canAfford(state, price) && groundOpen(state, 'timber'), gain: groundOpen(state, 'timber') ? standGain(state) : 0, feathersPerMin: t * birdValue(state, 'woodDuck').feathers * STANDS.feathers };
+    })(),
     birdsPerMin: realBirdsPerMin,
     ...buyGuide(state, bots, ap),
     acreAffordable: canAfford(state, ap),

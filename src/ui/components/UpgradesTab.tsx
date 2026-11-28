@@ -1,4 +1,4 @@
-import { ACRES } from '../../data/economy';
+import { ACRES, STANDS } from '../../data/economy';
 import { CROPS } from '../../data/crops';
 import { UPGRADES } from '../../data/upgrades';
 import { formatNumber, type Notation } from '../../util/format';
@@ -78,7 +78,22 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
       {far.filter((f) => f.open && f.ups.length > 0).map((f) => (
         <>
           <h4 class="group-head">{f.name}</h4>
+          {f.g === 'timber' && <p class="card__hint up-hint">The feather ground: birds here give {STANDS.feathers}× feathers{hud.stands.feathersPerMin >= 1 ? ` (about ${formatNumber(hud.stands.feathersPerMin, notation)} a minute now)` : ''}.</p>}
           <ul class="up-list">
+            {f.g === 'timber' && (
+              <li class="up-row">
+                <div class="up-row__text">
+                  <strong>
+                    Flooded Stands <span class="up-row__lvl">{hud.stands.count}</span>
+                    {hud.bestBuy === 'stand' && <span class="best-buy">Best buy</span>}
+                  </strong>
+                  <span>Flood another stand: +{Math.round((STANDS.flockRateGrowth - 1) * 100)}% timber flocks, bigger flocks{hud.stands.gain >= 0.05 ? ` · ${gainText(hud.stands.gain, notation)}` : ''}</span>
+                </div>
+                <button class="btn btn--primary btn--buy btn--small" aria-disabled={!hud.stands.affordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.buyStand())}>
+                  <Cost price={hud.stands.price} notation={notation} />
+                </button>
+              </li>
+            )}
             {f.ups.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
           </ul>
         </>

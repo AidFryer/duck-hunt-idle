@@ -13,7 +13,7 @@ import { fireVolley } from './volley';
 import Decimal from 'break_infinity.js';
 import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
-import { groundOpen, acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price } from './economy';
+import { groundOpen, acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price, standPrice, buyStand } from './economy';
 import type { SimEvent } from './events';
 import { doAction, canDo, fieldOpen, ground, type ActionJob } from './hunt';
 import { fixAll } from './problems';
@@ -139,6 +139,7 @@ function options(s: GameState): Option[] {
   }
   if (s.unlocks.upgrades === undefined) return opts;
   opts.push({ price: acrePrice(s.acres), buy: () => buyAcre(s) });
+  if (groundOpen(s, 'timber')) opts.push({ price: standPrice(s.stands), buy: () => buyStand(s) });
   opts.push({ price: decoyBagPrice(s), buy: () => buyDecoyBag(s) });
   for (const g of ['field', 'timber', 'bay'] as const) if (groundOpen(s, g)) opts.push({ price: decoyBagPrice(s, g), buy: () => buyDecoyBag(s, g) });
   for (const u of UPGRADE_ORDER) {

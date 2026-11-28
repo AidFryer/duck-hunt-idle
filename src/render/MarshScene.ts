@@ -1,3 +1,4 @@
+import { clockAt } from '../sim/clock';
 import { busyMarsh } from '../sim/volley';
 import { stageFor } from '../data/calendar';
 import { CARVINGS, CARVING_ORDER } from '../data/carvings';
@@ -259,6 +260,7 @@ export class MarshScene {
       case 'botMilestone':
         this.crew.celebrate(e.bot, true);
         return this.layout.anchors.crew;
+      case 'standFlooded':
       case 'acreRestored':
         this.fx.confetti(this.layout.anchors.decoyCenter.x, this.layout.anchors.decoyCenter.y, this.layout.scale);
         return this.layout.anchors.decoyCenter;
@@ -361,7 +363,15 @@ export class MarshScene {
     for (const f of this.fogs) f.weatherFog = WEATHER[w].fog;
     this.plots.setPlots(state.plots, plotCount(state.lodge));
     // The Pin Oak Stand grows the flooded timber, not the home marsh.
-    this.timber.setLevel(g === 'timber' ? state.upgrades.timber ?? 0 : 0);
+    if (g === 'timber') {
+      this.timber.setStand((state.upgrades.timber ?? 0) + state.stands - 1, state.upgrades.nestBoxes ?? 0, (state.upgrades.jonBoat ?? 0) > 0);
+      // Low mist between the trunks in the early morning.
+      const hour = clockAt(state.clock.dayTime).hour;
+      const dawn = hour >= 5 && hour < 9 ? 0.45 * (1 - Math.abs(hour - 6.5) / 2.5) : 0;
+      for (const f of this.fogs) f.weatherFog = Math.max(WEATHER[w].fog, dawn);
+    } else {
+      this.timber.setLevel(0);
+    }
     this.fx.steamBoost = 1 + (state.upgrades.coffee ?? 0) * 0.35;
   }
 

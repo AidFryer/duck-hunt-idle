@@ -27,6 +27,8 @@ export interface Environment {
   hour: number;
   /** Today's named day (Cold Front Push…), for its own sounds. */
   special?: string | null;
+  /** Which hunting ground is on screen (the timber has its own sounds). */
+  place?: string;
 }
 
 /** Major pentatonic (semitones) — cozy, never dissonant. */
@@ -83,7 +85,8 @@ export class AudioEngine {
     const t = this.ctx.currentTime;
     const strays = e.special === 'strays';
     const gray = e.special === 'grayDay';
-    this.windGain.gain.setTargetAtTime(0.015 + e.wind * 0.07 + (strays ? 0.04 : 0), t, 1.5);
+    const sheltered = e.place === 'timber' ? 0.45 : 1;
+    this.windGain.gain.setTargetAtTime((0.015 + e.wind * 0.07 + (strays ? 0.04 : 0)) * sheltered, t, 1.5);
     this.windFilter.frequency.setTargetAtTime(350 + e.wind * 700, t, 2);
     this.rainGain.gain.setTargetAtTime(gray ? 0.085 : e.rain ? 0.05 : 0, t, 2);
   }
@@ -164,8 +167,25 @@ export class AudioEngine {
       return 0.4 + Math.random() * 1.4;
     });
     this.loop(() => {
-      if (Math.random() < this.env.activity * 0.8 + 0.05) this.quack(this.buses.ambience, 0.05 + Math.random() * 0.04, 0.9 + Math.random() * 0.25, true, 1 + Math.floor(Math.random() * 3));
+      if (this.env.place !== 'timber' && Math.random() < this.env.activity * 0.8 + 0.05) this.quack(this.buses.ambience, 0.05 + Math.random() * 0.04, 0.9 + Math.random() * 0.25, true, 1 + Math.floor(Math.random() * 3));
       return 5 + Math.random() * 12;
+    });
+
+    // The flooded timber: wood duck whistles, a woodpecker, water dripping.
+    this.loop(() => {
+      if (this.env.place !== 'timber' || this.env.darkness > 0.5) return 3;
+      if (Math.random() < this.env.activity * 0.8 + 0.1) this.woodDuckWhistle();
+      return 4 + Math.random() * 8;
+    });
+    this.loop(() => {
+      if (this.env.place !== 'timber' || this.env.darkness > 0.5) return 3;
+      this.woodpecker();
+      return 9 + Math.random() * 14;
+    });
+    this.loop(() => {
+      if (this.env.place !== 'timber') return 3;
+      this.drip();
+      return 0.6 + Math.random() * 2.2;
     });
 
     // Named days have their own sounds.
@@ -189,6 +209,74 @@ export class AudioEngine {
       this.gust();
       return 6 + Math.random() * 8;
     });
+  }
+
+  /** A wood duck hen's rising 'oo-eek' whistle, somewhere in the trees. */
+  private woodDuckWhistle(): void {
+    const c = this.ctx!;
+    const t0 = c.currentTime;
+    const n = 1 + Math.floor(Math.random() * 3);
+    const pan = c.createStereoPanner();
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    pan.connect(this.buses.ambience);
+    for (let i = 0; i < n; i++) {
+      const t = t0 + i * 0.45;
+      const o = c.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(900, t);
+      o.frequency.exponentialRampToValueAtTime(2100, t + 0.28);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.02, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+      o.connect(g).connect(pan);
+      o.start(t);
+      o.stop(t + 0.34);
+    }
+  }
+
+  /** A woodpecker drumming on a dead trunk. */
+  private woodpecker(): void {
+    const c = this.ctx!;
+    const t0 = c.currentTime;
+    const hits = 8 + Math.floor(Math.random() * 10);
+    const pan = c.createStereoPanner();
+    pan.pan.value = Math.random() * 1.4 - 0.7;
+    pan.connect(this.buses.ambience);
+    for (let i = 0; i < hits; i++) {
+      const t = t0 + i * 0.055;
+      const s = this.noiseSource();
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1300;
+      bp.Q.value = 4;
+      const g = c.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.03 * (1 - i / (hits * 1.6)), t + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+      s.connect(bp).connect(g).connect(pan);
+      s.start(t, Math.random(), 0.04);
+    }
+  }
+
+  /** A drop of water falling into still water. */
+  private drip(): void {
+    const c = this.ctx!;
+    const t = c.currentTime;
+    const o = c.createOscillator();
+    o.type = 'sine';
+    const f = 700 + Math.random() * 600;
+    o.frequency.setValueAtTime(f, t);
+    o.frequency.exponentialRampToValueAtTime(f * 2.2, t + 0.06);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.012, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    const pan = c.createStereoPanner();
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    o.connect(g).connect(pan).connect(this.buses.ambience);
+    o.start(t);
+    o.stop(t + 0.1);
   }
 
   /** A skein of geese honking as it passes over, far off. */
