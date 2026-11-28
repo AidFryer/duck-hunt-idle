@@ -80,10 +80,11 @@ describe('crew training', () => {
 describe('prestige', () => {
   it('stars follow floor(sqrt(coins / divisor))', () => {
     expect(starsFor(new Decimal(PRESTIGE.divisor - 1))).toBe(0);
-    expect(starsFor(new Decimal(PRESTIGE.divisor))).toBe(1);
-    expect(starsFor(new Decimal(4 * PRESTIGE.divisor))).toBe(2);
-    expect(starsFor(new Decimal(8.9 * PRESTIGE.divisor))).toBe(2);
-    expect(coinsForNextStar(new Decimal(PRESTIGE.divisor)).toNumber()).toBe(4 * PRESTIGE.divisor);
+    expect(starsFor(new Decimal(PRESTIGE.divisor))).toBe(3);
+    expect(starsFor(new Decimal(4 * PRESTIGE.divisor))).toBe(6);
+    expect(starsFor(new Decimal(3.9 * PRESTIGE.divisor))).toBe(5);
+    expect(coinsForNextStar(new Decimal(0)).toNumber()).toBe(PRESTIGE.divisor);
+    expect(coinsForNextStar(new Decimal(PRESTIGE.divisor)).toNumber()).toBeCloseTo(PRESTIGE.divisor * (16 / 9), 0);
   });
 
   it('closing a season banks stars and resets the marsh, keeping the guide', () => {
@@ -94,8 +95,8 @@ describe('prestige', () => {
     s.achievements.firstBird = 1;
     s.season.coins = new Decimal(9 * PRESTIGE.divisor);
     const ev: SimEvent[] = [];
-    expect(closeSeason(s, nextFlyway(s), ev)).toBe(3);
-    expect(s.legacy.stars).toBe(3);
+    expect(closeSeason(s, nextFlyway(s), ev)).toBe(9);
+    expect(s.legacy.stars).toBe(9);
     expect(s.flyway).toBe('central');
     expect(s.bots.caller.owned).toBe(0);
     expect(s.upgrades.coffee).toBe(0);
@@ -103,7 +104,7 @@ describe('prestige', () => {
     expect(s.guide.mallard?.count).toBe(50);
     expect(s.achievements.firstBird).toBe(1);
     expect(s.season.number).toBe(2);
-    expect(starMultiplier(s)).toBeCloseTo(1.15);
+    expect(starMultiplier(s)).toBeCloseTo(1.9);
     expect(ev.some((e) => e.type === 'seasonClosed')).toBe(true);
   });
 
@@ -118,7 +119,7 @@ describe('prestige', () => {
     const s = opened(createInitialState(1));
     const base = birdValue(s, 'mallard').coins;
     s.legacy.earned = 4;
-    expect(birdValue(s, 'mallard').coins).toBeCloseTo(base * 1.2, 1);
+    expect(birdValue(s, 'mallard').coins).toBeCloseTo(base * 1.4, 1);
   });
 
   it('perks need stars and prerequisites, and apply next season', () => {

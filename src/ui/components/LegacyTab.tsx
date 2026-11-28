@@ -131,7 +131,9 @@ function ClosePreviewCard({ hud }: { hud: HudSnapshot }) {
 function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; controls: GameControls; onClose: () => void }) {
   const se = hud.season;
   const [dest, setDest] = useState<FlywayId>(se.nextFlyway);
-  const options: FlywayId[] = se.nextFlyway !== se.flyway ? [se.nextFlyway, se.flyway] : [se.flyway];
+  // The next new flyway first, then any flyway already hunted (to finish its mastery).
+  const hunted = hud.legacy.branches.filter((b) => b.id !== 'lodge' && b.open).map((b) => b.id as FlywayId);
+  const options: FlywayId[] = [...new Set<FlywayId>([se.nextFlyway, se.flyway, ...hunted])];
   return (
     <div class="away-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div class="away-card" role="dialog" aria-label="Close the season">
@@ -157,7 +159,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
               <h4>You keep</h4>
               <ul>
                 <li>Flyway Stars & perks</li>
-                <li>+5% coins & feathers per star</li>
+                <li>+10% coins & feathers per star</li>
                 <li>Your lodge and bot plans</li>
                 <li>Carved decoys & the Big Volley</li>
                 <li>Field Guide & patches</li>
@@ -172,7 +174,11 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
             <label class={`flyway-option ${dest === f ? 'is-on' : ''}`} for={`fly-${f}`}>
               <input id={`fly-${f}`} type="radio" name="flyway" checked={dest === f} onChange={() => setDest(f)} />
               <strong>{FLYWAYS[f].name}</strong>
-              <span>{f === se.flyway ? 'Stay on this marsh' : FLYWAYS[f].twist}</span>
+              <span>
+                {f === se.flyway ? 'Stay on this marsh' : FLYWAYS[f].twist}
+                {hud.legacy.mastery[f] && !hud.legacy.mastery[f]!.mastered && f !== se.nextFlyway ? ` · mastery ${hud.legacy.mastery[f]!.rows.filter((r) => r.cur >= r.goal).length}/4` : ''}
+                {hud.legacy.mastery[f]?.mastered ? ' · mastered' : ''}
+              </span>
             </label>
           ))}
         </fieldset>

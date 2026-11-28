@@ -9,14 +9,15 @@ import { createAssignments, createInitialState, createJobMetrics, createJobs, ty
 
 /** Flyway Stars a season's coins are worth. */
 export function starsFor(seasonCoins: Decimal): number {
-  if (seasonCoins.lte(0)) return 0;
-  return Math.floor(Math.sqrt(seasonCoins.div(PRESTIGE.divisor).toNumber()));
+  if (seasonCoins.lt(PRESTIGE.divisor)) return 0;
+  return Math.floor(PRESTIGE.starsAtClose * Math.sqrt(seasonCoins.div(PRESTIGE.divisor).toNumber()) + 1e-9);
 }
 
 /** Coins needed this season for the next star. */
 export function coinsForNextStar(seasonCoins: Decimal): Decimal {
   const n = starsFor(seasonCoins) + 1;
-  return new Decimal(PRESTIGE.divisor).mul(n * n);
+  const k = Math.max(1, n / PRESTIGE.starsAtClose);
+  return new Decimal(PRESTIGE.divisor).mul(k * k);
 }
 
 /** Permanent production multiplier from every star ever earned. */
@@ -184,12 +185,12 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
 
   // Start-of-season perks
   if (hasPerk(state, 'headStart')) {
-    state.currencies.coins = state.currencies.coins.add(500);
-    state.currencies.feathers = state.currencies.feathers.add(50);
+    state.currencies.coins = state.currencies.coins.add(5_000);
+    state.currencies.feathers = state.currencies.feathers.add(500);
   }
   if (hasPerk(state, 'nestEgg')) {
-    state.currencies.coins = state.currencies.coins.add(10_000);
-    state.currencies.feathers = state.currencies.feathers.add(500);
+    state.currencies.coins = state.currencies.coins.add(100_000);
+    state.currencies.feathers = state.currencies.feathers.add(10_000);
   }
   if (hasPerk(state, 'earlyRiser')) {
     for (const [bot, n] of [['caller', 2], ['blind', 2], ['retriever', 2], ['setter', 1]] as const) {

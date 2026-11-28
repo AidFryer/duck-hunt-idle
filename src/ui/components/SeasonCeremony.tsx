@@ -36,7 +36,7 @@ export function SeasonCeremony() {
             </div>
           </div>
         )}
-        <p class="card__hint">Spend your stars in the Legacy tab. Every star also adds +5% to coins and feathers, for good. Your lodge, plans, carvings and patches came with you.</p>
+        <p class="card__hint">Spend your stars in the Legacy tab. Every star also adds +10% to coins and feathers, for good. Your lodge, plans, carvings and patches came with you.</p>
         <button class="btn btn--primary away-card__ok" onClick={() => seasonView.set(null)}>Start Season {v.season + 1}</button>
       </div>
     </div>

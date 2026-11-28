@@ -2,10 +2,12 @@
 import type { FlywayId } from './flyways';
 
 export const PRESTIGE = {
-  /** stars = floor(sqrt(seasonCoins / divisor)) */
+  /** Season coins needed before a season can close at all. */
   divisor: 1.2e9,
+  /** Stars at that mark; after it, stars = floor(this × sqrt(seasonCoins / divisor)). */
+  starsAtClose: 3,
   /** Permanent production bonus per star ever earned. */
-  bonusPerStar: 0.05,
+  bonusPerStar: 0.1,
 } as const;
 
 /** The shared Lodge trunk, plus one branch per flyway. */
@@ -47,13 +49,13 @@ const trunk = (p: Omit<PerkDef, 'branch'>): PerkDef => ({ ...p, branch: 'lodge' 
 const fly = (branch: FlywayId, p: Omit<PerkDef, 'branch'>): PerkDef => ({ ...p, branch });
 
 export const PERKS: Record<PerkId, PerkDef> = {
-  headStart: trunk({ id: 'headStart', name: 'Head Start', desc: 'Begin each season with 500 coins and 50 feathers.', cost: 1, tier: 0, requires: [] }),
+  headStart: trunk({ id: 'headStart', name: 'Head Start', desc: 'Begin each season with 5,000 coins and 500 feathers.', cost: 1, tier: 0, requires: [] }),
   earlyRiser: trunk({ id: 'earlyRiser', name: 'Early Riser', desc: 'Begin each season with 2 Callers, 2 Blind Bots, 2 Robo-Retrievers and a Decoy Setter.', cost: 1, tier: 0, requires: [] }),
   longNights: trunk({ id: 'longNights', name: 'Long Nights', desc: '+2 hours of offline progress.', cost: 1, tier: 0, requires: [] }),
   keenEyes: trunk({ id: 'keenEyes', name: 'Keen Eyes', desc: 'One more flock can circle at once, and circling flocks wait 5s longer.', cost: 2, tier: 1, requires: ['earlyRiser'] }),
   unionRates: trunk({ id: 'unionRates', name: 'Union Rates', desc: 'Foreman Bots cost half as much.', cost: 2, tier: 1, requires: ['earlyRiser'] }),
   birdersLuck: trunk({ id: 'birdersLuck', name: "Birder's Luck", desc: 'Rare and legendary birds turn up 50% more often.', cost: 2, tier: 1, requires: ['headStart'] }),
-  nestEgg: trunk({ id: 'nestEgg', name: 'Nest Egg', desc: 'Begin each season with 10,000 coins and 500 feathers.', cost: 4, tier: 2, requires: ['headStart'] }),
+  nestEgg: trunk({ id: 'nestEgg', name: 'Nest Egg', desc: 'Begin each season with 100,000 coins and 10,000 feathers.', cost: 4, tier: 2, requires: ['headStart'] }),
   seasonedCrew: trunk({ id: 'seasonedCrew', name: 'Seasoned Crew', desc: 'Every bot type starts the season at level 2.', cost: 3, tier: 2, requires: ['keenEyes'] }),
   longerNights: trunk({ id: 'longerNights', name: 'Longer Nights', desc: '+4 more hours of offline progress.', cost: 3, tier: 2, requires: ['longNights'] }),
   legendHunter: trunk({ id: 'legendHunter', name: 'Legend Hunter', desc: 'King Eiders are three times as likely.', cost: 5, tier: 3, requires: ['birdersLuck'] }),
