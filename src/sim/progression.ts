@@ -35,6 +35,12 @@ export function counter(s: GameState, id: CounterId): number {
     case 'handFieldShots': return hand.fShoot ?? 0;
     case 'handPickups': return hand.fRetrieve ?? 0;
     case 'geese': return s.stats.geese;
+    case 'handTCalls': return hand.tCall ?? 0;
+    case 'handTShots': return hand.tShoot ?? 0;
+    case 'handTFetches': return hand.tRetrieve ?? 0;
+    case 'handBCalls': return hand.bCall ?? 0;
+    case 'handBShots': return hand.bShoot ?? 0;
+    case 'handBFetches': return hand.bRetrieve ?? 0;
   }
 }
 

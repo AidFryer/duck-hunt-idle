@@ -1289,13 +1289,24 @@ export function paintPegLeg(): Canvas {
   return t.canvas;
 }
 
-export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker' | 'staker' | 'flagger' | 'layout' | 'guide' | 'boatman';
+export type DecoyBotKind = 'caller' | 'blind' | 'generic' | 'scout' | 'setter' | 'ledger' | 'foreman' | 'tinker' | 'staker' | 'flagger' | 'layout' | 'guide' | 'boatman' | 'tCaller' | 'tBlind' | 'bCaller' | 'bBlind';
+
+/** The far-water crews wear the marsh crew's gear plus their ground's hat. */
+const FAR_LOOK: Partial<Record<DecoyBotKind, { base: DecoyBotKind; hat: DecoyBotKind }>> = {
+  tCaller: { base: 'caller', hat: 'guide' },
+  tBlind: { base: 'blind', hat: 'guide' },
+  bCaller: { base: 'caller', hat: 'boatman' },
+  bBlind: { base: 'blind', hat: 'boatman' },
+};
 
 /**
  * Decoy-bot: an upright carved decoy body on peg legs with a duck head,
  * rivets and a brass gear socket. Design 28×36, feet at y=36.
  */
-export function paintDecoyBot(kind: DecoyBotKind): Canvas {
+export function paintDecoyBot(look: DecoyBotKind): Canvas {
+  const far = FAR_LOOK[look];
+  const kind = far?.base ?? look;
+  const hat = far?.hat ?? look;
   const t = createPaintTarget(28, 36);
   const { ctx } = t;
   if (kind === 'setter') {
@@ -1485,7 +1496,7 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
     ctx.fillStyle = css(palette.brass);
     ctx.fillRect(18.5, 18.4, 3, 1.4);
   }
-  if (kind === 'guide') {
+  if (hat === 'guide') {
     // Camo cap with a bill, and a lanyard of calls
     ctx.fillStyle = css(0x5a6a3a);
     ctx.beginPath();
@@ -1502,7 +1513,7 @@ export function paintDecoyBot(kind: DecoyBotKind): Canvas {
       ctx.fill();
     }
   }
-  if (kind === 'boatman') {
+  if (hat === 'boatman') {
     // Yellow sou'wester and a life ring
     ctx.fillStyle = css(0xe8b84a);
     ctx.beginPath();
@@ -1613,6 +1624,71 @@ export function setDogCoat(c: { coat: number; shade: number; light: number; patc
 }
 
 /** Dog body without legs, facing right. Design 56×30; leg sockets noted in DOG_RIG. */
+/** The bay's Pickup Skiff: a little wooden boat with an outboard and a net on a pole. 56×30. */
+export function paintSkiff(): Canvas {
+  const t = createPaintTarget(56, 30);
+  const { ctx } = t;
+  // Net pole and net
+  ctx.strokeStyle = css(palette.woodDark);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(30, 18);
+  ctx.lineTo(46, 4);
+  ctx.stroke();
+  ctx.strokeStyle = css(palette.cream, 0.85);
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.ellipse(48, 6, 4.5, 3.2, -0.6, 0, Math.PI * 2);
+  ctx.stroke();
+  for (const d of [-2, 0, 2]) {
+    ctx.beginPath();
+    ctx.moveTo(46 + d, 3 + d * 0.4);
+    ctx.lineTo(49 + d, 11);
+    ctx.stroke();
+  }
+  // Outboard motor
+  ctx.fillStyle = css(0x3a3f45);
+  ctx.beginPath();
+  ctx.roundRect(4, 11, 7, 7, 1.5);
+  ctx.fill();
+  ctx.fillRect(6, 18, 2.4, 7);
+  ctx.fillStyle = css(0xd85a3a);
+  ctx.fillRect(4, 12, 7, 2);
+  // Hull
+  ctx.fillStyle = linearV(ctx, 16, 28, [
+    [0, palette.woodLight],
+    [1, palette.wood],
+  ]);
+  ctx.beginPath();
+  ctx.moveTo(9, 17);
+  ctx.lineTo(51, 15);
+  ctx.quadraticCurveTo(48, 26, 38, 27);
+  ctx.lineTo(16, 27);
+  ctx.quadraticCurveTo(10, 26, 9, 17);
+  ctx.fill();
+  // Gunwale and rivets
+  ctx.strokeStyle = css(palette.woodDark);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(9, 17);
+  ctx.lineTo(51, 15);
+  ctx.stroke();
+  ctx.fillStyle = css(palette.brass);
+  for (const x of [18, 26, 34, 42]) {
+    ctx.beginPath();
+    ctx.arc(x, 21.5, 0.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Water line
+  ctx.strokeStyle = css(0x8fb8c8, 0.7);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(6, 28.5);
+  ctx.quadraticCurveTo(28, 26.5, 54, 28.5);
+  ctx.stroke();
+  return t.canvas;
+}
+
 export function paintDogBody(kind: DogKind): Canvas {
   const t = createPaintTarget(56, 30);
   const { ctx } = t;

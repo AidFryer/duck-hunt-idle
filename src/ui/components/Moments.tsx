@@ -10,7 +10,7 @@ import { FEATURES } from '../../data/features';
 import { KEEPER_NAME } from '../../data/goals';
 import { formatNumber } from '../../util/format';
 import { LODGE_LEVELS, PLANS, RUNGS } from '../../data/progression';
-import { BOTS } from '../../data/economy';
+import { BOTS, CREW_TITLE, crewOf } from '../../data/economy';
 import { portrait } from '../portraits';
 import { LodgeArt } from './LodgeArt';
 
@@ -72,7 +72,7 @@ export function Moments({ onOpen, greetName = '' }: { onOpen: (feature: string) 
     const b = BOTS[m.bot];
     return (
       <button class="moment moment--plan" onClick={popMoment} key={`pl-${m.bot}`} aria-live="polite">
-        <span class="moment__tag">Plans earned</span>
+        <span class="moment__tag">Plans earned · {CREW_TITLE[crewOf(m.bot)]}</span>
         <img src={portrait(m.bot)} alt="" />
         <strong>{b.name}</strong>
         <span class="moment__desc">

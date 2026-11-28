@@ -124,8 +124,8 @@ export function legacyFx(state: GameState): LegacyFx {
     crops: on('valleyHarvest') ? 1.5 : 1,
     fieldDecoys: on('cornfieldDeals') ? 0.5 : 1,
   };
-  if (on('cypressCalls')) fx.job.call = fx.job.tHunt = 1.25;
-  if (on('saltSpray')) fx.job.bHunt = 1.25;
+  if (on('cypressCalls')) fx.job.call = fx.job.tCall = fx.job.tShoot = fx.job.tRetrieve = 1.25;
+  if (on('saltSpray')) fx.job.bCall = fx.job.bShoot = fx.job.bRetrieve = 1.25;
   if (on('woodDuckBoxes')) fx.groundFlocks.timber = 1.3;
   if (on('prairieWind')) fx.groundFlocks.field = 1.3;
   if (on('seaDuckRigs')) fx.groundFlocks.bay = 1.3;

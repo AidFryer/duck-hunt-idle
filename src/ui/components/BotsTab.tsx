@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { BOT_MILESTONES, BOTS, DECOYS, FIELD_BOTS, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId, type GroundId } from '../../data/economy';
+import { BOT_MILESTONES, BOTS, CREW_TITLE, crewOf, DECOYS, GROUND_CREW, GROUND_NAMES, MILESTONE_MULTIPLIER, WORKSHOP_ORDER, type BotId, type CrewId, type GroundId } from '../../data/economy';
 import { PLANS } from '../../data/progression';
 import { botPrice } from '../../sim/economy';
 import { formatNumber, formatRate, type Notation } from '../../util/format';
@@ -21,17 +21,14 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
   const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => setOpenId((o) => (o === id ? null : id));
   const shown = WORKSHOP_ORDER.filter((id) => showBot(hud, id));
-  const groups: { key: string; title: string; ids: BotId[] }[] = [
-    { key: 'marsh', title: 'Marsh crew', ids: shown.filter((id) => !FIELD_BOTS.includes(id) && !FAR_CREW.includes(id) && id !== 'tinker' && id !== 'foreman') },
-    { key: 'timber', title: 'Timber crew', ids: shown.filter((id) => id === 'guide') },
-    { key: 'field', title: 'Goose field crew', ids: shown.filter((id) => FIELD_BOTS.includes(id)) },
-    { key: 'bay', title: 'Bay crew', ids: shown.filter((id) => id === 'boatman') },
-    { key: 'lodge', title: 'Lodge crew', ids: shown.filter((id) => id === 'tinker' || id === 'foreman') },
-  ];
-  const sections = [
-    ...groups.slice(0, 1),
+  const crew = (c: CrewId) => ({ key: c, title: CREW_TITLE[c], ids: shown.filter((id) => crewOf(id) === c) });
+  const sections: { key: string; title: string; ids: BotId[] }[] = [
+    crew('marsh'),
     { key: 'decoys', title: 'Decoys', ids: [] },
-    ...groups.slice(1),
+    crew('timber'),
+    crew('field'),
+    crew('bay'),
+    crew('lodge'),
   ].filter((g) => g.key === 'decoys' || g.ids.length > 0);
   const jump = (key: string) => document.getElementById(`ws-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
@@ -51,10 +48,11 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
           <button class="ws-jump__chip" onClick={() => jump(g.key)}>{g.title}</button>
         ))}
       </nav>
-      <p class="crew-note">{limitNote(hud, notation)}</p>
+      <p class="crew-note">{totalNote(hud, notation)}</p>
       {sections.map((g) => (
         <section id={`ws-${g.key}`} class="ws-section" aria-label={g.title}>
           <h4 class="group-head">{g.title}</h4>
+          {g.key !== 'decoys' && <p class="ws-section__note">{crewNote(hud, g.key as CrewId, notation)}</p>}
           {g.key === 'decoys' ? (
             <DecoysSection hud={hud} controls={controls} notation={notation} />
           ) : (
@@ -304,9 +302,6 @@ function SpreadCard({ ground, hud, controls, notation, rigs }: { ground: GroundI
   );
 }
 
-/** Crews that work one far ground on their own. */
-const FAR_CREW: BotId[] = ['guide', 'boatman'];
-
 export function pulse(el: HTMLElement, ok: boolean): void {
   el.classList.remove('is-pressed', 'is-nope');
   void el.offsetWidth;
@@ -324,18 +319,35 @@ export function gainText(g: number, notation: Notation): string {
   return `+${g < 10 ? (Math.round(g * 10) / 10).toString() : formatNumber(g, notation)} birds/min`;
 }
 
-const LIMIT_TEXT: Record<string, string> = {
-  flocks: 'not enough flocks. More decoys or acres bring more',
-  call: 'calling. More Callers',
-  shoot: 'shooting. More Blind Bots',
-  fetch: 'fetching. More Robo-Retrievers',
-  crew: 'the crew there. Hire more',
+/** How many birds a minute come in, across every ground. */
+function totalNote(hud: HudSnapshot, notation: Notation): string {
+  const bpm = hud.birdsPerMin;
+  if (bpm < 0.05) return 'Carve your first crew and the marsh starts hunting on its own.';
+  return `About ${formatNumber(bpm, notation)} birds a minute in all.`;
+}
+
+/** What more flocks take on each ground. */
+const MORE_FLOCKS: Record<GroundId, string> = {
+  marsh: 'More decoys or acres bring more',
+  timber: 'More decoys or flooded stands bring more',
+  field: 'More goose decoys bring more',
+  bay: 'A bigger bay rig brings more',
 };
 
-/** How many birds a minute come in, and what's holding the marsh back. */
-function limitNote(hud: HudSnapshot, notation: Notation): string {
-  const bpm = hud.birdsPerMin;
-  const lim = hud.limits.marsh;
-  if (bpm < 0.05) return 'Carve your first crew and the marsh starts hunting on its own.';
-  return `The lodge brings in about ${formatNumber(bpm, notation)} birds a minute. Holding the marsh back: ${LIMIT_TEXT[lim ?? 'flocks']}.`;
+/** One line under each crew: what's holding that ground back right now. */
+function crewNote(hud: HudSnapshot, c: CrewId, notation: Notation): string {
+  if (c === 'lodge') return 'Help every ground: Ledgers turn birds into coins, Scouts find marsh flocks, Foremen and Tinkers fix the crews.';
+  const g = hud.grounds.find((x) => x.id === c);
+  if (!g?.open) return `Works the ${GROUND_NAMES[c]} once it opens.`;
+  const [callBot, shootBot, fetchBot] = GROUND_CREW[c].map((id) => BOTS[id].name);
+  const anyOwned = GROUND_CREW[c].some((id) => hud.bots[id].owned > 0);
+  if (!anyOwned) return `Works the ${GROUND_NAMES[c]}: a ${callBot}, a ${shootBot} and a ${fetchBot}. Until then, hunt it by hand.`;
+  const lim = hud.limits[c] ?? 'flocks';
+  const what =
+    lim === 'call' ? `calling. More ${callBot}s`
+    : lim === 'shoot' ? `shooting. More ${shootBot}s`
+    : lim === 'fetch' ? `fetching. More ${fetchBot}s`
+    : `not enough flocks. ${MORE_FLOCKS[c]}`;
+  const bpm = hud.groundBirds?.[c];
+  return `${bpm !== undefined ? `About ${formatNumber(bpm, notation)} birds a minute. ` : ''}Holding it back: ${what}.`;
 }

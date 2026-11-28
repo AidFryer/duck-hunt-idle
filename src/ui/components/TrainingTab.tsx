@@ -1,7 +1,8 @@
 import Decimal from 'break_infinity.js';
-import { BOTS, WORKSHOP_ORDER } from '../../data/economy';
+import { BOTS, CREW_TITLE, crewOf, WORKSHOP_ORDER } from '../../data/economy';
 import { BRANCHES, BRANCH_ORDER, TRAINING, type BranchId } from '../../data/training';
 import { dogNameOf } from '../../data/goals';
+import { LODGE_LEVELS } from '../../data/progression';
 import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
@@ -72,7 +73,7 @@ function Drills({ hud, controls, notation }: { hud: HudSnapshot; controls: GameC
   return (
     <section class="lodge-section" aria-label="Drills">
       <h4 class="group-head">Drills</h4>
-      <p class="card__hint">Each drill makes that kind of bot faster and steadier for the rest of the season.</p>
+      <p class="card__hint">Each drill makes one kind of bot faster and steadier for the rest of the season. Skills below are kept for good.</p>
       <ul class="drill-list">
         {owned.map((id) => {
           const b = hud.bots[id];
@@ -81,7 +82,7 @@ function Drills({ hud, controls, notation }: { hud: HudSnapshot; controls: GameC
               <img src={portrait(id)} alt="" />
               <div class="drill__text">
                 <strong>{BOTS[id].name}</strong>
-                <span>Drill level {b.level} · +{Math.round(BOTS[id].levelSpeedBonus * 100)}% speed each</span>
+                <span>{CREW_TITLE[crewOf(id)].replace(' crew', '')} · Lv {b.level} · +{Math.round(BOTS[id].levelSpeedBonus * 100)}% speed</span>
               </div>
               <button class="btn btn--buy btn--small" aria-disabled={!b.levelAffordable} onClick={(e) => pulse(e.currentTarget as HTMLElement, controls.levelUp(id))}>
                 <span>Drill</span>
@@ -111,7 +112,7 @@ function Branch({ id, hud, controls, notation }: { id: BranchId; hud: HudSnapsho
               <div class="skill__text">
                 <strong>{d.name}</strong>
                 <span>{d.desc}</span>
-                {k.status === 'needsLodge' && <em>Opens with lodge level {d.lodge}</em>}
+                {k.status === 'needsLodge' && <em>Opens with the {LODGE_LEVELS[d.lodge - 1]?.name ?? `lodge level ${d.lodge}`}</em>}
                 {k.status === 'needsPrev' && <em>Learn {TRAINING[d.requires!].name} first</em>}
               </div>
               {k.status === 'ready' && (

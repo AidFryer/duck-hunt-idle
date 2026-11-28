@@ -240,6 +240,7 @@ export class Renderer {
   setGround(g: GroundId): void {
     if (g !== 'marsh' && !this.others.has(g) && this.ready) {
       const sc = g === 'field' ? new FieldScene(this.scene.tex) : new MarshScene(g, this.scene.tex);
+      if (sc instanceof MarshScene) sc.crew.onFix = (b) => this.onFix?.(b);
       sc.layout.skyTop = this.scene.layout.skyTop;
       sc.resize(this.app.screen.width, this.app.screen.height);
       this.app.stage.addChildAt(sc.root, 0);

@@ -5120,3 +5120,8 @@ img { object-fit: contain; max-width: 100%; }
 .cloud-bring .btn { grid-column: 1 / -1; }
 .cloud-bring input { min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(74, 50, 33, 0.25); background: #fffaf0; font: inherit; font-size: 16px; }
 .file-backup > .cloud-note { font-size: 12px; }
+
+/* One line under each crew in the Workshop: what's holding that ground back. */
+.ws-section__note { margin: -2px 2px 8px; font-size: 12.5px; line-height: 1.35; color: var(--ui-textSoft); }
+.lodge-rep { margin: 8px 0 0; padding: 7px 10px; border-radius: 10px; background: rgba(184, 140, 60, 0.12); font-size: 12.5px; line-height: 1.35; color: var(--ui-textSoft); }
+.lodge-rep strong { color: var(--ui-text); }

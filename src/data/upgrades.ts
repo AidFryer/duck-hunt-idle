@@ -82,8 +82,8 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     costCoins: 4000, costFeathers: 6000, costGrowth: 2.3, revealAtCoins: 0, lodge: 3,
   },
   jonBoat: {
-    id: 'jonBoat', name: 'Old Jon Boat', ground: 'timber', blurb: 'A flat-bottomed boat that slips between the trees. The guides love it.',
-    effect: 'Timber Guides +20% faster', maxLevel: 5,
+    id: 'jonBoat', name: 'Old Jon Boat', ground: 'timber', blurb: 'A flat-bottomed boat that slips between the trees. The timber crew loves it.',
+    effect: 'The timber crew +20% faster', maxLevel: 5,
     costCoins: 8000, costFeathers: 12000, costGrowth: 2.4, revealAtCoins: 0, lodge: 3,
   },
   nestBoxes: {
@@ -118,7 +118,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   },
   guestDock: {
     id: 'guestDock', name: 'Guest Dock', room: true, blurb: 'A long dock with rocking chairs. Guests tell their friends.',
-    effect: 'Reputation grows 15% faster', maxLevel: 10,
+    effect: 'Reputation pays 15% more', maxLevel: 10,
     costCoins: 750_000, costFeathers: 37_500, costGrowth: 2.3, revealAtCoins: 0, lodge: 4,
   },
   smokehouse: {

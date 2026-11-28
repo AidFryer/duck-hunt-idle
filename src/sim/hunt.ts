@@ -6,7 +6,7 @@ import { dogHas, dogSwim } from './training';
 import { DOG_FX } from '../data/training';
 import { GUESTS } from '../data/guests';
 import { carvingFx } from './carvings';
-import { ACRES, BOTS, FIELD_JOBS, GOLDEN, HAND, STANDS, GROUND_JOBS, GROUND_ORDER, LEDGER, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostId, type OutpostJob, type Step } from '../data/economy';
+import { ACRES, BOTS, FIELD_JOBS, GOLDEN, HAND, STANDS, GROUND_ORDER, LEDGER, OUTPOST_JOBS, OUTPOSTS, PIPELINE_JOBS, PROBLEM_RATE, SCOUT, TINKER, BOT_ORDER, type FieldJob, type GroundId, type HuntStage, type JobId, type OutpostJob, type Step } from '../data/economy';
 import { DISCOVERY, SPECIES, type SpeciesId } from '../data/species';
 import { WEATHER } from '../data/weather';
 import { checkAchievements, checkUnlocks } from './achievements';
@@ -314,7 +314,7 @@ export function stepHunt(state: GameState, dt: number, activity: number, events:
   const table = rateTable(state);
   for (let i = PIPELINE_JOBS.length - 1; i >= 0; i--) runJob(state, table, PIPELINE_JOBS[i]!, dt, events);
   if (fieldOpen(state)) for (let i = FIELD_JOBS.length - 1; i >= 0; i--) runJob(state, table, FIELD_JOBS[i]!, dt, events);
-  for (const o of OUTPOSTS) if (groundOpen(state, o)) runOutpost(state, table, o, dt, events);
+  for (const o of OUTPOSTS) if (groundOpen(state, o)) for (const job of OUTPOST_JOBS[o]) runJob(state, table, job, dt, events);
 
   stepForemen(state, events, table.total.foreman ?? 0);
   stepTinkers(state, dt, events, table.total.tinker ?? 0);
@@ -423,43 +423,6 @@ function problemChance(state: GameState, t: RateTable, bot: (typeof BOT_ORDER)[n
   return (base * PROBLEM_RATE) / (1 + TINKER.reliabilityPerRate * (t.total.tinker ?? 0)) / crowd;
 }
 
-/** Timber Guides and Bay Boatmen: one crew does every step, the furthest-along first. */
-function runOutpost(state: GameState, t: RateTable, g: OutpostId, dt: number, events: EventSink): void {
-  const job: JobId = g === 'timber' ? 'tHunt' : 'bHunt';
-  const steps = GROUND_JOBS[g];
-  const rate = t.total[job] ?? 0;
-  const j = state.jobs[job];
-  if (rate <= 0) {
-    j.progress = 0;
-    return;
-  }
-  j.progress += rate * dt;
-  const h = ground(state, g);
-  // Fetching goes in batches; calling and shooting one flock at a time.
-  for (let guard = 0; j.progress >= 1 && guard < 400; guard++) {
-    if (h.downed.length > 0) {
-      const n = Math.min(Math.floor(j.progress), h.downed.length);
-      j.progress -= n;
-      doMany(state, steps.retrieve as ManyJob, n, 'retriever', events);
-      continue;
-    }
-    const step = canDo(state, steps.shoot as ActionJob) && botCanDo(state, steps.shoot as ActionJob) ? steps.shoot : botCanDo(state, steps.call as ActionJob) ? steps.call : null;
-    if (!step) {
-      j.progress = Math.min(j.progress, 1);
-      return;
-    }
-    j.progress -= 1;
-    const bot = pickFrom(t, job, rand(state));
-    if (!bot) return;
-    if (rand(state) < problemChance(state, t, bot, job) && raiseProblem(state, bot, job, events)) {
-      recordJob(state, job, false);
-      continue;
-    }
-    doAction(state, step as ActionJob, bot, events);
-    recordJob(state, job, true);
-  }
-}
-
 function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: EventSink): void {
   const rate = t.total[job] ?? 0;
   const j = state.jobs[job];
@@ -468,7 +431,7 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
     return;
   }
   j.progress += rate * dt;
-  if (job === 'retrieve' || job === 'fRetrieve' || job === 'log' || job === 'scout') {
+  if (job === 'retrieve' || job === 'fRetrieve' || job === 'tRetrieve' || job === 'bRetrieve' || job === 'log' || job === 'scout') {
     runBatch(state, t, job, events);
     return;
   }
@@ -490,7 +453,7 @@ function runJob(state: GameState, t: RateTable, job: JobId, dt: number, events: 
 }
 
 /** Batched version of runJob for high-volume jobs. */
-function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'fRetrieve' | 'log' | 'scout', events: EventSink): void {
+function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'fRetrieve' | 'tRetrieve' | 'bRetrieve' | 'log' | 'scout', events: EventSink): void {
   const j = state.jobs[job];
   const want = Math.floor(j.progress);
   if (want <= 0) return;
@@ -498,6 +461,8 @@ function runBatch(state: GameState, t: RateTable, job: 'retrieve' | 'fRetrieve' 
   const avail =
     job === 'retrieve' ? h.downed.length
     : job === 'fRetrieve' ? state.field.downed.length
+    : job === 'tRetrieve' ? state.timber.downed.length
+    : job === 'bRetrieve' ? state.bay.downed.length
     : job === 'log' ? h.ledger.length
     : h.incoming.length < maxIncoming(state) ? want : 0;
   const k = Math.min(want, avail);

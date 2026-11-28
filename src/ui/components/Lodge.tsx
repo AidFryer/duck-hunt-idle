@@ -28,6 +28,8 @@ export function ReqBar({ r, notation = 'letters' }: { r: Req; notation?: Notatio
   );
 }
 
+const pct = (m: number) => Math.round((m - 1) * 100);
+
 /** The lodge: what it is now, and what it takes to build the next level. */
 export function LodgePanel({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const l = hud.lodge;
@@ -43,6 +45,9 @@ export function LodgePanel({ hud, controls, notation }: { hud: HudSnapshot; cont
           {!n && <p class="lodge-panel__next">The finest lodge on the flyway.</p>}
         </div>
       </div>
+      <p class="lodge-rep">
+        <strong>Reputation: coins +{pct(hud.reputation)}%.</strong> Word gets around as the lodge logs birds, so every bird pays a little more.
+      </p>
       {n && (
         <>
           <div class="reqs">

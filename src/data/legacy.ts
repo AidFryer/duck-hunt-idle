@@ -65,7 +65,7 @@ export const PERKS: Record<PerkId, PerkDef> = {
   deepBench: trunk({ id: 'deepBench', name: 'Deep Bench', desc: 'The whole crew works 5% faster, per rank.', cost: 3, costStep: 2, maxRank: 10, tier: 4, requires: ['seasonedCrew'] }),
   fineFeathers: trunk({ id: 'fineFeathers', name: 'Fine Feathers', desc: '+10% feathers from every bird, per rank.', cost: 3, costStep: 2, maxRank: 10, tier: 4, requires: ['birdersLuck'] }),
 
-  cypressCalls: fly('mississippi', { id: 'cypressCalls', name: 'Cypress Calls', desc: 'Callers and Timber Guides work 25% faster.', cost: 2, tier: 0, requires: [] }),
+  cypressCalls: fly('mississippi', { id: 'cypressCalls', name: 'Cypress Calls', desc: 'Marsh Callers and the whole timber crew work 25% faster.', cost: 2, tier: 0, requires: [] }),
   woodDuckBoxes: fly('mississippi', { id: 'woodDuckBoxes', name: 'Wood Duck Boxes', desc: 'Flocks come to the Flooded Timber 30% more often.', cost: 3, tier: 1, requires: ['cypressCalls'] }),
   bayouBrokers: fly('mississippi', { id: 'bayouBrokers', name: 'Bayou Brokers', desc: 'Birds from the marsh and the timber pay 25% more coins.', cost: 5, tier: 2, requires: ['woodDuckBoxes'] }),
   homecoming: fly('mississippi', { id: 'homecoming', name: 'Homecoming', desc: 'Begin each season with 5 Callers, Blind Bots, Robo-Retrievers and Ledger Bots.', cost: 8, tier: 3, requires: ['bayouBrokers'] }),
@@ -80,7 +80,7 @@ export const PERKS: Record<PerkId, PerkDef> = {
   valleyHarvest: fly('pacific', { id: 'valleyHarvest', name: 'Valley Harvest', desc: 'Food plots draw 50% more.', cost: 5, tier: 2, requires: ['riceCountry'] }),
   rareAir: fly('pacific', { id: 'rareAir', name: 'Rare Air', desc: 'Legendary birds are twice as likely.', cost: 8, tier: 3, requires: ['valleyHarvest'] }),
 
-  saltSpray: fly('atlantic', { id: 'saltSpray', name: 'Salt Spray', desc: 'Bay Boatmen work 25% faster.', cost: 2, tier: 0, requires: [] }),
+  saltSpray: fly('atlantic', { id: 'saltSpray', name: 'Salt Spray', desc: 'The whole bay crew works 25% faster.', cost: 2, tier: 0, requires: [] }),
   seaDuckRigs: fly('atlantic', { id: 'seaDuckRigs', name: 'Sea Duck Rigs', desc: 'Flocks come to the Coastal Bay 30% more often.', cost: 3, tier: 1, requires: ['saltSpray'] }),
   eiderDown: fly('atlantic', { id: 'eiderDown', name: 'Eider Down', desc: 'Birds from the Coastal Bay give 50% more feathers.', cost: 5, tier: 2, requires: ['seaDuckRigs'] }),
   coastalCharter: fly('atlantic', { id: 'coastalCharter', name: 'Coastal Charter', desc: 'Birds from the Coastal Bay pay 50% more coins.', cost: 8, tier: 3, requires: ['eiderDown'] }),

@@ -54,6 +54,32 @@ describe('save / load', () => {
     expect(s.bots.caller.owned).toBe(0);
   });
 
+  it('turns Timber Guides and Bay Boatmen into full crews (v26 → v27)', () => {
+    const plain = JSON.parse(serialize(createInitialState(4))).s;
+    plain.version = 26;
+    plain.lodge = 5;
+    plain.bots.guide = { owned: 7, level: 3 };
+    plain.bots.boatman = { owned: 2, level: 1 };
+    plain.assign.guide = { tHunt: 7 };
+    plain.assign.boatman = { bHunt: 2 };
+    plain.plans = { ...plain.plans, guide: true, boatman: true };
+    plain.problems.open = [{ id: 1, bot: 'guide', job: 'tHunt', kind: 'mud', at: 0, attempts: 0 }];
+    const s = fromPlain(plain);
+    for (const id of ['tCaller', 'tBlind', 'tPup'] as const) {
+      expect(s.bots[id]).toEqual({ owned: 7, level: 3 });
+      expect(s.plans[id]).toBe(true);
+    }
+    expect(s.assign.tCaller.tCall).toBe(7);
+    expect(s.assign.tPup.tRetrieve).toBe(7);
+    for (const id of ['bCaller', 'bBlind', 'bPup'] as const) expect(s.bots[id].owned).toBe(2);
+    expect(s.bots.guide.owned).toBe(0);
+    expect(s.bots.boatman.owned).toBe(0);
+    expect(s.problems.open).toHaveLength(0);
+    // The new crew actually hunts the timber.
+    advance(s, 120, TICK_SECONDS);
+    expect(s.metrics.jobs.tCall.totalDone + s.metrics.jobs.tRetrieve.totalDone).toBeGreaterThan(0);
+  });
+
   it('rejects garbage with a friendly message', () => {
     expect(() => importSave('not a save!!')).toThrow(/not valid|damaged/);
     expect(() => importSave(btoa('{"hello":1}'))).toThrow(/save/);

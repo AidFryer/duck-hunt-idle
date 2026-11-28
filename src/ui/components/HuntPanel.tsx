@@ -1,4 +1,4 @@
-import type { GroundId } from '../../data/economy';
+import { BOTS, GROUND_CREW, type GroundId } from '../../data/economy';
 import { dogNameOf } from '../../data/goals';
 import type { HudSnapshot } from '../hudState';
 
@@ -9,12 +9,17 @@ import type { HudSnapshot } from '../hudState';
 export function HuntPanel({ hud, ground = 'marsh' }: { hud: HudSnapshot; ground?: GroundId }) {
   const field = ground === 'field';
   if (ground === 'timber' || ground === 'bay') {
+    const crew = GROUND_CREW[ground];
+    const names = `${BOTS[crew[0]!].name}, ${BOTS[crew[1]!].name} and ${BOTS[crew[2]!].name}`;
+    const crewLine = crew.every((id) => hud.plans[id].earned)
+      ? `Its own crew (${names}) works it once you carve them in the Workshop.`
+      : `Hunt it by hand to earn the plans for its own crew: ${names}.`;
     return (
       <p class="hunt-status__how">
         {ground === 'timber' ? (
-          <><strong>The flooded timber.</strong> Wood ducks and black ducks drop through the oaks in small, quick flocks. Hire a Timber Guide in the Workshop to hunt it while you're away.</>
+          <><strong>The flooded timber.</strong> Wood ducks and black ducks drop through the oaks in small, quick flocks. {crewLine}</>
         ) : (
-          <><strong>The coastal bay.</strong> Big rafts of sea ducks, slow to decoy. Scoters and eiders live out here. Hire a Bay Boatman in the Workshop to work it.</>
+          <><strong>The coastal bay.</strong> Big rafts of sea ducks, slow to decoy. Scoters and eiders live out here. {crewLine}</>
         )}
       </p>
     );

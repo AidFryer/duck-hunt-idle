@@ -8,11 +8,11 @@ import type { GameState } from './state';
 /** A typical hour's duck activity (the day's average, roughly). */
 const TYPICAL_ACTIVITY = 0.6;
 
-const JOBS: Record<GroundId, { call: JobId; shoot: JobId; fetch: JobId } | { crew: JobId }> = {
+const JOBS: Record<GroundId, { call: JobId; shoot: JobId; fetch: JobId }> = {
   marsh: { call: 'call', shoot: 'shoot', fetch: 'retrieve' },
   field: { call: 'flag', shoot: 'fShoot', fetch: 'fRetrieve' },
-  timber: { crew: 'tHunt' },
-  bay: { crew: 'bHunt' },
+  timber: { call: 'tCall', shoot: 'tShoot', fetch: 'tRetrieve' },
+  bay: { call: 'bCall', shoot: 'bShoot', fetch: 'bRetrieve' },
 };
 
 /** Birds a ground brings in per minute: the slowest of flock supply, calling, shooting and fetching. */
@@ -25,12 +25,6 @@ export function groundBirdsPerMinute(state: GameState, g: GroundId): { birds: nu
   const size = P.flockSizeMin + (P.flockSizeMax - P.flockSizeMin + extra) / 2;
   const perShot = Math.max(1, Math.ceil(size * shotFraction(state, g)));
   const j = JOBS[g];
-  if ('crew' in j) {
-    // One crew calls, shoots and fetches each bird itself.
-    const crewFlocks = jobRate(state, j.crew) / (2 + perShot);
-    const flocks = Math.min(supply, crewFlocks);
-    return { birds: flocks * perShot * 60, limit: crewFlocks < supply ? 'crew' : 'flocks' };
-  }
   const call = jobRate(state, j.call);
   const shoot = jobRate(state, j.shoot);
   const flocks = Math.min(supply, call, shoot);
@@ -58,6 +52,11 @@ export function calibrate(state: GameState): number {
   const real = state.volley.birdsRate * 60;
   scale = est > 1 && real > 0 ? Math.min(2, Math.max(0.02, real / est)) : 1;
   return real > 0 ? real : est;
+}
+
+/** A ground's birds a minute, scaled to match what the hunt really brings in. */
+export function groundBirdsNow(state: GameState, g: GroundId): number {
+  return groundBirdsPerMinute(state, g).birds * scale;
 }
 
 /** How many more birds a minute a change would bring (the change is undone after). */

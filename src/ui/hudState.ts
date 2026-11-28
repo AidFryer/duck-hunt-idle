@@ -1,4 +1,4 @@
-import { acreGain, botGain, calibrate, decoyGain, groundBirdsPerMinute, standGain, upgradeGain } from '../sim/estimate';
+import { acreGain, botGain, calibrate, decoyGain, groundBirdsNow, groundBirdsPerMinute, standGain, upgradeGain } from '../sim/estimate';
 import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -7,7 +7,7 @@ import {
   type GroundId,
   type BotId, type HuntStage, type JobId, type ProblemKind,
 } from '../data/economy';
-import { RHYTHM } from '../data/economy';
+import { CREW_TITLE, crewOf, RHYTHM, WORKSHOP_ORDER, type CrewId } from '../data/economy';
 import { rhythmSnag, rhythmTarget, type RhythmSnag } from '../sim/rhythm';
 import { currentGoal } from '../data/goals';
 import { FEATURE_ORDER, FEATURES, type FeatureId } from '../data/features';
@@ -169,7 +169,9 @@ export interface HudSnapshot {
   ledger: number;
   /** Crew Rhythm: fill (0–1), the coin bonus it pays (%), where it's heading, and what's holding it back. */
   rhythm: { level: number; bonus: number; rising: boolean; snag: RhythmSnag; crew: boolean };
+  /** Reputation's coin multiplier, and what it would be with one more Guest Dock level. */
   reputation: number;
+  reputationNextDock: number;
   keeperRate: number;
   can: Record<HuntStage, boolean>;
   /** Automation per stage (actions/sec), for the hunt buttons. */
@@ -230,6 +232,8 @@ export interface HudSnapshot {
   /** Birds a minute the whole lodge brings in, and what's holding each ground back. */
   birdsPerMin: number;
   limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>>;
+  /** Birds a minute from each open ground. */
+  groundBirds: Partial<Record<GroundId, number>>;
   /** Birds a minute one more acre would add. */
   acreGain: number;
   /** Flooded Timber stands: how many, the next one's price, and what it adds. */
@@ -376,9 +380,28 @@ function lodgeSnap(state: GameState): LodgeSnapshot {
       price,
       ready: lodgeReady(state),
       affordable: canBuildLodge(state),
-      points: n.points,
+      points: [...n.points, ...planLines(n.level)],
     },
   };
+}
+
+/** "Plans for the Flooded Timber crew: Cypress Caller, Stump Blind, Timber Pup." for each crew whose plans open at a lodge level. */
+function withDock(state: GameState): number {
+  const was = state.upgrades.guestDock ?? 0;
+  state.upgrades.guestDock = was + 1;
+  const r = reputationMultiplier(state);
+  state.upgrades.guestDock = was;
+  return r;
+}
+
+export function planLines(level: number): string[] {
+  const by = new Map<CrewId, string[]>();
+  for (const id of WORKSHOP_ORDER) {
+    if (PLANS[id].lodge !== level) continue;
+    const c = crewOf(id);
+    by.set(c, [...(by.get(c) ?? []), BOTS[id].name]);
+  }
+  return [...by].map(([c, names]) => `Plans for the ${CREW_TITLE[c]}${c === 'lodge' ? ' (they help every ground)' : ''}: ${names.join(', ')}.`);
 }
 
 function planSnap(state: GameState, id: BotId): PlanSnapshot {
@@ -561,6 +584,7 @@ export function snapshot(state: GameState): HudSnapshot {
       crew: BOT_ORDER.some((id) => state.bots[id].owned > 0),
     },
     reputation: reputationMultiplier(state),
+    reputationNextDock: withDock(state),
     keeperRate: LEDGER.keeperRate,
     can: {
       decoys: canDo(state, 'decoys'),
@@ -803,12 +827,17 @@ function trainingSnap(state: GameState): HudSnapshot['training'] {
 }
 
 /** Crew whose work brings birds in (the rest keep the lodge running). */
-const BIRD_JOBS = new Set<JobId>(['scout', 'call', 'shoot', 'retrieve', 'flag', 'fShoot', 'fRetrieve', 'tHunt', 'bHunt']);
+const BIRD_JOBS = new Set<JobId>(['scout', 'call', 'shoot', 'retrieve', 'flag', 'fShoot', 'fRetrieve', 'tCall', 'tShoot', 'tRetrieve', 'bCall', 'bShoot', 'bRetrieve']);
 
 /** Birds a minute, what limits each ground, and the best-value buy. */
 function buyGuide(state: GameState, bots: Record<BotId, BotSnapshot>, acrePrice: Price) {
   const limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>> = {};
-  for (const g of GROUND_ORDER) if (groundOpen(state, g)) limits[g] = groundBirdsPerMinute(state, g).limit;
+  const groundBirds: Partial<Record<GroundId, number>> = {};
+  for (const g of GROUND_ORDER) {
+    if (!groundOpen(state, g)) continue;
+    limits[g] = groundBirdsPerMinute(state, g).limit;
+    groundBirds[g] = groundBirdsNow(state, g);
+  }
   const acre = acreGain(state);
   const options: { key: string; gain: number; coins: number; label: string; price: Price }[] = [];
   for (const id of BOT_ORDER) {
@@ -830,5 +859,5 @@ function buyGuide(state: GameState, bots: Record<BotId, BotSnapshot>, acrePrice:
       best = o.key;
     }
   }
-  return { limits, acreGain: acre, bestBuy: best };
+  return { limits, groundBirds, acreGain: acre, bestBuy: best };
 }

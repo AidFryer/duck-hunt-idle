@@ -11,7 +11,7 @@ import { CARVINGS, CARVING_ORDER } from '../data/carvings';
 import { buyCarving, carvingStatus } from './carvings';
 import { fireVolley } from './volley';
 import Decimal from 'break_infinity.js';
-import { BOT_ORDER, HUNT, type BotId, type HuntStage } from '../data/economy';
+import { BOT_ORDER, HUNT, type BotId, type GroundId } from '../data/economy';
 import { UPGRADE_ORDER, UPGRADES } from '../data/upgrades';
 import { groundOpen, acrePrice, botPrice, botPriceMult, buyAcre, buyBot, buyDecoyBag, canAfford, decoyBagPrice, levelPrice, levelUpBot, type Price, standPrice, buyStand } from './economy';
 import type { SimEvent } from './events';
@@ -87,10 +87,12 @@ function wanted(s: GameState): BotId[] {
     if (f.committed.length >= 1 || own('layout') < own('flagger')) out.push('layout');
     if (f.incoming.length >= 2 || own('flagger') < 1) out.push('flagger');
   }
-  for (const [g, bot] of [['timber', 'guide'], ['bay', 'boatman']] as const) {
+  for (const [g, caller, shooter, pup] of [['timber', 'tCaller', 'tBlind', 'tPup'], ['bay', 'bCaller', 'bBlind', 'bPup']] as const) {
     if (!groundOpen(s, g)) continue;
     const d = ground(s, g);
-    if (d.incoming.length >= 2 || d.downed.length > 3 || own(bot) < 3) out.push(bot);
+    if (d.downed.length > 3 || own(pup) < 1) out.push(pup);
+    if (d.committed.length >= 1 || own(shooter) < own(caller)) out.push(shooter);
+    if (d.incoming.length >= 2 || own(caller) < 1) out.push(caller);
   }
   return out.filter((id) => !!s.plans[id]);
 }
@@ -184,8 +186,13 @@ function shop(s: GameState): void {
   }
 }
 
-const TAP_ORDER: HuntStage[] = ['shoot', 'call', 'retrieve'];
-const FIELD_TAPS: ActionJob[] = ['fShoot', 'flag', 'fRetrieve'];
+const GROUND_TAPS: [GroundId, ActionJob[]][] = [
+  ['marsh', ['shoot', 'call', 'retrieve']],
+  ['field', ['fShoot', 'flag', 'fRetrieve']],
+  ['timber', ['tShoot', 'tCall', 'tRetrieve']],
+  ['bay', ['bShoot', 'bCall', 'bRetrieve']],
+];
+let taken = 0;
 
 export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
   const dt = opts.dt ?? 0.5;
@@ -214,9 +221,10 @@ export function autoplay(s: GameState, opts: AutoplayOptions): PaceReport {
         fixAll(s, events);
         continue;
       }
-      // Alternate between grounds once the field is open.
-      const fieldFirst = fieldOpen(s) && (i & 1) === 1;
-      const order: ActionJob[] = fieldFirst ? [...FIELD_TAPS, ...TAP_ORDER] : fieldOpen(s) ? [...TAP_ORDER, ...FIELD_TAPS] : TAP_ORDER;
+      // Take turns between the open grounds (the one in turn first, then the rest).
+      const open = GROUND_TAPS.filter(([g]) => g === 'marsh' || (g === 'field' ? fieldOpen(s) : groundOpen(s, g)));
+      const turn = (taken++) % open.length;
+      const order: ActionJob[] = [...open.slice(turn), ...open.slice(0, turn)].flatMap(([, jobs]) => jobs);
       const stage = order.find((st) => canDo(s, st));
       if (!stage) break;
       doAction(s, stage, 'manual', events);

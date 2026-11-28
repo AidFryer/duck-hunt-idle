@@ -46,8 +46,8 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
             <Cost price={hud.acrePrice} notation={notation} />
           </button>
         </li>
-        {ready.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
-        {maxed.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+        {ready.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
+        {maxed.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
       </ul>
 
       {soon.length > 0 && (
@@ -70,7 +70,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
         <>
           <h4 class="group-head">Goose field</h4>
           <ul class="up-list">
-            {field.filter((u) => u.revealed).sort(byWhen).map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+            {field.filter((u) => u.revealed).sort(byWhen).map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
           </ul>
         </>
       )}
@@ -94,7 +94,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
                 </button>
               </li>
             )}
-            {f.ups.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} />)}
+            {f.ups.map((u) => <UpRow u={u} controls={controls} notation={notation} offline={hud.offlineHours} rep={{ now: hud.reputation, next: hud.reputationNextDock }} />)}
           </ul>
         </>
       ))}
@@ -102,7 +102,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
   );
 }
 
-function UpRow({ u, controls, notation, offline }: { u: Up; controls: GameControls; notation: Notation; offline: number }) {
+function UpRow({ u, controls, notation, offline, rep }: { u: Up; controls: GameControls; notation: Notation; offline: number; rep?: { now: number; next: number } }) {
   const d = UPGRADES[u.id];
   const maxed = u.level >= u.max;
   return (
@@ -114,6 +114,7 @@ function UpRow({ u, controls, notation, offline }: { u: Up; controls: GameContro
         <span>
           {d.effect}
           {u.id === 'cot' ? ` (now ${offline}h)` : ''}
+          {u.id === 'guestDock' && !maxed && rep ? ` (coins +${Math.round((rep.now - 1) * 100)}% → +${Math.round((rep.next - 1) * 100)}%)` : ''}
           {u.gain >= 0.05 && !maxed ? ` · ${gainText(u.gain, notation)}` : ''}
         </span>
       </div>

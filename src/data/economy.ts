@@ -130,13 +130,13 @@ export const DECOYS = {
 } as const;
 
 /** Bots that no longer have work now that decoys stay out (kept for old saves). */
-export const RETIRED_BOTS: readonly BotId[] = ['setter', 'staker'];
+export const RETIRED_BOTS: readonly BotId[] = ['setter', 'staker', 'guide', 'boatman'];
 
 /** Where you can hunt. */
 export type GroundId = 'marsh' | 'field' | 'timber' | 'bay';
 /** Every ground in the order they open. */
 export const GROUND_ORDER: readonly GroundId[] = ['marsh', 'timber', 'field', 'bay'];
-/** Grounds where one crew bot works every step of the hunt. */
+/** The far-water grounds (timber and bay). */
 export type OutpostId = 'timber' | 'bay';
 export const OUTPOSTS: readonly OutpostId[] = ['timber', 'bay'];
 /** Lodge level that opens each ground. */
@@ -163,7 +163,7 @@ export { SPECIES, type SpeciesId } from './species';
 export type JobId =
   | 'scout' | 'decoys' | 'call' | 'shoot' | 'retrieve' | 'log' | 'fDecoys' | 'flag' | 'fShoot' | 'fRetrieve' | 'foreman' | 'tinker'
   | OutpostJob | 'tHunt' | 'bHunt';
-/** Hand actions at the timber and the bay (their crews use tHunt / bHunt). */
+/** Jobs at the timber and the bay. (tHunt / bHunt were the old all-in-one crews; kept for old saves.) */
 export type OutpostJob = 'tCall' | 'tShoot' | 'tRetrieve' | 'bCall' | 'bShoot' | 'bRetrieve';
 /** Jobs in the goose field. */
 export type FieldJob = 'fDecoys' | 'flag' | 'fShoot' | 'fRetrieve';
@@ -213,7 +213,10 @@ export const CROSS_JOB_EFFICIENCY = 0.5;
 
 // ---------------------------------------------------------------- bots
 
-export type BotId = 'scout' | 'setter' | 'caller' | 'blind' | 'retriever' | 'ledger' | 'staker' | 'flagger' | 'layout' | 'fieldDog' | 'guide' | 'boatman' | 'foreman' | 'tinker';
+export type BotId =
+  | 'scout' | 'setter' | 'caller' | 'blind' | 'retriever' | 'ledger' | 'staker' | 'flagger' | 'layout' | 'fieldDog'
+  | 'tCaller' | 'tBlind' | 'tPup' | 'bCaller' | 'bBlind' | 'bPup'
+  | 'guide' | 'boatman' | 'foreman' | 'tinker';
 
 export interface BotDef {
   id: BotId;
@@ -326,6 +329,54 @@ export const BOTS: Record<BotId, BotDef> = {
     levelCostCoins: 900_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
     revealAtCoins: 0,
   },
+  tCaller: {
+    id: 'tCaller', name: 'Cypress Caller', job: 'tCall', crossJobs: [],
+    blurb: 'A wood duck carving on a cypress knee. Whistles ducks down through the branches.',
+    baseSpeed: 0.08, reliability: 0.96,
+    costCoins: 3_000, costFeathers: 300, costGrowth: 1.17,
+    levelCostCoins: 10_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  tBlind: {
+    id: 'tBlind', name: 'Stump Blind', job: 'tShoot', crossJobs: [],
+    blurb: 'Hides behind an old oak stump in waders and takes the shot as they drop in.',
+    baseSpeed: 0.08, reliability: 0.96,
+    costCoins: 3_500, costFeathers: 350, costGrowth: 1.17,
+    levelCostCoins: 12_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  tPup: {
+    id: 'tPup', name: 'Timber Pup', job: 'tRetrieve', crossJobs: [],
+    blurb: 'A clockwork pup with a snorkel. Weaves between the trunks to bring birds back.',
+    baseSpeed: 0.25, reliability: 0.96,
+    costCoins: 2_500, costFeathers: 250, costGrowth: 1.17,
+    levelCostCoins: 8_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  bCaller: {
+    id: 'bCaller', name: 'Sea Caller', job: 'bCall', crossJobs: [],
+    blurb: 'A scoter carving with a foghorn voice. Turns rafts of sea ducks toward the rig.',
+    baseSpeed: 0.09, reliability: 0.95,
+    costCoins: 1_200_000, costFeathers: 60_000, costGrowth: 1.17,
+    levelCostCoins: 4_000_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  bBlind: {
+    id: 'bBlind', name: 'Boat Blind', job: 'bShoot', crossJobs: [],
+    blurb: 'Rides the swells in a little layout boat and sits up for the shot.',
+    baseSpeed: 0.09, reliability: 0.95,
+    costCoins: 1_400_000, costFeathers: 70_000, costGrowth: 1.17,
+    levelCostCoins: 4_500_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
+  bPup: {
+    id: 'bPup', name: 'Pickup Skiff', job: 'bRetrieve', crossJobs: [],
+    blurb: 'A tiny skiff with a net on a pole. Motors out and picks up the birds.',
+    baseSpeed: 0.28, reliability: 0.95,
+    costCoins: 1_000_000, costFeathers: 50_000, costGrowth: 1.17,
+    levelCostCoins: 3_500_000, levelCostGrowth: 2.6, levelSpeedBonus: 0.25,
+    revealAtCoins: 0,
+  },
   guide: {
     id: 'guide', name: 'Timber Guide', job: 'tHunt', crossJobs: [],
     blurb: 'A carved mallard in waders and a camo cap. Calls, shoots and fetches in the flooded timber.',
@@ -360,11 +411,44 @@ export const BOTS: Record<BotId, BotDef> = {
   },
 };
 
-export const BOT_ORDER: readonly BotId[] = ['setter', 'caller', 'blind', 'retriever', 'ledger', 'scout', 'staker', 'flagger', 'layout', 'fieldDog', 'guide', 'boatman', 'foreman', 'tinker'];
+export const BOT_ORDER: readonly BotId[] = [
+  'setter', 'caller', 'blind', 'retriever', 'ledger', 'scout', 'staker', 'flagger', 'layout', 'fieldDog',
+  'tCaller', 'tBlind', 'tPup', 'bCaller', 'bBlind', 'bPup', 'guide', 'boatman', 'foreman', 'tinker',
+];
 /** Workshop order: roughly when each bot's plans arrive. */
-export const WORKSHOP_ORDER: readonly BotId[] = ['caller', 'blind', 'retriever', 'ledger', 'scout', 'foreman', 'guide', 'flagger', 'layout', 'fieldDog', 'boatman', 'tinker'];
+export const WORKSHOP_ORDER: readonly BotId[] = [
+  'caller', 'blind', 'retriever', 'tCaller', 'tBlind', 'tPup', 'flagger', 'layout', 'fieldDog',
+  'bCaller', 'bBlind', 'bPup', 'ledger', 'scout', 'foreman', 'tinker',
+];
 /** Bots that work the goose field. */
 export const FIELD_BOTS: readonly BotId[] = ['staker', 'flagger', 'layout', 'fieldDog'];
+/** Each ground's own crew: a caller, a shooter and a retriever. */
+export const GROUND_CREW: Record<GroundId, readonly BotId[]> = {
+  marsh: ['caller', 'blind', 'retriever'],
+  timber: ['tCaller', 'tBlind', 'tPup'],
+  field: ['flagger', 'layout', 'fieldDog'],
+  bay: ['bCaller', 'bBlind', 'bPup'],
+};
+/** Bots that help every ground from the lodge. */
+export const LODGE_CREW: readonly BotId[] = ['ledger', 'scout', 'foreman', 'tinker'];
+export type CrewId = GroundId | 'lodge';
+/** Which crew a bot belongs to. */
+export function crewOf(bot: BotId): CrewId {
+  for (const g of ['marsh', 'timber', 'field', 'bay'] as const) if (GROUND_CREW[g].includes(bot)) return g;
+  if (bot === 'staker') return 'field';
+  if (bot === 'setter') return 'marsh';
+  if (bot === 'guide') return 'timber';
+  if (bot === 'boatman') return 'bay';
+  return 'lodge';
+}
+export const CREW_TITLE: Record<CrewId, string> = {
+  marsh: 'Marsh crew', timber: 'Flooded Timber crew', field: 'Goose Field crew', bay: 'Coastal Bay crew', lodge: 'Lodge crew',
+};
+/** The jobs each far-water crew works, furthest along first. */
+export const OUTPOST_JOBS: Record<OutpostId, readonly OutpostJob[]> = {
+  timber: ['tRetrieve', 'tShoot', 'tCall'],
+  bay: ['bRetrieve', 'bShoot', 'bCall'],
+};
 
 /** Owned counts that double a bot type's output. */
 export const BOT_MILESTONES: readonly number[] = [10, 25, 50, 100, 200, 300, 400, 500, 750, 1000];

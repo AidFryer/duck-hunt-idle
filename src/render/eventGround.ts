@@ -1,12 +1,10 @@
-import { FIELD_BOTS, type BotId, type GroundId } from '../data/economy';
+import { crewOf, type BotId, type GroundId } from '../data/economy';
 import type { SimEvent } from '../sim/events';
 
 /** Which ground a crew member works. */
 export function botGround(bot: BotId): GroundId {
-  if (FIELD_BOTS.includes(bot)) return 'field';
-  if (bot === 'guide') return 'timber';
-  if (bot === 'boatman') return 'bay';
-  return 'marsh';
+  const c = crewOf(bot);
+  return c === 'lodge' ? 'marsh' : c;
 }
 
 /** Events that only ever happen on the home marsh (they carry no ground tag). */

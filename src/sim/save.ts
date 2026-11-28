@@ -214,6 +214,30 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
   },
   // v26: Flooded Timber stands.
   25: (s) => ({ ...s, stands: typeof s.stands === 'number' ? s.stands : 1, version: 26 }),
+  // v27: the timber and the bay get a caller, a shooter and a retriever of their
+  // own. Each Timber Guide / Bay Boatman becomes one of each, at the same level.
+  26: (s) => {
+    const bots = { ...((s.bots as Json) ?? {}) } as Record<string, { owned?: number; level?: number }>;
+    const assign = { ...((s.assign as Json) ?? {}) } as Record<string, unknown>;
+    const plans = { ...((s.plans as Json) ?? {}) } as Record<string, unknown>;
+    const swaps: [string, string[]][] = [['guide', ['tCaller', 'tBlind', 'tPup']], ['boatman', ['bCaller', 'bBlind', 'bPup']]];
+    for (const [old, crew] of swaps) {
+      const b = bots[old] ?? {};
+      const owned = Math.max(0, Math.floor(b.owned ?? 0));
+      const level = Math.max(1, Math.floor(b.level ?? 1));
+      for (const id of crew) {
+        const cur = bots[id] ?? {};
+        bots[id] = { ...cur, owned: (cur.owned ?? 0) + owned, level: Math.max(cur.level ?? 1, level) };
+        assign[id] = {};
+        if (plans[old]) plans[id] = true;
+      }
+      bots[old] = { ...b, owned: 0, level: 1 };
+      assign[old] = {};
+    }
+    const problems = { ...((s.problems as Json) ?? {}) } as { open?: { bot?: string }[] };
+    if (Array.isArray(problems.open)) problems.open = problems.open.filter((p) => p.bot !== 'guide' && p.bot !== 'boatman');
+    return { ...s, bots, assign, plans, problems, version: 27 };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

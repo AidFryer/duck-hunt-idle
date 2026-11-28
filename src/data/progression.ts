@@ -16,7 +16,8 @@ import type { CropId } from './crops';
 export type CounterId =
   | 'handDecoys' | 'handCalls' | 'handShots' | 'handFetches' | 'handFixes'
   | 'birds' | 'flocksCalled' | 'shots' | 'logged' | 'species' | 'bots'
-  | 'handStakes' | 'handFlags' | 'handFieldShots' | 'handPickups' | 'geese';
+  | 'handStakes' | 'handFlags' | 'handFieldShots' | 'handPickups' | 'geese'
+  | 'handTCalls' | 'handTShots' | 'handTFetches' | 'handBCalls' | 'handBShots' | 'handBFetches';
 
 export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   handDecoys: (n) => `Set ${n} decoys by hand`,
@@ -35,6 +36,12 @@ export const COUNTER_LABEL: Record<CounterId, (n: string) => string> = {
   handFieldShots: (n) => `Take ${n} shots from the layout blind`,
   handPickups: (n) => `Pick up ${n} geese by hand`,
   geese: (n) => `Bring in ${n} geese and cranes`,
+  handTCalls: (n) => `Call in ${n} flocks by hand in the timber`,
+  handTShots: (n) => `Take ${n} shots by hand in the timber`,
+  handTFetches: (n) => `Fetch ${n} birds by hand in the timber`,
+  handBCalls: (n) => `Call in ${n} flocks by hand on the bay`,
+  handBShots: (n) => `Take ${n} shots by hand on the bay`,
+  handBFetches: (n) => `Pick up ${n} birds by hand on the bay`,
 };
 
 // ---------------------------------------------------------------- lodge
@@ -76,9 +83,8 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
     birds: 0, species: 5, coins: 12_000, feathers: 1_200, opens: [],
     points: [
-      'Ledger Bot plans, so Ray gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
-      'Flooded Timber: a second hunting ground in drowned oaks, home to wood ducks and black ducks. A Timber Guide can work it for you.',
+      'Flooded Timber: a second hunting ground in drowned oaks, home to wood ducks and black ducks, with a crew of its own.',
       'A second food plot, plus wild celery, the boat house, lantern posts and more.',
     ],
   },
@@ -88,7 +94,6 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     birds: 0, species: 12, coins: 8_000_000, feathers: 500_000, opens: ['field'],
     points: [
       'The Goose Field: a harvested cornfield with its own geese, cranes, crew and ladder. Switch grounds from the button at the top of the screen.',
-      'Scout and Foreman plans.',
       'Third rungs: Decoy Skiff, Long Call, Twin Blinds, Retriever Skiff, Front Desk.',
       'The Deep Pool for diving ducks, the Guest Dock and the Smokehouse.',
     ],
@@ -98,9 +103,8 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
     birds: 0, species: 20, coins: 100_000_000, feathers: 4_000_000, opens: ['legacy'],
     points: [
-      'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks. Hire a Bay Boatman to run it.',
+      'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks, with a crew of its own.',
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',
-      'Tinker Bot plans.',
       'Top rungs: Floating Rig, Lure Master, Marksman, Retriever Boat, Guest Wing, Lookout Tower.',
       'The Carving Shed makes every bot cheaper.',
     ],
@@ -132,6 +136,12 @@ export const PLANS: Record<BotId, PlanDef> = {
   flagger: { lodge: 4, counter: 'handFlags', count: 40 },
   layout: { lodge: 4, counter: 'handFieldShots', count: 40 },
   fieldDog: { lodge: 4, counter: 'handPickups', count: 100 },
+  tCaller: { lodge: 3, counter: 'handTCalls', count: 8 },
+  tBlind: { lodge: 3, counter: 'handTShots', count: 10 },
+  tPup: { lodge: 3, counter: 'handTFetches', count: 25 },
+  bCaller: { lodge: 5, counter: 'handBCalls', count: 12 },
+  bBlind: { lodge: 5, counter: 'handBShots', count: 15 },
+  bPup: { lodge: 5, counter: 'handBFetches', count: 40 },
   guide: { lodge: 3, counter: 'birds', count: 1_500 },
   boatman: { lodge: 5, counter: 'birds', count: 1_400_000 },
 };

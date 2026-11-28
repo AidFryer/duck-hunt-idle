@@ -11,7 +11,7 @@ import { CrewLayer } from './layers/CrewLayer';
 import { DuckLayer } from './layers/DuckLayer';
 import { HintLayer, chooseHint } from './layers/HintLayer';
 import type { Floater } from './layers/DuckLayer';
-import { type GroundId, type HuntStage, type OutpostId } from '../data/economy';
+import { GROUND_CREW, type GroundId, type HuntStage, type OutpostId } from '../data/economy';
 import { ground } from '../sim/hunt';
 import { SPECIES, type SpeciesId } from '../data/species';
 import { eventGround } from './eventGround';
@@ -142,6 +142,9 @@ export class MarshScene {
       // Far grounds: no lodge, porch or plots, just water, blind and birds.
       for (const v of [shore.view, shore.reflection, this.props.view, this.props.reflection, this.life.view, this.plots.view]) v.visible = false;
       this.crew.outpost = true;
+      // Its own crew stands in for the marsh's caller, shooter and retriever.
+      const [caller, blindBot, pup] = GROUND_CREW[variant];
+      this.crew.crewMap = { caller, blind: blindBot, retriever: pup };
       this.timber.stand = variant === 'timber';
       // The bay is always salt water and open coast.
       if (variant === 'bay') this.flyway = 'atlantic';
@@ -223,18 +226,18 @@ export class MarshScene {
         return null;
       case 'flockCalled':
         this.ducks.call(e.flockId);
-        return this.crew.call(e.source);
+        return this.crew.call(this.crew.local(e.source));
       case 'flockLeft':
         return this.ducks.leave(e.flockId);
       case 'flockFlared':
         return this.ducks.flare(e.flockId);
       case 'shot': {
-        const p = this.crew.shoot(e.source);
+        const p = this.crew.shoot(this.crew.local(e.source));
         this.ducks.shoot(e.flockId, e.downed);
         return p;
       }
       case 'retrieved':
-        return this.crew.retrieve(e.source);
+        return this.crew.retrieve(this.crew.local(e.source));
       case 'logged':
         return this.crew.logged(e.source);
       case 'scouted':

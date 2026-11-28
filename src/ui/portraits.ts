@@ -1,5 +1,5 @@
 import type { BotId } from '../data/economy';
-import { paintCarving, paintDecoyBot, paintDogBody, paintPerson, paintSpeciesPortrait } from '../render/assets/painters';
+import { paintCarving, paintDecoyBot, paintDogBody, paintPerson, paintSkiff, paintSpeciesPortrait } from '../render/assets/painters';
 import { CARVINGS, type CarvingId } from '../data/carvings';
 import { AVATARS } from '../data/avatars';
 import { SPECIES, type SpeciesId } from '../data/species';
@@ -10,7 +10,7 @@ const cache = new Map<BotId, string>();
 export function portrait(id: BotId): string {
   let url = cache.get(id);
   if (!url) {
-    const canvas = id === 'retriever' || id === 'fieldDog' ? paintDogBody('robo') : paintDecoyBot(id);
+    const canvas = id === 'retriever' || id === 'fieldDog' || id === 'tPup' ? paintDogBody('robo') : id === 'bPup' ? paintSkiff() : paintDecoyBot(id);
     url = canvas.toDataURL();
     cache.set(id, url);
   }

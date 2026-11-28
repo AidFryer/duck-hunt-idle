@@ -9,7 +9,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, STANDS, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 /** One flyway's mastery challenges (see data/mastery.ts). */
 export interface FlywayMastery {
