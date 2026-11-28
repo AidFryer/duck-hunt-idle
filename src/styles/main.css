@@ -5236,3 +5236,56 @@ img { object-fit: contain; max-width: 100%; }
 .dog-card__need { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .dog-card__need small { font-size: 12px; color: var(--ui-textSoft); }
 .dog-card .buy-btn span, .dog-card .buy-btn .cost__item { color: inherit; font-weight: 800; }
+
+/* ---- Pinned layout: text lengths and big numbers never move buttons ------ */
+/* Cards: same height in a row, text in fixed slots, the button or status on the bottom. */
+.card-grid > .mini-card { display: flex; flex-direction: column; height: 100%; }
+.mini-card > .buy-btn, .mini-card > .mini-card__status { margin-top: auto; }
+.mini-card__effect {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * 1.3em);
+  margin-bottom: 6px;
+}
+.carve-card .mini-card__effect { -webkit-line-clamp: 3; min-height: calc(3 * 1.3em); }
+.carve-card__name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: calc(2 * 1.2em);
+  margin-top: 4px;
+}
+.mini-card__head strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-card__head > div > .pips, .mini-card__head > div > .mini-card__status { min-height: 14px; }
+.mini-card > .mini-card__status { min-height: 38px; display: grid; place-items: center; text-align: center; line-height: 1.2; }
+
+/* Price buttons: one width everywhere, prices on one line. */
+.up-row .buy-btn, .ws-row .buy-btn, .path-step .buy-btn, .dog-card .buy-btn {
+  flex: none;
+  width: 124px;
+  min-width: 124px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+.buy-btn .cost { flex-wrap: nowrap; white-space: nowrap; font-size: 12.5px; column-gap: 7px; }
+.mini-card .buy-btn { height: 38px; }
+.mini-card .buy-btn .cost { font-size: 12px; }
+
+/* Rows: titles on one line, detail on at most two, so rows keep their shape. */
+.up-row { min-height: 62px; }
+.up-row__text > strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-row__text > span:not(.guest__bar):not(.crop-birds) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.path-step__text > strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.path-step__text > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.row-note { width: 124px; max-width: none; }
+.path .row-note { width: auto; max-width: 42%; }
+.ws-row__text > strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ws-row__text > span:first-of-type { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
