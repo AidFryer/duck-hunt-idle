@@ -36,7 +36,7 @@ export class SkeinLayer implements Layer {
 
   constructor(private readonly tex: TextureLibrary) {
     for (let i = 0; i < MAX_SKEINS; i++) {
-      const variant = i % 3;
+      const variant = i % 4;
       const s = new Sprite(tex.get(`skein.${variant}.up`));
       s.anchor.set(0.5);
       s.visible = false;
@@ -74,8 +74,10 @@ export class SkeinLayer implements Layer {
       k.y += k.vy * f.dt;
       k.flap += f.dt * (5 + k.depth * 3) * Math.max(0.4, f.motion);
       k.s.texture = this.tex.get(`skein.${k.variant}.${Math.floor(k.flap) % 2 === 0 ? 'up' : 'down'}`);
-      // Ease in, then fade as they settle toward the far marsh.
-      const out = k.vx > 0 ? k.x > l.w * 0.9 : k.x < l.w * 0.1;
+      // Ease in, then fade as they settle onto the far marsh (or fly on past).
+      const landed = k.y >= l.horizon - 4 * l.scale;
+      const out = landed || (k.vx > 0 ? k.x > l.w * 0.92 : k.x < l.w * 0.08);
+      if (landed) k.vy = 0;
       k.fade = Math.min(1, k.fade + f.dt * (out ? -0.6 : 0.8));
       if (out && k.fade <= 0) {
         k.s.visible = false;
@@ -89,17 +91,21 @@ export class SkeinLayer implements Layer {
 
   private launch(k: Skein): void {
     const l = this.l;
+    // Bigger hauls bring bigger skeins (9, 14, 22 and 32 birds).
+    const big = this.rate >= 60_000 ? 3 : this.rate >= 12_000 ? 2 : this.rate >= 2_000 ? 1 : 0;
+    k.variant = Math.max(0, big - (this.rnd() < 0.35 ? 1 : 0));
     const top = l.skyTop ?? 0;
     const fromLeft = this.rnd() < 0.5;
     k.depth = this.rnd();
     const scale = l.scale * (0.6 + k.depth * 0.5);
     k.s.scale.set(fromLeft ? scale : -scale, scale);
     k.x = fromLeft ? -60 * l.scale : l.w + 60 * l.scale;
-    k.y = top + (l.horizon - top) * (0.12 + this.rnd() * 0.45);
+    // Low over the trees, dropping in to settle on the far marsh.
+    k.y = top + (l.horizon - top) * (0.45 + this.rnd() * 0.3);
     const speed = (20 + k.depth * 16) * l.scale;
     k.vx = fromLeft ? speed : -speed;
-    // Drift down toward the marsh as they come in.
-    k.vy = speed * (0.05 + this.rnd() * 0.08);
+    const cross = l.w * (0.45 + this.rnd() * 0.35);
+    k.vy = Math.max(2 * l.scale, ((l.horizon - k.y) / cross) * speed);
     k.flap = this.rnd() * 2;
     k.life = 0;
     k.fade = 0;

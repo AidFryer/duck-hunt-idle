@@ -2108,11 +2108,11 @@ export function paintTrimMedal(): Canvas {
  * `variant` changes the count and spacing so skeins don't all look alike.
  */
 export function paintSkein(variant: number, wingsUp: boolean): Canvas {
-  const W = 160;
-  const H = 70;
+  const W = 230;
+  const H = 80;
   const t = createPaintTarget(W, H);
   const { ctx } = t;
-  const counts = [9, 14, 20];
+  const counts = [9, 14, 22, 32];
   const n = counts[variant % counts.length]!;
   const rnd = seeded(17 + variant * 31);
   ctx.strokeStyle = '#ffffff';
@@ -2122,8 +2122,8 @@ export function paintSkein(variant: number, wingsUp: boolean): Canvas {
     // Alternate arms of the V, with a little jitter so it looks alive.
     const arm = i === 0 ? 0 : i % 2 === 0 ? 1 : -1;
     const k = Math.ceil(i / 2);
-    const x = W - 14 - k * (9 + variant * 1.5) + (rnd() - 0.5) * 3;
-    const y = H / 2 + arm * k * (3.4 + variant * 0.4) + (rnd() - 0.5) * 3;
+    const x = W - 14 - k * (variant === 3 ? 12.5 : 9 + variant * 1.5) + (rnd() - 0.5) * 3;
+    const y = H / 2 + arm * k * (variant === 3 ? 2.2 : 3.4 + variant * 0.4) + (rnd() - 0.5) * 3;
     const s = 0.85 + rnd() * 0.3;
     const lift = (wingsUp ? -2.6 : 1.4) * s + (rnd() - 0.5) * 0.8;
     ctx.lineWidth = 1.5 * s;

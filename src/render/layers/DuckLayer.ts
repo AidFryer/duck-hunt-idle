@@ -203,7 +203,7 @@ export class DuckLayer implements Layer {
     f.state = 'approach';
     f.lx = f.dir > 0 ? -60 * l.scale : l.w + 60 * l.scale;
     const top = l.skyTop ?? 0;
-    f.ly = top + (l.horizon - top) * (0.3 + this.rnd() * 0.3);
+    f.ly = top + (l.horizon - top) * (0.5 + this.rnd() * 0.25);
     f.speed = 120 * l.scale * (species === 'teal' ? 1.25 : 1);
     f.species = species;
     this.setTargets(f);
@@ -253,7 +253,9 @@ export class DuckLayer implements Layer {
       this.unseen.delete(id);
       return null;
     }
-    const tally = { birds: downed + this.unseenDowned, at: { x: f.lx, y: f.ly } };
+    // Shown where the birds come down: over the decoys, on the water.
+    const a = l.anchors.decoyCenter;
+    const tally = { birds: downed + this.unseenDowned, at: { x: a.x + (this.rnd() - 0.5) * l.w * 0.3, y: a.y - 26 * l.scale } };
     this.unseenDowned = 0;
     const live = f.ducks.filter((d) => d.flock === f && d.mode === 'fly');
     // Every shot drops at least one bird; past that, only as many as the
@@ -372,7 +374,9 @@ export class DuckLayer implements Layer {
     f.depth = depth;
     f.spacing = 24 * l.scale * depth;
     f.speed = (55 + this.rnd() * 30) * l.scale * (0.5 + depth * 0.6);
-    f.ly = l.horizon * (high ? 0.1 + this.rnd() * 0.15 : 0.15 + this.rnd() * 0.45) * (1.1 - depth * 0.3);
+    // Below the top bar, in the lower part of the sky.
+    const top = l.skyTop ?? 0;
+    f.ly = top + (l.horizon - top) * (high ? 0.25 + this.rnd() * 0.2 : 0.35 + this.rnd() * 0.4);
     f.lx = f.dir > 0 ? -40 * l.scale : l.w + 40 * l.scale;
     ducks.forEach((d, i) => this.launch(d, f, i));
     this.flocks.push(f);
@@ -674,9 +678,10 @@ export class DuckLayer implements Layer {
       // stays in sight and tappable.
       const top = l.skyTop ?? 0;
       const band = Math.max(60, l.horizon - top);
-      f.tcy = top + band * (0.45 + slot * 0.14);
+      // Low over the treeline, close to the water where the action is.
+      f.tcy = Math.min(l.horizon - 34 * l.scale, top + band * (0.64 + slot * 0.1));
       f.tradius = Math.min(l.w * 0.34, 300 * l.scale) * (1 - slot * 0.12);
-      f.tsquash = Math.min(0.22, (band * 0.32) / Math.max(1, f.tradius));
+      f.tsquash = Math.min(0.2, (band * 0.24) / Math.max(1, f.tradius));
       f.tdepth = 0.62 - slot * 0.08;
     }
   }
