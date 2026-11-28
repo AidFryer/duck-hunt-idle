@@ -1,4 +1,4 @@
-import { adminPlayers, adminRemovePlayer, adminSetHidden, failureText, onlineEnabled, type AdminRow } from '../app/online';
+import { adminGetSave, adminPlayers, adminRemovePlayer, adminSetHidden, failureText, onlineEnabled, type AdminRow } from '../app/online';
 import { LODGE_LEVELS } from '../data/progression';
 import { formatNumber } from '../util/format';
 import './dev.css';
@@ -93,7 +93,9 @@ function draw(): void {
           <div class="line">${esc(lodgeName(r.lodge))} · ${formatNumber(r.birds, 'letters')} birds · ${r.species} kinds${r.stars ? ` · ${r.stars} ★` : ''}</div>
           <div class="line dim">Day ${r.day} · ${r.play_hours.toFixed(1)} h played · ${formatNumber(r.coins, 'letters')} coins${r.seasons ? ` · ${r.seasons} seasons` : ''}</div>
           <div class="line dim">This week: ${formatNumber(r.week_birds ?? 0, 'letters')} birds · Joined ${day(r.created_at)}${r.flyway ? ` · ${esc(r.flyway)} flyway` : ''}${r.build ? ` · v ${esc(r.build)}` : ''}</div>
+          <div class="line dim">${r.saved_at ? `Cloud save: ${ago(r.saved_at)}` : 'No cloud save yet'}</div>
           <div class="tools">
+            ${r.saved_at ? `<button class="btn small soft" data-save="${r.id}">Copy save code</button>` : ''}
             <button class="btn small soft" data-hide="${r.id}" data-to="${r.hidden ? '0' : '1'}">${r.hidden ? 'Show on board' : 'Hide from board'}</button>
             <button class="btn small soft danger" data-remove="${r.id}" data-name="${esc(r.name)}">Remove</button>
           </div>
@@ -117,6 +119,24 @@ function draw(): void {
         alert(failureText(e));
         b.disabled = false;
       }
+    }),
+  );
+  root.querySelectorAll<HTMLButtonElement>('[data-save]').forEach((b) =>
+    b.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        const code = await adminGetSave(getSaved(), b.dataset.save!);
+        if (!code) throw new Error('none');
+        try {
+          await navigator.clipboard.writeText(code);
+          b.textContent = 'Copied';
+        } catch {
+          prompt('Copy this save code:', code);
+        }
+      } catch (e) {
+        alert(e instanceof Error && e.message === 'none' ? 'No cloud save for this player yet.' : failureText(e));
+      }
+      b.disabled = false;
     }),
   );
   root.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((b) =>

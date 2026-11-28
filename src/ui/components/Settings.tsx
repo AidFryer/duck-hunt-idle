@@ -8,6 +8,7 @@ import { useStore } from '../store';
 import { AVATARS, NAME_MAX } from '../../data/avatars';
 import { BREEDS, BREED_ORDER, DOG_NAME_MAX, type BreedId } from '../../data/crew';
 import { avatarPortrait } from '../portraits';
+import { showRestoreCode } from '../../app/online';
 
 export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
   prefs: Prefs;
@@ -70,6 +71,38 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
     const r = controls.restoreBackup(at);
     setBackups(controls.listBackups());
     setMsg(r.ok ? { text: 'Backup restored. Welcome back!', tone: 'good' } : { text: r.error, tone: 'bad' });
+  };
+
+  const [cloud, setCloud] = useState(() => controls.cloudStatus());
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [showBring, setShowBring] = useState(false);
+  const [bringName, setBringName] = useState('');
+  const [bringCode, setBringCode] = useState('');
+  const doCloudSave = async () => {
+    setCloudBusy(true);
+    const err = await controls.cloudSaveNow();
+    setCloudBusy(false);
+    setCloud(controls.cloudStatus());
+    setMsg(err ? { text: err, tone: 'bad' } : { text: 'Saved to the cloud.', tone: 'good' });
+  };
+  const copyCloudCode = async () => {
+    if (!cloud.code) return;
+    try {
+      await navigator.clipboard.writeText(`${profile.name} ${showRestoreCode(cloud.code)}`);
+      setMsg({ text: 'Name and restore code copied. Keep them somewhere safe.', tone: 'good' });
+    } catch {
+      setMsg({ text: 'Write down your name and the restore code shown.', tone: 'good' });
+    }
+  };
+  const doBring = async () => {
+    if (!bringName.trim() || !bringCode.trim()) return;
+    setCloudBusy(true);
+    const r = await controls.cloudRestore(bringName, bringCode);
+    setCloudBusy(false);
+    setCloud(controls.cloudStatus());
+    setBackups(controls.listBackups());
+    if (r.ok) setShowBring(false);
+    setMsg(r.ok ? { text: 'Cloud save brought back. Welcome back!', tone: 'good' } : { text: r.error, tone: 'bad' });
   };
 
   const doImport = () => {
@@ -248,6 +281,35 @@ export function Settings({ prefs, controls, onPrefs, onClose, profile }: {
             <p class="card__hint">
               On iPhone, Safari and the home-screen app keep separate saves. Use a backup file or save code to move one to the other.
             </p>
+          )}
+          {cloud.enabled && (
+            <div class="file-backup cloud-save">
+              <strong>Cloud save</strong>
+              {cloud.joined && cloud.code ? (
+                <>
+                  <span>
+                    {cloud.savedAt ? `Saved online ${whenText(cloud.savedAt)}.` : 'Saves online every few minutes.'} To bring this lodge back on any
+                    phone, use your name and this code:
+                  </span>
+                  <code class="cloud-code">{showRestoreCode(cloud.code)}</code>
+                </>
+              ) : (
+                <span>Pick a name above and your lodge saves online every few minutes.</span>
+              )}
+              <div class="btn-row">
+                {cloud.joined && <button class="btn btn--small btn--primary" disabled={cloudBusy} onClick={() => void doCloudSave()}>Save now</button>}
+                {cloud.joined && <button class="btn btn--small" onClick={() => void copyCloudCode()}>Copy code</button>}
+                <button class="btn btn--small" onClick={() => setShowBring(!showBring)}>Bring back a save</button>
+              </div>
+              {showBring && (
+                <div class="cloud-bring">
+                  <input type="text" placeholder="Name" maxLength={NAME_MAX} value={bringName} onInput={(e) => setBringName((e.currentTarget as HTMLInputElement).value)} />
+                  <input type="text" placeholder="Code" maxLength={12} autoCapitalize="characters" autoComplete="off" spellcheck={false} value={bringCode} onInput={(e) => setBringCode((e.currentTarget as HTMLInputElement).value)} />
+                  <button class="btn btn--primary" disabled={cloudBusy || !bringName.trim() || !bringCode.trim()} onClick={() => void doBring()}>Bring back</button>
+                </div>
+              )}
+              {showBring && <span class="cloud-note">This replaces the lodge on this phone. A backup of it is kept below.</span>}
+            </div>
           )}
           <div class="file-backup">
             <strong>Back up to iCloud</strong>

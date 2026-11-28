@@ -5105,3 +5105,18 @@ img { object-fit: contain; max-width: 100%; }
   white-space: nowrap;
 }
 .up-hint { margin: -4px 0 6px; }
+
+/* ---- Cloud save ---------------------------------------------------------- */
+.cloud-code {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(74, 50, 33, 0.1);
+  font: 700 17px/1.2 ui-monospace, 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.08em;
+  color: var(--ui-text);
+}
+.cloud-bring { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin-top: 4px; }
+.cloud-bring .btn { grid-column: 1 / -1; }
+.cloud-bring input { min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(74, 50, 33, 0.25); background: #fffaf0; font: inherit; font-size: 16px; }
+.file-backup > .cloud-note { font-size: 12px; }

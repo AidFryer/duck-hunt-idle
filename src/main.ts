@@ -24,7 +24,7 @@ import { GROUND_JOBS, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
 import { BUILD_STAMP, installState } from './app/pwa';
-import { failureText, joinGame, leaderboard, newSecret, onlineEnabled, onlineReady, probeOnline, OnlineFailure, renamePlayer, reportProgress, type Progress } from './app/online';
+import { cloudRestore, cloudSave, cloudSaveReady, failureText, joinGame, leaderboard, newSecret, onlineEnabled, onlineReady, probeOnline, OnlineFailure, renamePlayer, reportProgress, restoreCode, type Progress } from './app/online';
 import { speciesFound } from './sim/progression';
 import { NAME_MAX } from './data/avatars';
 import { BREEDS, DOG_NAME_MAX } from './data/crew';
@@ -194,6 +194,11 @@ async function syncOnline(): Promise<void> {
       s.online.name = name;
     }
     await reportProgress(s.online.id, s.online.secret, progressOf(s));
+    // Cloud save: the latest copy of the whole save, kept with the board entry.
+    if (cloudSaveReady() !== false && s === state && s.online) {
+      await cloudSave(s.online.id, s.online.secret, exportSave(s));
+      setCloudSavedAt(s.online.id, Date.now());
+    }
   } catch (e) {
     const kind = e instanceof OnlineFailure ? e.kind : 'unknown';
     if (kind === 'name_taken') takenName = name;
@@ -204,6 +209,24 @@ async function syncOnline(): Promise<void> {
   }
 }
 setInterval(() => void syncOnline(), 5 * 60_000);
+
+const CLOUD_KEY = 'duck-hunt-idle.cloudSavedAt';
+/** When this lodge was last saved online, from this device (null: not yet). */
+function cloudSavedAt(id: string): number | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLOUD_KEY) ?? 'null') as { id: string; at: number } | null;
+    return v && v.id === id ? v.at : null;
+  } catch {
+    return null;
+  }
+}
+function setCloudSavedAt(id: string, at: number): void {
+  try {
+    localStorage.setItem(CLOUD_KEY, JSON.stringify({ id, at }));
+  } catch {
+    /* fine */
+  }
+}
 
 // Now and then a stray decoy drifts across the water you're looking at.
 setInterval(() => {
@@ -658,6 +681,44 @@ const controls: GameControls = {
   },
   onlineStatus() {
     return { enabled: onlineEnabled() && onlineReady() === true, joined: !!state.online, name: state.online?.name ?? state.profile.name, takenName };
+  },
+  cloudStatus() {
+    const o = state.online;
+    return {
+      enabled: onlineEnabled() && onlineReady() === true && cloudSaveReady() !== false,
+      joined: !!o,
+      savedAt: o ? cloudSavedAt(o.id) : null,
+      code: o ? restoreCode(o.secret) : null,
+    };
+  },
+  async cloudSaveNow() {
+    if (!state.online) return 'Pick a name first, so the cloud knows whose lodge this is.';
+    if (onlineReady() !== true) await probeOnline();
+    const before = cloudSavedAt(state.online.id);
+    await syncOnline();
+    const o = state.online;
+    if (o && cloudSavedAt(o.id) !== before) return null;
+    if (cloudSaveReady() === false) return "Cloud saves aren't switched on yet.";
+    return "Couldn't reach the cloud right now. It'll try again in a few minutes.";
+  },
+  async cloudRestore(name, code) {
+    try {
+      const r = await cloudRestore(name.trim(), code);
+      if (!r.ok) {
+        return {
+          ok: false as const,
+          error: r.why === 'no_save' ? 'No cloud save under that name.' : r.why === 'locked' ? 'Too many tries. Wait 15 minutes and try again.' : "That code doesn't match. Check it and try again.",
+        };
+      }
+      const next = importSave(r.code);
+      backupNow(state, 'restore');
+      replaceState(next);
+      save();
+      if (next.online) setCloudSavedAt(next.online.id, new Date(r.saved_at).getTime());
+      return { ok: true as const };
+    } catch (e) {
+      return { ok: false as const, error: e instanceof OnlineFailure ? (e.kind === 'not_set_up' ? "Cloud saves aren't switched on yet." : failureText(e)) : (e as Error).message };
+    }
   },
   async fetchBoard(sort) {
     try {

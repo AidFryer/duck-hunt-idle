@@ -34,6 +34,12 @@ export interface GameControls {
   claimName(name: string): Promise<string | null>;
   /** Is the leaderboard set up, and is this lodge on it? */
   onlineStatus(): { enabled: boolean; joined: boolean; name: string; takenName: string | null };
+  /** Cloud save: whether it's on, when this lodge was last saved online, and its restore code. */
+  cloudStatus(): { enabled: boolean; joined: boolean; savedAt: number | null; code: string | null };
+  /** Save online now. Resolves to an error message, or null when saved. */
+  cloudSaveNow(): Promise<string | null>;
+  /** Bring back a cloud save by name and restore code (keeps a backup of this one first). */
+  cloudRestore(name: string, code: string): Promise<{ ok: true } | { ok: false; error: string }>;
   /** Fetch the leaderboard (top 50 plus your own row). */
   fetchBoard(sort: BoardSort): Promise<{ ok: true; rows: BoardRow[] } | { ok: false; error: string }>;
   /** Name the retriever and pick its breed. */

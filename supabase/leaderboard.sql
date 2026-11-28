@@ -44,6 +44,12 @@ alter table public.players add column if not exists week_base  double precision 
 alter table public.players add column if not exists week_birds double precision not null default 0;
 alter table public.players add column if not exists reported   boolean not null default false;
 alter table public.players add column if not exists hidden     boolean not null default false;
+-- Cloud save: the latest copy of each player's save, and a hash of their restore code.
+alter table public.players add column if not exists save_code    text;
+alter table public.players add column if not exists saved_at     timestamptz;
+alter table public.players add column if not exists restore_hash text;
+alter table public.players add column if not exists restore_fails int not null default 0;
+alter table public.players add column if not exists restore_lock timestamptz;
 
 -- Nobody touches the tables directly; only the functions below do.
 alter table public.players enable row level security;
@@ -160,6 +166,41 @@ begin
   if not found then raise exception 'not_found'; end if;
 end $$;
 
+-- Cloud save: keep the latest copy of your save online. p_restore is the short
+-- code the game shows the player (only its hash is kept). Returns when it was saved.
+create or replace function public.cloud_save(p_id uuid, p_secret text, p_code text, p_restore text) returns timestamptz
+language plpgsql security definer set search_path = public as $$
+declare t timestamptz := now();
+begin
+  if char_length(coalesce(p_code, '')) < 20 or char_length(p_code) > 2000000 then raise exception 'bad_save'; end if;
+  if char_length(coalesce(p_restore, '')) <> 8 then raise exception 'bad_save'; end if;
+  update players set save_code = p_code, saved_at = t, restore_hash = dhi_hash(upper(p_restore)), last_seen = t
+  where id = p_id and secret_hash = dhi_hash(p_secret);
+  if not found then raise exception 'not_found'; end if;
+  return t;
+end $$;
+
+-- Bring a cloud save back on any device, with the player's name and restore code.
+-- Five wrong codes in a row lock that name's restore for 15 minutes.
+-- Returns {ok, code, saved_at} or {ok: false, why: 'no_save' | 'wrong_code' | 'locked'}.
+create or replace function public.cloud_restore(p_name text, p_restore text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r players%rowtype;
+begin
+  select * into r from players where name_key = dhi_name_key(p_name);
+  if not found or r.save_code is null then return jsonb_build_object('ok', false, 'why', 'no_save'); end if;
+  if r.restore_lock is not null and r.restore_lock > now() then return jsonb_build_object('ok', false, 'why', 'locked'); end if;
+  if r.restore_hash is distinct from dhi_hash(upper(coalesce(p_restore, ''))) then
+    update players set
+      restore_fails = case when restore_fails + 1 >= 5 then 0 else restore_fails + 1 end,
+      restore_lock  = case when restore_fails + 1 >= 5 then now() + interval '15 minutes' else restore_lock end
+    where id = r.id;
+    return jsonb_build_object('ok', false, 'why', 'wrong_code');
+  end if;
+  update players set restore_fails = 0, restore_lock = null where id = r.id;
+  return jsonb_build_object('ok', true, 'code', r.save_code, 'saved_at', r.saved_at);
+end $$;
+
 -- The leaderboard: the top players for one ranking ('week', 'birds', 'lodge' or 'stars'),
 -- plus your own row (is_me) even when you're further down. Hidden players
 -- (set from the owner's page) only ever see themselves.
@@ -193,7 +234,7 @@ create or replace function public.admin_players(p_password text)
 returns table (
   id uuid, name text, created_at timestamptz, last_seen timestamptz, lodge int, birds double precision,
   species int, stars int, seasons int, coins double precision, day int, play_hours double precision,
-  flyway text, build text, week_birds double precision, hidden boolean
+  flyway text, build text, week_birds double precision, hidden boolean, saved_at timestamptz
 )
 language plpgsql stable security definer set search_path = public as $$
 begin
@@ -201,7 +242,7 @@ begin
   return query
     select p.id, p.name, p.created_at, p.last_seen, p.lodge, p.birds, p.species, p.stars, p.seasons,
            p.coins, p.day, p.play_hours, p.flyway, p.build,
-           case when p.week_key = dhi_week() then p.week_birds else 0 end, p.hidden
+           case when p.week_key = dhi_week() then p.week_birds else 0 end, p.hidden, p.saved_at
     from players p order by p.last_seen desc;
 end $$;
 
@@ -211,6 +252,14 @@ language plpgsql security definer set search_path = public as $$
 begin
   if not dhi_admin_ok(p_password) then raise exception 'wrong_password'; end if;
   update players set hidden = coalesce(p_hidden, false) where id = p_id;
+end $$;
+
+-- One player's cloud save code (to send them if they lose their lodge).
+create or replace function public.admin_get_save(p_password text, p_id uuid) returns text
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not dhi_admin_ok(p_password) then raise exception 'wrong_password'; end if;
+  return (select save_code from players where id = p_id);
 end $$;
 
 -- Remove a player for good and free their name. (If they play again, they rejoin.)
@@ -235,7 +284,9 @@ revoke all on function public.dhi_hash(text), public.dhi_name_key(text), public.
 grant execute on function public.name_available(text), public.join_game(text, text),
   public.rename_player(uuid, text, text), public.report_progress(uuid, text, jsonb),
   public.leaderboard(text, int, uuid), public.admin_players(text),
-  public.admin_set_hidden(text, uuid, boolean), public.admin_remove_player(text, uuid) to anon, authenticated;
+  public.admin_set_hidden(text, uuid, boolean), public.admin_remove_player(text, uuid),
+  public.cloud_save(uuid, text, text, text), public.cloud_restore(text, text),
+  public.admin_get_save(text, uuid) to anon, authenticated;
 
 -- ---------------------------------------------------------------- your admin password
 -- First time only: change CHANGE-ME to a password only you know (you'll type

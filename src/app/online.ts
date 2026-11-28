@@ -48,7 +48,14 @@ export function failureText(e: unknown): string {
   }
 }
 
-async function rpc<T>(fn: string, args: Record<string, unknown>, probe = false): Promise<T> {
+/**
+ * Whether the cloud save functions exist on the server (they came in a later
+ * update of the database setup): unknown until the first try.
+ */
+let cloudReady: boolean | null = null;
+export const cloudSaveReady = (): boolean | null => cloudReady;
+
+async function rpc<T>(fn: string, args: Record<string, unknown>, probe = false, extra = false): Promise<T> {
   if (!probe && !onlineEnabled()) throw new OnlineFailure('not_set_up');
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 10_000);
@@ -72,11 +79,14 @@ async function rpc<T>(fn: string, args: Record<string, unknown>, probe = false):
   }
   const text = await res.text();
   // 404: the functions aren't there yet (setup not run).
+  // (A later addition missing just means that part of the setup hasn't been rerun.)
   if (res.status === 404) {
-    ready = false;
+    if (extra) cloudReady = false;
+    else ready = false;
     throw new OnlineFailure('not_set_up');
   }
   ready = true;
+  if (extra) cloudReady = true;
   if (!res.ok) {
     let msg = '';
     try {
@@ -149,7 +159,60 @@ export interface AdminRow {
   build: string;
   week_birds?: number;
   hidden?: boolean;
+  /** When their cloud save was last updated (null: none yet). */
+  saved_at?: string | null;
 }
 export const adminPlayers = (password: string) => rpc<AdminRow[]>('admin_players', { p_password: password });
 export const adminSetHidden = (password: string, id: string, hidden: boolean) => rpc<null>('admin_set_hidden', { p_password: password, p_id: id, p_hidden: hidden });
 export const adminRemovePlayer = (password: string, id: string) => rpc<null>('admin_remove_player', { p_password: password, p_id: id });
+
+// ---- Cloud save -------------------------------------------------------------
+
+// Crockford's letters: no I, L, O or U, so nothing is mistaken for 1, 0 or V.
+const CODE_ABC = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+/** Two rounds of a small string hash (enough to turn the secret into a short code). */
+function hash32(text: string, seed: number): number {
+  let h = seed >>> 0;
+  for (let i = 0; i < text.length; i++) {
+    h = Math.imul(h ^ text.charCodeAt(i), 0x5bd1e995);
+    h ^= h >>> 15;
+  }
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+/**
+ * The player's restore code: 8 letters and numbers made from their secret, so
+ * it never changes and needs nothing new in the save. With their name, it
+ * brings the cloud save back on any device.
+ */
+export function restoreCode(secret: string): string {
+  let a = hash32(secret, 0x9e3779b9);
+  let b = hash32(secret, 0x85ebca6b);
+  let out = '';
+  for (let i = 0; i < 8; i++) {
+    const src = i < 4 ? a : b;
+    out += CODE_ABC[src & 31];
+    if (i < 4) a = src >>> 5;
+    else b = src >>> 5;
+  }
+  return out;
+}
+
+/** Tidy what the player typed: capitals, no spaces or dashes, look-alikes fixed. */
+export function cleanRestoreCode(raw: string): string {
+  return raw.toUpperCase().replace(/[\s-]+/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
+}
+
+/** Shown as ABCD-EFGH. */
+export const showRestoreCode = (code: string): string => `${code.slice(0, 4)}-${code.slice(4)}`;
+
+export const cloudSave = (id: string, secret: string, code: string) =>
+  rpc<string>('cloud_save', { p_id: id, p_secret: secret, p_code: code, p_restore: restoreCode(secret) }, false, true);
+
+export type CloudRestore = { ok: true; code: string; saved_at: string } | { ok: false; why: 'no_save' | 'wrong_code' | 'locked' };
+export const cloudRestore = (name: string, code: string) =>
+  rpc<CloudRestore>('cloud_restore', { p_name: name, p_restore: cleanRestoreCode(code) }, false, true);
+
+export const adminGetSave = (password: string, id: string) => rpc<string | null>('admin_get_save', { p_password: password, p_id: id }, false, true);
