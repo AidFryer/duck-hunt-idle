@@ -25,8 +25,8 @@ import { buyUpgrade, upgradePrice } from './upgrades';
 import { buildLodge, buyRung, canBuildLodge, lodgeReady, nextLodge, rungPrice, rungReady } from './progression';
 import { RUNG_ORDER, SPECIES_DRAW } from '../data/progression';
 import type { UpgradeId } from '../data/upgrades';
-import { cropsFor, plotCount, type CropId } from '../data/crops';
-import { cropPrice, plantCrop } from './crops';
+import { cropsFor, FAR_PLOT_ORDER, plotCount, type CropId } from '../data/crops';
+import { cropPrice, farPlotPrice, levelFarPlot, levelPlot, plantCrop, plotLevelPrice } from './crops';
 import type { SpeciesId } from '../data/species';
 
 export interface PaceReport {
@@ -135,6 +135,9 @@ function options(s: GameState): Option[] {
     if (pick) opts.push({ price: cropPrice(pick, i), buy: () => plantCrop(s, i, pick), first: !!fresh });
   }
   for (const id of RUNG_ORDER) if (rungReady(s, id)) opts.push({ price: rungPrice(id), buy: () => buyRung(s, id) });
+  // Plot levels, and the other grounds' plots.
+  for (let i = 0; i < plotCount(s.lodge); i++) if (s.plots[i]!.crop) opts.push({ price: plotLevelPrice(i, s.plots[i]!.level), buy: () => levelPlot(s, i) });
+  for (const g of FAR_PLOT_ORDER) if (groundOpen(s, g)) opts.push({ price: farPlotPrice(g, s.farPlots[g]), buy: () => levelFarPlot(s, g) });
   if (s.unlocks.bots === undefined) return opts;
   for (const id of new Set(wanted(s))) {
     opts.push({ price: botPrice(id, s.bots[id].owned, 1, botPriceMult(s, id)), buy: () => buyBot(s, id, 1) > 0 });

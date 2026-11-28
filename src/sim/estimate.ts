@@ -1,6 +1,7 @@
 import { ACRES, BOT_ORDER, BOTS, GROUND_ORDER, SCOUT, type BotId, type GroundId, type JobId } from '../data/economy';
 import { FLYWAYS } from '../data/flyways';
 import type { UpgradeId } from '../data/upgrades';
+import type { FarPlotGround } from '../data/crops';
 import { extraFlockSize, flockDraw, GROUND_PARAMS, groundOpen, shotFraction } from './economy';
 import { jobRate } from './jobs';
 import type { GameState } from './state';
@@ -75,7 +76,9 @@ function shapeKey(state: GameState): string {
     if (b.owned) k += `${b.owned}.${b.level},`;
   }
   for (const [u, n] of Object.entries(state.upgrades)) k += `${u[0]}${n}`;
-  k += `|${Object.keys(state.rungs).length}|${Object.keys(state.training).length}|${state.environment.weather}`;
+  k += `|${Object.keys(state.rungs).length}|${Object.keys(state.training).length}|${state.environment.weather}|`;
+  for (const p of state.plots) k += `${p.crop ?? '-'}${p.level},`;
+  k += `${state.farPlots.timber},${state.farPlots.field},${state.farPlots.bay}`;
   return k;
 }
 
@@ -140,6 +143,25 @@ export function acreGain(state: GameState): number {
     state.acres += 1;
     return () => {
       state.acres -= 1;
+    };
+  }));
+}
+
+export function plotGain(state: GameState, plot: number): number {
+  return remember(`plot:${plot}`, state, () => gainFrom(state, () => {
+    const p = state.plots[plot]!;
+    p.level += 1;
+    return () => {
+      p.level -= 1;
+    };
+  }));
+}
+
+export function farPlotGain(state: GameState, g: FarPlotGround): number {
+  return remember(`farPlot:${g}`, state, () => gainFrom(state, () => {
+    state.farPlots[g] += 1;
+    return () => {
+      state.farPlots[g] -= 1;
     };
   }));
 }

@@ -9,7 +9,7 @@ import { NEW_GAME_DAY_TIME } from '../data/dayCycle';
 import { ACRES, STANDS, BOT_ORDER, FOREMAN, JOB_ORDER, START, type BotId, type JobId, type ProblemKind, type Slot, type SpeciesId } from '../data/economy';
 
 /** Bump when the save shape changes, and add a migration in save.ts. */
-export const SAVE_VERSION = 28;
+export const SAVE_VERSION = 29;
 
 /** One flyway's mastery challenges (see data/mastery.ts). */
 export interface FlywayMastery {
@@ -213,7 +213,9 @@ export interface GameState {
   /** Bags of decoys bought for each spread. */
   decoyBags: { marsh: number; field: number; timber: number; bay: number };
   /** Food plots on the far bank (how many are usable depends on the lodge). */
-  plots: { crop: CropId | null; growth: number }[];
+  plots: { crop: CropId | null; growth: number; level: number }[];
+  /** Levels of the timber, goose field and bay plots (0 = not planted). */
+  farPlots: { timber: number; field: number; bay: number };
   bots: Record<BotId, BotState>;
   /** How many of each bot type work each job (or rest on the bench). */
   assign: Record<BotId, Partial<Record<Slot, number>>>;
@@ -391,7 +393,8 @@ export function createInitialState(seed = 1337, now = 0): GameState {
     training: {},
     dog: { level: 1, swim: 0 },
     volley: { unlocked: false, charge: 0, fired: 0, birdsRate: 0, coinsRate: 0, feathersRate: 0 },
-    plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0 })),
+    plots: [0, 1, 2, 3].map(() => ({ crop: null, growth: 0, level: 0 })),
+    farPlots: { timber: 0, field: 0, bay: 0 },
     decoyBags: { marsh: 0, field: 0, timber: 0, bay: 0 },
     bots: createBotStates(),
     assign: createAssignments(),

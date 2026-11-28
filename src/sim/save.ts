@@ -245,6 +245,16 @@ const MIGRATIONS: Record<number, (s: Json) => Json> = {
     stats.bayBirds = typeof stats.bayBirds === 'number' ? stats.bayBirds : 0;
     return { ...s, stats, version: 28 };
   },
+  // v29: food plots level up, and the other grounds get a plot each.
+  28: (s) => {
+    const plots = (Array.isArray(s.plots) ? s.plots : []) as { crop?: string | null; growth?: number; level?: number }[];
+    return {
+      ...s,
+      plots: plots.map((p) => ({ ...p, level: typeof p.level === 'number' ? p.level : p.crop ? 1 : 0 })),
+      farPlots: { timber: 0, field: 0, bay: 0, ...((s.farPlots as Json) ?? {}) },
+      version: 29,
+    };
+  },
 };
 
 const DECIMAL_PATHS: [keyof GameState, string][] = [

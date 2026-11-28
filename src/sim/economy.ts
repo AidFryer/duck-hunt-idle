@@ -18,7 +18,7 @@ import { WEATHER } from '../data/weather';
 import { legacyFx, starMultiplier } from './prestige';
 import { workflowEval } from './workflow';
 import { rungFx } from './progression';
-import { cropFlockRate, cropFlockSize } from './crops';
+import { cropFlockRate, cropFlockSize, farPlotFlockRate, farPlotFlockSize } from './crops';
 import { FLYWAYS } from '../data/flyways';
 
 export interface Price {
@@ -242,9 +242,9 @@ export function shotFraction(state: GameState, g: GroundId = 'marsh'): number {
 export function extraFlockSize(state: GameState, g: GroundId = 'marsh'): number {
   const stage = stageFor(state.clock.day).flockSize - 1;
   const weather = WEATHER[state.environment.weather].flockSize + dayFx(state).flockSize;
-  if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + weather + stage;
-  if (g === 'bay') return UPGRADE_EFFECTS.breakwaterFlockSize * (state.upgrades.breakwater ?? 0) + weather + stage;
-  if (g === 'timber') return STANDS.flockSizePerStand * (state.stands - STANDS.start) + weather + stage;
+  if (isField(g)) return UPGRADE_EFFECTS.winterWheatFlockSize * (state.upgrades.winterWheat ?? 0) + farPlotFlockSize(state, 'field') + weather + stage;
+  if (g === 'bay') return UPGRADE_EFFECTS.breakwaterFlockSize * (state.upgrades.breakwater ?? 0) + farPlotFlockSize(state, 'bay') + weather + stage;
+  if (g === 'timber') return STANDS.flockSizePerStand * (state.stands - STANDS.start) + farPlotFlockSize(state, 'timber') + weather + stage;
   const cold = state.environment.weather === 'coldFront' ? workflowEval(state).coldFlockSize : 0;
   const flyway = FLYWAYS[state.flyway].flockSizeBonus ?? 0;
   return cropFlockSize(state) + weather + cold + flyway + stage;
@@ -264,18 +264,18 @@ function baseFlockDraw(state: GameState, g: GroundId): number {
   const common = WEATHER[state.environment.weather].flockRate * rungFx(state, g).draw * stageFor(state.clock.day).flockRate * dayFx(state).flockRate;
   if (isField(g)) {
     const field = (1 + UPGRADE_EFFECTS.cornStubbleFlockRate * (u.cornStubble ?? 0)) * (1 + UPGRADE_EFFECTS.roostPondFlockRate * (u.roostPond ?? 0));
-    return P.baseFlockRate * spread * field * common * carvingFx(state).fieldRate;
+    return P.baseFlockRate * spread * field * common * carvingFx(state).fieldRate * farPlotFlockRate(state, 'field');
   }
   if (g === 'timber') {
     const timber = (1 + UPGRADE_EFFECTS.timberFlockRate * (u.timber ?? 0)) * (1 + UPGRADE_EFFECTS.nestBoxesFlockRate * (u.nestBoxes ?? 0)) * (1 + UPGRADE_EFFECTS.duckweedFlockRate * (u.duckweed ?? 0));
     // Its own line (flooded stands), plus part of the marsh's acres and food plots.
     const stands = Math.pow(STANDS.flockRateGrowth, state.stands - STANDS.start);
     const shared = Math.pow(Math.pow(ACRES.flockRateGrowth, state.acres - ACRES.start) * cropFlockRate(state), STANDS.sharedBoost);
-    return P.baseFlockRate * spread * timber * stands * shared * common * carvingFx(state).flockRate;
+    return P.baseFlockRate * spread * timber * stands * shared * common * carvingFx(state).flockRate * farPlotFlockRate(state, 'timber');
   }
   if (g === 'bay') {
     const bay = (1 + UPGRADE_EFFECTS.musselBedsFlockRate * (u.musselBeds ?? 0)) * (1 + UPGRADE_EFFECTS.kelpLineFlockRate * (u.kelpLine ?? 0));
-    return P.baseFlockRate * spread * bay * common;
+    return P.baseFlockRate * spread * bay * common * farPlotFlockRate(state, 'bay');
   }
   const acreBonus = Math.pow(ACRES.flockRateGrowth, state.acres - ACRES.start);
   const marsh =

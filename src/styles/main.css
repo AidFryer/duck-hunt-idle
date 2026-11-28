@@ -5125,3 +5125,16 @@ img { object-fit: contain; max-width: 100%; }
 .ws-section__note { margin: -2px 2px 8px; font-size: 12.5px; line-height: 1.35; color: var(--ui-textSoft); }
 .lodge-rep { margin: 8px 0 0; padding: 7px 10px; border-radius: 10px; background: rgba(184, 140, 60, 0.12); font-size: 12.5px; line-height: 1.35; color: var(--ui-textSoft); }
 .lodge-rep strong { color: var(--ui-text); }
+
+/* ---- Food plots: one compact row per plot, crops picked from a small list ---- */
+.link-btn { justify-self: start; padding: 2px 0; border: 0; background: none; font: inherit; font-size: 12.5px; font-weight: 700; color: var(--c-rust, #b5562b); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.plot-row .up-row__text { gap: 1px; }
+.crop-picker { display: grid; gap: 6px; margin: -2px 0 4px; padding: 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.45); list-style: none; }
+.crop-opt { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.6); }
+.crop-opt.is-on { background: rgba(122, 143, 90, 0.18); box-shadow: inset 0 0 0 1px rgba(122, 143, 90, 0.45); }
+.crop-opt__text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.crop-opt__text strong { font-size: 13.5px; }
+.crop-opt__text > span { font-size: 12px; color: var(--ui-textSoft); }
+.crop-birds { display: flex; flex-wrap: wrap; gap: 4px; }
+.crop-bird { padding: 1px 7px; border-radius: 999px; background: rgba(74, 50, 33, 0.08); font-size: 11.5px; color: var(--ui-textSoft); }
+.crop-bird.is-found { background: rgba(122, 143, 90, 0.2); color: #4f6a35; font-weight: 700; }

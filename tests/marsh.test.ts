@@ -30,7 +30,7 @@ describe('species & field guide', () => {
   it('a mixed bag of species arrives over a long day', () => {
     const s = rich(7);
     s.hunt.decoys = HUNT.baseSpreadSize;
-    s.plots[0] = { crop: 'millet', growth: 1 };
+    s.plots[0] = { crop: 'millet', growth: 1, level: 1 };
     s.upgrades.nestBoxes = 1;
     const ev: SimEvent[] = [];
     advance(s, 1800, 0.5, ev);

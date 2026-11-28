@@ -87,6 +87,55 @@ export const CROPS: Record<CropId, CropDef> = {
   },
 };
 
+/**
+ * Plot levels: a planted plot can be worked up level by level (disked,
+ * limed, seeded thicker...). Each level draws more flocks; every few levels
+ * flocks come in bigger. The crop decides which birds come; the level stays
+ * when you change crops.
+ */
+export const PLOT_LEVELS = {
+  /** × flocks for every level beyond the first. */
+  flockRateGrowth: 1.05,
+  /** +1 bird per flock every this many levels. */
+  birdsEvery: 10,
+  /** Price of level 2 on the first plot; later plots cost (plot number)² as much. */
+  costCoins: 600,
+  costFeathers: 60,
+  costGrowth: 4,
+} as const;
+
+/** The other grounds each have one plot of their own, which lifts only that ground. */
+export type FarPlotGround = 'timber' | 'field' | 'bay';
+export interface FarPlotDef {
+  name: string;
+  blurb: string;
+  /** Price of the first level (planting it). */
+  coins: number;
+  feathers: number;
+  costGrowth: number;
+  /** × that ground's flocks per level. */
+  flockRateGrowth: number;
+  look: CropDef['look'];
+}
+export const FAR_PLOTS: Record<FarPlotGround, FarPlotDef> = {
+  timber: {
+    name: 'Acorn Flats', blurb: 'Pin oaks dropping acorns into the shallows. Wood ducks gorge on them.',
+    coins: 4_000, feathers: 800, costGrowth: 4, flockRateGrowth: 1.08,
+    look: { stalk: 0x6a5a3a, head: 0x8a6a3a, style: 'bush' },
+  },
+  field: {
+    name: 'Winter Rye', blurb: 'A strip of green rye along the field edge. Geese graze it like a lawn.',
+    coins: 40_000, feathers: 3_000, costGrowth: 4, flockRateGrowth: 1.08,
+    look: { stalk: 0x7a9a4a, head: 0xa8c070, style: 'droop' },
+  },
+  bay: {
+    name: 'Sea Lettuce Beds', blurb: 'Bright green sea lettuce in the shallow coves. Brant and black ducks come for it.',
+    coins: 2_000_000, feathers: 120_000, costGrowth: 4, flockRateGrowth: 1.08,
+    look: { stalk: 0x3a7a4a, head: 0x6ab05a, style: 'ribbon' },
+  },
+};
+export const FAR_PLOT_ORDER: readonly FarPlotGround[] = ['timber', 'field', 'bay'];
+
 export const CROP_ORDER: readonly CropId[] = ['millet', 'rice', 'smartweed', 'soybeans', 'corn', 'milo', 'barley', 'eelgrass'];
 
 export function cropsFor(flyway: FlywayId): CropId[] {

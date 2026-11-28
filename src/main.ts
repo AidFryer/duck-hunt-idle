@@ -36,7 +36,7 @@ import { claimDrifter, drifterReady } from './sim/drifter';
 import { MarshScene } from './render/MarshScene';
 import { claimGuest } from './sim/guests';
 import { CARVINGS } from './data/carvings';
-import { plantCrop } from './sim/crops';
+import { levelFarPlot, levelPlot, plantCrop } from './sim/crops';
 import { claimDailyBonus, localDayKey } from './sim/daily';
 import type { TapTarget } from './render/MarshScene';
 import type { HuntStage } from './data/economy';
@@ -633,6 +633,16 @@ const controls: GameControls = {
   },
   buyDecoys(g) {
     const ok = buyDecoyBag(state, g, runner.sink);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  levelPlot(plot) {
+    const ok = levelPlot(state, plot);
+    hud.set(snapshot(state));
+    return ok;
+  },
+  levelFarPlot(g) {
+    const ok = levelFarPlot(state, g);
     hud.set(snapshot(state));
     return ok;
   },

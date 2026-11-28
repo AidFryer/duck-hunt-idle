@@ -1,4 +1,4 @@
-import { acreGain, botGain, calibrate, decoyGain, groundBirdsNow, groundBirdsPerMinute, standGain, upgradeGain } from '../sim/estimate';
+import { acreGain, botGain, calibrate, decoyGain, farPlotGain, groundBirdsNow, groundBirdsPerMinute, plotGain, standGain, upgradeGain } from '../sim/estimate';
 import type { SpecialDayId } from '../data/days';
 import Decimal from 'break_infinity.js';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -42,8 +42,8 @@ import { assigned, contribution, jobRate, stuck } from '../sim/jobs';
 import { successRate, throughput } from '../sim/metrics';
 import { foremanCapacity, retryChance, retryDelay } from '../sim/problems';
 import type { GameState, Problem } from '../sim/state';
-import { CROPS, cropsFor, plotCount, type CropId } from '../data/crops';
-import { canPlant, cropPrice } from '../sim/crops';
+import { CROPS, cropsFor, FAR_PLOT_ORDER, FAR_PLOTS, plotCount, type CropId, type FarPlotGround } from '../data/crops';
+import { canLevelFarPlot, canLevelPlot, canPlant, cropPrice, farPlotFlockRate, farPlotPrice, plotFlockRate, plotLevelPrice } from '../sim/crops';
 import { COUNTER_LABEL, PLANS, RUNGS, SPECIES_DRAW, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
 import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesNeeds } from '../sim/progression';
 
@@ -246,7 +246,19 @@ export interface HudSnapshot {
     open: number;
     /** Lodge that opens the next plot (null when all four are open). */
     nextLodgeName: string | null;
-    list: { crop: CropId | null; growth: number; options: { crop: CropId; price: Price; affordable: boolean }[] }[];
+    list: {
+      crop: CropId | null;
+      growth: number;
+      level: number;
+      /** This plot's lift on marsh flocks (1.3 = +30%). */
+      flocks: number;
+      levelPrice: Price;
+      levelAffordable: boolean;
+      gain: number;
+      options: { crop: CropId; price: Price; affordable: boolean; birds: { id: SpeciesId; name: string; found: boolean }[] }[];
+    }[];
+    /** The timber, goose field and bay plots. */
+    far: { g: FarPlotGround; name: string; open: boolean; level: number; flocks: number; price: Price; affordable: boolean; gain: number }[];
   };
   plans: Record<BotId, PlanSnapshot>;
   ladder: Record<BotId, RungSnapshot[]>;
@@ -392,6 +404,17 @@ function withDock(state: GameState): number {
   const r = reputationMultiplier(state);
   state.upgrades.guestDock = was;
   return r;
+}
+
+/** The birds a crop brings (or makes more common) on this flyway, and which you've found. */
+function cropBirds(state: GameState, c: CropId): { id: SpeciesId; name: string; found: boolean }[] {
+  const ids = new Set<SpeciesId>(Object.keys(CROPS[c].species) as SpeciesId[]);
+  for (const [id, need] of Object.entries(SPECIES_DRAW) as [SpeciesId, readonly Draw[]][]) {
+    if (!need.some((d) => 'crop' in d && d.crop.includes(c))) continue;
+    if (need.some((d) => 'flyway' in d && !d.flyway.includes(state.flyway))) continue;
+    ids.add(id);
+  }
+  return [...ids].map((id) => ({ id, name: SPECIES[id].name, found: (state.guide[id]?.count ?? 0) > 0 }));
 }
 
 export function planLines(level: number): string[] {
@@ -704,7 +727,22 @@ export function snapshot(state: GameState): HudSnapshot {
       list: state.plots.slice(0, plotCount(state.lodge)).map((p, i) => ({
         crop: p.crop,
         growth: p.growth,
-        options: cropsFor(state.flyway).map((c) => ({ crop: c, price: cropPrice(c, i), affordable: canPlant(state, i, c) })),
+        level: p.level,
+        flocks: plotFlockRate(state, i),
+        levelPrice: plotLevelPrice(i, p.level),
+        levelAffordable: canLevelPlot(state, i),
+        gain: p.crop ? plotGain(state, i) : 0,
+        options: cropsFor(state.flyway).map((c) => ({ crop: c, price: cropPrice(c, i), affordable: canPlant(state, i, c), birds: cropBirds(state, c) })),
+      })),
+      far: FAR_PLOT_ORDER.map((g) => ({
+        g,
+        name: FAR_PLOTS[g].name,
+        open: groundOpen(state, g),
+        level: state.farPlots[g],
+        flocks: farPlotFlockRate(state, g),
+        price: farPlotPrice(g, state.farPlots[g]),
+        affordable: canLevelFarPlot(state, g),
+        gain: groundOpen(state, g) ? farPlotGain(state, g) : 0,
       })),
     },
     plans: Object.fromEntries(BOT_ORDER.map((id) => [id, planSnap(state, id)])) as Record<BotId, PlanSnapshot>,
@@ -850,6 +888,16 @@ function buyGuide(state: GameState, bots: Record<BotId, BotSnapshot>, acrePrice:
     options.push({ key: `decoys:${g}`, gain: decoyGain(state, g), coins: dp.coins.toNumber(), label: g === 'marsh' ? 'Decoys' : `${GROUND_NAMES[g]} decoys`, price: dp });
   }
   if (state.unlocks.upgrades !== undefined) options.push({ key: 'acre', gain: acre, coins: acrePrice.coins.toNumber(), label: 'Wetland Acre', price: acrePrice });
+  state.plots.slice(0, plotCount(state.lodge)).forEach((p, i) => {
+    if (!p.crop) return;
+    const price = plotLevelPrice(i, p.level);
+    options.push({ key: `plot:${i}`, gain: plotGain(state, i), coins: price.coins.toNumber(), label: CROPS[p.crop].name, price });
+  });
+  for (const g of FAR_PLOT_ORDER) {
+    if (!groundOpen(state, g)) continue;
+    const price = farPlotPrice(g, state.farPlots[g]);
+    options.push({ key: `farPlot:${g}`, gain: farPlotGain(state, g), coins: price.coins.toNumber(), label: FAR_PLOTS[g].name, price });
+  }
   let best: string | null = null;
   let bestValue = 0;
   for (const o of options) {

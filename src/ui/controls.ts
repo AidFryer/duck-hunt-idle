@@ -1,3 +1,4 @@
+import type { FarPlotGround } from '../data/crops';
 import type { BreedId } from '../data/crew';
 import type { CarvingId } from '../data/carvings';
 import type { DayPhaseId } from '../data/dayCycle';
@@ -51,6 +52,10 @@ export interface GameControls {
   /** Fish a drifting decoy out of the water (a small gift). */
   claimDrifter(): boolean;
   plantCrop(plot: number, crop: CropId): boolean;
+  /** Work a marsh plot up one level. */
+  levelPlot(plot: number): boolean;
+  /** Plant or work up the timber, goose field or bay plot. */
+  levelFarPlot(g: FarPlotGround): boolean;
   buyDecoys(g: GroundId): boolean;
   buyRung(id: RungId): boolean;
   /** Teach the crew a Crew Training skill. */
