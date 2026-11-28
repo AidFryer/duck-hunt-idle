@@ -193,7 +193,7 @@ export function closeSeason(state: GameState, toFlyway: FlywayId, events?: Event
     state.currencies.feathers = state.currencies.feathers.add(10_000);
   }
   if (hasPerk(state, 'earlyRiser')) {
-    for (const [bot, n] of [['caller', 2], ['blind', 2], ['retriever', 2], ['setter', 1]] as const) {
+    for (const [bot, n] of [['caller', 2], ['blind', 2], ['retriever', 2]] as const) {
       state.bots[bot].owned += n;
       state.assign[bot][BOTS[bot].job] = n;
     }

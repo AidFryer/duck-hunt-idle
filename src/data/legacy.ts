@@ -50,7 +50,7 @@ const fly = (branch: FlywayId, p: Omit<PerkDef, 'branch'>): PerkDef => ({ ...p, 
 
 export const PERKS: Record<PerkId, PerkDef> = {
   headStart: trunk({ id: 'headStart', name: 'Head Start', desc: 'Begin each season with 5,000 coins and 500 feathers.', cost: 1, tier: 0, requires: [] }),
-  earlyRiser: trunk({ id: 'earlyRiser', name: 'Early Riser', desc: 'Begin each season with 2 Callers, 2 Blind Bots, 2 Robo-Retrievers and a Decoy Setter.', cost: 1, tier: 0, requires: [] }),
+  earlyRiser: trunk({ id: 'earlyRiser', name: 'Early Riser', desc: 'Begin each season with 2 Callers, 2 Blind Bots and 2 Robo-Retrievers.', cost: 1, tier: 0, requires: [] }),
   longNights: trunk({ id: 'longNights', name: 'Long Nights', desc: '+2 hours of offline progress.', cost: 1, tier: 0, requires: [] }),
   keenEyes: trunk({ id: 'keenEyes', name: 'Keen Eyes', desc: 'One more flock can circle at once, and circling flocks wait 5s longer.', cost: 2, tier: 1, requires: ['earlyRiser'] }),
   unionRates: trunk({ id: 'unionRates', name: 'Union Rates', desc: 'Foreman Bots cost half as much.', cost: 2, tier: 1, requires: ['earlyRiser'] }),

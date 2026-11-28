@@ -45,7 +45,7 @@ import type { GameState, Problem } from '../sim/state';
 import { CROPS, cropsFor, plotCount, type CropId } from '../data/crops';
 import { canPlant, cropPrice } from '../sim/crops';
 import { COUNTER_LABEL, PLANS, RUNGS, SPECIES_DRAW, ladderFor, type CounterId, type Draw, type RungId } from '../data/progression';
-import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesNeeds } from '../sim/progression';
+import { canBuildLodge, counter, lodgeDef, lodgeReady, nextLodge, rungPrice, rungReady, speciesAvailable, speciesFound, speciesNeeds } from '../sim/progression';
 
 export interface Req {
   label: string;
@@ -86,6 +86,8 @@ export interface LodgeSnapshot {
     ready: boolean;
     affordable: boolean;
     points: readonly string[];
+    /** Plain-words estimate of when it can be built ('Ready now', 'about 40 min', 'find 2 more kinds of bird'). */
+    eta: string;
   };
 }
 
@@ -234,6 +236,8 @@ export interface HudSnapshot {
   acreGain: number;
   /** The best-value buy right now (most birds a minute per coin), e.g. 'bot:caller', 'decoys:marsh', 'acre'. */
   bestBuy: string | null;
+  /** What the best buy is called, what it costs, and whether it's affordable now. */
+  best: { label: string; price: Price; affordable: boolean } | null;
   /** Every hunting ground, open or not, in the order they open. */
   grounds: { id: GroundId; name: string; open: boolean; lodgeName: string }[];
   plots: {
@@ -375,6 +379,7 @@ function lodgeSnap(state: GameState): LodgeSnapshot {
       ready: lodgeReady(state),
       affordable: canBuildLodge(state),
       points: n.points,
+      eta: lodgeEta(state, n.coins, n.feathers, n.species),
     },
   };
 }
@@ -803,24 +808,41 @@ function buyGuide(state: GameState, bots: Record<BotId, BotSnapshot>, acrePrice:
   const limits: Partial<Record<GroundId, 'flocks' | 'call' | 'shoot' | 'fetch' | 'crew'>> = {};
   for (const g of GROUND_ORDER) if (groundOpen(state, g)) limits[g] = groundBirdsPerMinute(state, g).limit;
   const acre = acreGain(state);
-  const options: { key: string; gain: number; coins: number }[] = [];
+  const options: { key: string; gain: number; coins: number; label: string; price: Price }[] = [];
   for (const id of BOT_ORDER) {
     const b = bots[id];
-    if (b.gain && state.plans[id]) options.push({ key: `bot:${id}`, gain: b.gain, coins: b.price.coins.toNumber() });
+    if (b.gain && state.plans[id]) options.push({ key: `bot:${id}`, gain: b.gain, coins: b.price.coins.toNumber(), label: BOTS[id].name, price: b.price });
   }
   for (const g of GROUND_ORDER) {
     if (!groundOpen(state, g)) continue;
-    options.push({ key: `decoys:${g}`, gain: decoyGain(state, g), coins: decoyBagPrice(state, g).coins.toNumber() });
+    const dp = decoyBagPrice(state, g);
+    options.push({ key: `decoys:${g}`, gain: decoyGain(state, g), coins: dp.coins.toNumber(), label: g === 'marsh' ? 'Decoys' : `${GROUND_NAMES[g]} decoys`, price: dp });
   }
-  if (state.unlocks.upgrades !== undefined) options.push({ key: 'acre', gain: acre, coins: acrePrice.coins.toNumber() });
+  if (state.unlocks.upgrades !== undefined) options.push({ key: 'acre', gain: acre, coins: acrePrice.coins.toNumber(), label: 'Wetland Acre', price: acrePrice });
   let best: string | null = null;
+  let bestOpt: (typeof options)[number] | null = null;
   let bestValue = 0;
   for (const o of options) {
     const v = o.gain / Math.max(1, o.coins);
     if (o.gain > 0.05 && v > bestValue) {
       bestValue = v;
       best = o.key;
+      bestOpt = o;
     }
   }
-  return { limits, acreGain: acre, bestBuy: best };
+  return { limits, acreGain: acre, bestBuy: best, best: bestOpt ? { label: bestOpt.label, price: bestOpt.price, affordable: canAfford(state, bestOpt.price) } : null };
+}
+
+/** When the next lodge can be built, at the pace coins and feathers are coming in now. */
+function lodgeEta(state: GameState, coins: number, feathers: number, species: number): string {
+  const missing = species - speciesFound(state);
+  const kinds = missing > 0 ? `find ${missing} more kind${missing === 1 ? '' : 's'} of bird` : '';
+  const needC = Math.max(0, coins - state.currencies.coins.toNumber());
+  const needF = Math.max(0, feathers - state.currencies.feathers.toNumber());
+  if (needC === 0 && needF === 0) return kinds ? `Saved up · ${kinds}` : 'Ready now';
+  const v = state.volley;
+  if (v.coinsRate < 0.05) return `Hunt a little and Ray will estimate it${kinds ? ` · ${kinds}` : ''}`;
+  const secs = Math.max(needC > 0 ? needC / Math.max(1e-9, v.coinsRate) : 0, needF > 0 ? needF / Math.max(1e-9, v.feathersRate) : 0);
+  const time = !Number.isFinite(secs) || secs > 3 * 86400 ? 'a good while yet' : secs < 90 ? 'about a minute' : secs < 3600 ? `about ${Math.round(secs / 60)} min` : `about ${Math.floor(secs / 3600)} h ${Math.round((secs % 3600) / 60)} min`;
+  return `At this pace: ${time}${kinds ? ` · ${kinds}` : ''}`;
 }

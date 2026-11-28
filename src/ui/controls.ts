@@ -40,6 +40,8 @@ export interface GameControls {
   buyCarving(id: CarvingId): boolean;
   /** Fire the Big Volley when it's charged. */
   fireVolley(): boolean;
+  /** Buy whatever has the Best buy tag. */
+  buyBest(): boolean;
   /** Fish a drifting decoy out of the water (a small gift). */
   claimDrifter(): boolean;
   plantCrop(plot: number, crop: CropId): boolean;

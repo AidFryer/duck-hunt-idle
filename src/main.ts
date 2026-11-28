@@ -20,7 +20,7 @@ import { moveBots } from './sim/jobs';
 import { fixAll, fixBot, fixProblem, setForemanSettings } from './sim/problems';
 import type { SimEvent } from './sim/events';
 import { canDo, doAction, type ActionJob } from './sim/hunt';
-import { GROUND_JOBS, type GroundId } from './data/economy';
+import { GROUND_JOBS, type BotId, type GroundId } from './data/economy';
 import { buildLodge, buyRung, canBuildLodge, nextLodge } from './sim/progression';
 import { buzz, setHaptics } from './app/haptics';
 import { BUILD_STAMP, installState } from './app/pwa';
@@ -645,6 +645,17 @@ const controls: GameControls = {
       keep();
       return null;
     }
+  },
+  buyBest() {
+    const key = hud.get().bestBuy;
+    if (!key) return false;
+    const [kind, id] = key.split(':');
+    const ok = kind === 'bot' ? buyBot(state, id as BotId, 1, runner.sink) > 0
+      : kind === 'decoys' ? buyDecoyBag(state, id as GroundId, runner.sink)
+      : kind === 'acre' ? buyAcre(state, runner.sink)
+      : false;
+    if (ok) hud.set(snapshot(state));
+    return ok;
   },
   claimDrifter() {
     const ok = claimDrifter(state, runner.sink);
