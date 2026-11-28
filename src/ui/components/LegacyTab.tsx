@@ -6,7 +6,13 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { pulse } from './BotsTab';
-import { Finished, JumpChips, Row, RowNote, StarButton } from './Kit';
+import { JumpChips, Path, PathStep, RowNote, SectionHead, StarButton, type Tone } from './Kit';
+import type { IconName } from '../tabs';
+import type { BranchId } from '../../data/legacy';
+
+const LEGACY_ICON: Record<BranchId, [IconName, Tone]> = {
+  lodge: ['lodge', 'gold'], mississippi: ['leaf', 'timber'], central: ['wind', 'field'], pacific: ['fog', 'marsh'], atlantic: ['boat', 'bay'],
+};
 
 export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const [confirming, setConfirming] = useState(false);
@@ -56,28 +62,40 @@ export function LegacyTab({ hud, controls, notation }: { hud: HudSnapshot; contr
       {lg.branches.map((b) => {
         const info = BRANCH_INFO[b.id];
         const perks = lg.perks.filter((p) => PERKS[p.id].branch === b.id).sort((x, y) => PERKS[x.id].tier - PERKS[y.id].tier);
-        const done = perks.filter((p) => p.rank >= p.maxRank);
         const open = b.id === 'lodge' || b.open;
-        const notDone = perks.filter((p) => p.rank < p.maxRank);
-        // What you can buy now, plus the next locked step; the rest of the chain folds away.
-        const buyable = notDone.filter((p) => open && p.prereqsMet);
-        const locked = notDone.filter((p) => !(open && p.prereqsMet));
-        const rest = [...buyable, ...locked.slice(0, 1)];
-        const later = locked.slice(1);
+        const [icon, tone] = LEGACY_ICON[b.id];
+        let lockedShown = 0;
         return (
           <section id={`legacy-${b.id}`} class="jump-target" aria-label={info.name}>
-            <h4 class="group-head">{info.name}</h4>
-            <p class="card__hint">{open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`}</p>
+            <SectionHead icon={icon} tone={tone} title={info.name} note={open ? info.blurb : `Hunt the ${FLYWAYS[b.id as FlywayId].name} to open this branch.`} />
             {b.id !== 'lodge' && <Mastery m={lg.mastery[b.id as FlywayId]} notation={notation} />}
-            <ul class="up-list">{rest.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</ul>
-            <Finished count={later.length} label="Later">{later.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</Finished>
-            <Finished count={done.length} label="Owned">{done.map((p) => <PerkRowView p={p} open={open} controls={controls} />)}</Finished>
+            <Path>
+              {perks.map((p) => {
+                const d = PERKS[p.id];
+                const ranked = p.maxRank > 1;
+                const tag = ranked && p.rank > 0 ? `${p.rank}/${p.maxRank}` : undefined;
+                if (p.rank >= p.maxRank) return <PathStep state="done" title={d.name} tag={tag} />;
+                if (open && p.prereqsMet) {
+                  return (
+                    <PathStep
+                      state="ready"
+                      title={d.name}
+                      tag={tag}
+                      sub={d.desc}
+                      right={<StarButton cost={p.nextCost} affordable={p.canBuy} label={`Buy ${d.name}`} onBuy={() => controls.buyPerk(p.id)} />}
+                    />
+                  );
+                }
+                const state = lockedShown++ === 0 ? 'next' : 'later';
+                return <PathStep state={state} title={d.name} sub={d.desc} right={<RowNote>{open ? `After ${d.requires.map((r) => PERKS[r].name).join(', ')}` : '★ ' + p.nextCost}</RowNote>} />;
+              })}
+            </Path>
           </section>
         );
       })}
 
-      <section id="legacy-map" class="card jump-target">
-        <h3>Flyway map</h3>
+      <section id="legacy-map" class="jump-target">
+        <SectionHead icon="map" tone="wood" title="Flyway map" />
         <ol class="flyway-map">
           {hud.flyways.map((f) => (
             <li class={`flyway flyway--${f.status}`}>
@@ -190,28 +208,7 @@ function CloseSeasonDialog({ hud, controls, onClose }: { hud: HudSnapshot; contr
   );
 }
 
-type PerkRow = HudSnapshot['legacy']['perks'][number];
 
-/** One perk as a row: buy it, or rank it up if it has ranks. */
-function PerkRowView({ p, open, controls }: { p: PerkRow; open: boolean; controls: GameControls }) {
-  const d = PERKS[p.id];
-  const ranked = p.maxRank > 1;
-  const maxed = p.rank >= p.maxRank;
-  return (
-    <Row
-      cls={maxed ? 'is-maxed' : !open || !p.prereqsMet ? 'is-locked' : ''}
-      title={d.name}
-      tag={ranked ? `${p.rank}/${p.maxRank}` : undefined}
-      sub={d.desc}
-      right={
-        maxed ? <RowNote done>{ranked ? 'Max' : 'Owned'}</RowNote>
-        : !open ? <RowNote>Locked</RowNote>
-        : !p.prereqsMet ? <RowNote>After {d.requires.map((r) => PERKS[r].name).join(', ')}</RowNote>
-        : <StarButton cost={p.nextCost} affordable={p.canBuy} label={`Buy ${d.name}`} onBuy={() => controls.buyPerk(p.id)} />
-      }
-    />
-  );
-}
 
 /** The free once-a-season refund, with a second tap to confirm. */
 function RespecRow({ hud, controls }: { hud: HudSnapshot; controls: GameControls }) {

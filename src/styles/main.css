@@ -5162,3 +5162,77 @@ img { object-fit: contain; max-width: 100%; }
 .tab-help .keeper--small { margin: 0 0 6px; }
 .tab-help .keeper--small + ul { margin-top: 4px; }
 .finished + .finished { margin-top: 6px; }
+
+/* ---- Character pass: section heads, pips, paths, cards ------------------ */
+.group-head { margin: 14px 2px 6px; line-height: 1.3; }
+.sec-head { display: flex; align-items: center; gap: 8px; margin: 16px 2px 6px; font-family: var(--ui-fontHeading); font-size: 16px; line-height: 1.3; color: var(--ui-text); }
+.sec-head__icon { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; box-shadow: 0 1px 2px rgba(40, 26, 14, 0.2); }
+.tone-wood { background: #8a6240; }
+.tone-marsh { background: #6e8558; }
+.tone-timber { background: #6a5a3a; }
+.tone-field { background: #c49a3c; }
+.tone-bay { background: #4f7f99; }
+.tone-gold { background: #c9a04e; }
+.tone-rust { background: #b5562b; }
+.sec-note { margin: -2px 2px 8px; font-size: 12.5px; line-height: 1.35; color: var(--ui-textSoft); }
+.jump-target:first-of-type > .sec-head:first-child { margin-top: 6px; }
+
+.pips { display: inline-flex; gap: 3px; vertical-align: middle; }
+.pips i { width: 7px; height: 7px; border-radius: 50%; background: rgba(107, 74, 47, 0.18); }
+.pips i.is-on { background: var(--c-sageDark, #5d7448); }
+.pips--bar { display: inline-block; width: 64px; height: 6px; border-radius: 6px; background: rgba(107, 74, 47, 0.18); overflow: hidden; }
+.pips--bar span { display: block; height: 100%; background: var(--c-sageDark, #5d7448); border-radius: 6px; }
+
+.path { list-style: none; margin: 0; padding: 4px 10px 4px 8px; border-radius: 14px; background: var(--c-cream); box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12); }
+.path-step { position: relative; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 7px 0 7px 30px; }
+.path-step + .path-step { border-top: 1px solid rgba(107, 74, 47, 0.08); }
+.path-step::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 3px; border-radius: 3px; background: rgba(107, 74, 47, 0.16); }
+.path-step:first-child::before { top: 50%; }
+.path-step:last-child::before { bottom: 50%; }
+.path-step:only-child::before { display: none; }
+.path-step__dot { position: absolute; left: 1px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 50%; background: var(--c-cream); box-shadow: 0 0 0 3px rgba(107, 74, 47, 0.22); font-size: 11px; font-weight: 800; color: #fff; }
+.path-step--done .path-step__dot { background: var(--c-sageDark, #5d7448); box-shadow: 0 0 0 3px rgba(110, 133, 88, 0.3); }
+.path-step--ready .path-step__dot { background: #f6d07e; box-shadow: 0 0 0 3px rgba(201, 160, 78, 0.45), 0 0 10px rgba(246, 208, 126, 0.6); }
+.path-step__text { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.path-step__text strong { font-size: 14px; }
+.path-step__text > span { font-size: 12px; line-height: 1.35; color: var(--ui-textSoft); }
+.path-step--done, .path-step--later { min-height: 32px; padding-top: 5px; padding-bottom: 5px; }
+.path-step--done .path-step__text strong, .path-step--later .path-step__text strong { font-size: 13px; font-weight: 700; color: var(--ui-textSoft); }
+.path-step--later { opacity: 0.7; }
+.path-step--next .path-step__text { opacity: 0.8; }
+.path .row-note { font-size: 11.5px; }
+
+/* Rooms and carvings: small cards in a grid (two and three across). */
+.card-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.card-grid--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mini-card { display: grid; align-content: start; gap: 4px; padding: 10px; border-radius: 14px; background: var(--c-cream); box-shadow: 0 1px 3px rgba(40, 26, 14, 0.12); min-width: 0; }
+.mini-card__head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.mini-card__head > div { display: grid; gap: 2px; min-width: 0; }
+.mini-card__head strong { font-size: 13.5px; line-height: 1.2; }
+.mini-card__icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: radial-gradient(circle at 50% 35%, #fff6e2, var(--ui-panelShade)); color: var(--c-wood); }
+.mini-card__effect { font-size: 11.5px; line-height: 1.3; color: var(--ui-textSoft); }
+.mini-card .buy-btn { width: 100%; min-width: 0; min-height: 38px; padding: 4px 6px; margin-top: 2px; }
+.mini-card .buy-btn .cost { font-size: 12px; column-gap: 6px; }
+.mini-card.is-built { background: #f8f2e2; }
+.mini-card.is-maxed { box-shadow: 0 0 0 2px rgba(201, 160, 78, 0.5); }
+.mini-card.is-locked { opacity: 0.6; background: rgba(255, 255, 255, 0.3); box-shadow: none; border: 1px dashed var(--ui-panelEdge); }
+.mini-card__status { font-size: 11.5px; font-weight: 800; color: var(--c-sageDark, #5d7448); }
+.mini-card__status.is-need { color: var(--c-rust, #b5562b); }
+.carve-card { justify-items: center; text-align: center; padding: 8px 6px; }
+.carve-card__art { display: grid; place-items: center; width: 100%; height: 46px; border-radius: 10px; background: radial-gradient(circle at 50% 40%, #fff6e2, #ead7b0); }
+.carve-card__art img { width: 50px; }
+.carve-card.is-owned .carve-card__art img { animation: bob 3.4s ease-in-out infinite; }
+.carve-card.is-needBird .carve-card__art img { filter: grayscale(1) sepia(0.4) opacity(0.6); }
+.finished .card-grid { margin-top: 0; }
+.finished__grid { list-style: none; }
+.carve-card__name { font-size: 12.5px; line-height: 1.2; }
+.dog-card__who { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.dog-card__who strong { font-family: var(--ui-fontHeading); font-size: 18px; }
+.dog-card__who > span:not(.guest__bar) { font-size: 12px; font-weight: 700; color: var(--c-sageDark, #5d7448); }
+.dog-card__who .dog-card__need { font-weight: 600; color: var(--ui-textSoft); }
+.dog-card__head .buy-btn { flex: none; }
+.dog-card__who em { font-style: normal; font-size: 12.5px; font-weight: 800; color: var(--c-sageDark, #5d7448); }
+.dog-card__next { display: flex; align-items: center; gap: 10px; }
+.dog-card__need { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.dog-card__need small { font-size: 12px; color: var(--ui-textSoft); }
+.dog-card .buy-btn span, .dog-card .buy-btn .cost__item { color: inherit; font-weight: 800; }

@@ -6,7 +6,8 @@ import { formatNumber, formatRate, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot, RungSnapshot } from '../hudState';
 import { ReqBar } from './Lodge';
-import { BuyButton, Finished, Row, RowNote } from './Kit';
+import { BuyButton, Finished, Row, SectionHead, type Tone } from './Kit';
+import type { IconName } from '../tabs';
 import { carvingPortrait, portrait } from '../portraits';
 import { CARVINGS } from '../../data/carvings';
 import { SPECIES } from '../../data/species';
@@ -51,8 +52,7 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
       <p class="crew-note">{totalNote(hud, notation)}</p>
       {sections.map((g) => (
         <section id={`ws-${g.key}`} class="ws-section" aria-label={g.title}>
-          <h4 class="group-head">{g.title}</h4>
-          {g.key !== 'decoys' && <p class="ws-section__note">{crewNote(hud, g.key as CrewId, notation)}</p>}
+          <SectionHead icon={SECTION_ICON[g.key]![0]} tone={SECTION_ICON[g.key]![1]} title={g.title} note={g.key !== 'decoys' ? crewNote(hud, g.key as CrewId, notation) : undefined} />
           {g.key === 'decoys' ? (
             <DecoysSection hud={hud} controls={controls} notation={notation} />
           ) : (
@@ -67,6 +67,11 @@ export function BotsTab({ hud, controls, notation }: { hud: HudSnapshot; control
     </div>
   );
 }
+
+/** Each Workshop section's icon and color. */
+const SECTION_ICON: Record<string, [IconName, Tone]> = {
+  marsh: ['marsh', 'marsh'], decoys: ['duck', 'gold'], timber: ['leaf', 'timber'], field: ['wind', 'field'], bay: ['boat', 'bay'], lodge: ['lodge', 'wood'],
+};
 
 /** Decoy spreads (and their rigs) for each ground, plus the collection. */
 function DecoysSection({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
@@ -95,30 +100,27 @@ function DecoyCollection({ hud, controls, notation }: { hud: HudSnapshot; contro
   }
   const owned = hud.carvings.filter((c) => c.status === 'owned');
   const rest = hud.carvings.filter((c) => c.status !== 'owned');
-  const row = (c: HudSnapshot['carvings'][number]) => {
+  const card = (c: HudSnapshot['carvings'][number]) => {
     const d = CARVINGS[c.id];
     const known = c.status !== 'needsLodge';
     return (
-      <Row
-        cls={c.status === 'owned' ? 'is-maxed' : c.status === 'needsLodge' ? 'is-locked' : ''}
-        pic={known ? <img src={carvingPortrait(c.id)} alt="" /> : <span class="carving__mystery">?</span>}
-        title={known ? d.name : 'Unknown carving'}
-        sub={known ? d.effect : `Opens with lodge level ${d.lodge}`}
-        right={
-          c.status === 'owned' ? <RowNote done>On the shelf</RowNote>
-          : c.status === 'needsBird' ? <RowNote>Find a {SPECIES[d.needs!].name}</RowNote>
-          : c.status === 'ready' ? <BuyButton price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} affordable={c.affordable} label={`Carve ${d.name}`} onBuy={() => controls.buyCarving(c.id)} />
-          : null
-        }
-      />
+      <li class={`mini-card carve-card ${c.status === 'owned' ? 'is-owned' : ''} ${c.status === 'needsLodge' ? 'is-locked' : ''} ${c.status === 'needsBird' ? 'is-needBird' : ''}`}>
+        <div class="carve-card__art">{known ? <img src={carvingPortrait(c.id)} alt="" /> : <span class="carving__mystery">?</span>}</div>
+        <strong class="carve-card__name">{known ? d.name : 'Unknown'}</strong>
+        <span class="mini-card__effect">{known ? d.effect : `Lodge level ${d.lodge}`}</span>
+        {c.status === 'owned' && <span class="mini-card__status">On the shelf</span>}
+        {c.status === 'needsBird' && <span class="mini-card__status is-need">Find a {SPECIES[d.needs!].name}</span>}
+        {c.status === 'ready' && (
+          <BuyButton price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} affordable={c.affordable} label={`Carve ${d.name}`} onBuy={() => controls.buyCarving(c.id)} />
+        )}
+      </li>
     );
   };
   return (
     <section class="carvings" aria-label="Decoy collection">
-      <h4 class="group-head">Decoy collection · {owned.length}/{hud.carvings.length}</h4>
-      <p class="card__hint">One-of-a-kind carvings. Each keeps its bonus for good, even after you move flyways.</p>
-      <ul class="up-list">{rest.map(row)}</ul>
-      <Finished count={owned.length} label="On the shelf">{owned.map(row)}</Finished>
+      <SectionHead icon="duck" tone="gold" title={`Decoy collection · ${owned.length}/${hud.carvings.length}`} note="One-of-a-kind carvings. Each keeps its bonus for good, even after you move flyways." />
+      <ul class="card-grid card-grid--three">{rest.map(card)}</ul>
+      <Finished count={owned.length} label="On the shelf"><li class="finished__grid"><ul class="card-grid card-grid--three">{owned.map(card)}</ul></li></Finished>
     </section>
   );
 }

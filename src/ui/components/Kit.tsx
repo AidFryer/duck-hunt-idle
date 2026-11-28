@@ -7,6 +7,8 @@ import type { Price } from '../../sim/economy';
 import type { Notation } from '../../util/format';
 import { pulse } from './BotsTab';
 import { Cost } from './Cost';
+import { Icon } from './Icon';
+import type { IconName } from '../tabs';
 
 /** A buy button that shows only the price (the row says what it buys). */
 export function BuyButton({ price, notation, affordable, onBuy, label }: { price: Price; notation: Notation; affordable: boolean; onBuy: () => boolean; label?: string }) {
@@ -88,5 +90,54 @@ export function Finished({ count, label = 'Finished', children }: { count: numbe
       </summary>
       <ul class="up-list">{children}</ul>
     </details>
+  );
+}
+
+/** A section title with a small tinted icon (each ground has its own color). */
+export function SectionHead({ icon, title, tone = 'wood', note }: { icon: IconName; title: ComponentChildren; tone?: Tone; note?: ComponentChildren }) {
+  return (
+    <>
+      <h4 class="sec-head">
+        <span class={`sec-head__icon tone-${tone}`} aria-hidden="true"><Icon name={icon} size={15} /></span>
+        {title}
+      </h4>
+      {note && <p class="sec-note">{note}</p>}
+    </>
+  );
+}
+export type Tone = 'wood' | 'marsh' | 'timber' | 'field' | 'bay' | 'gold' | 'rust';
+
+/** Level shown as little dots (or a thin bar when there are many levels). */
+export function Pips({ level, max }: { level: number; max: number }) {
+  if (max > 10) {
+    return <span class="pips pips--bar" aria-label={`Level ${level} of ${max}`}><span style={{ width: `${Math.round((level / max) * 100)}%` }} /></span>;
+  }
+  return (
+    <span class="pips" aria-label={`Level ${level} of ${max}`}>
+      {Array.from({ length: max }, (_, i) => <i class={i < level ? 'is-on' : ''} />)}
+    </span>
+  );
+}
+
+export type StepState = 'done' | 'ready' | 'next' | 'later';
+
+/** A path of steps joined by a line (skills, perks): done ones shrink to one line. */
+export function Path({ children }: { children: ComponentChildren }) {
+  return <ol class="path">{children}</ol>;
+}
+export function PathStep({ state, title, tag, sub, right }: { state: StepState; title: ComponentChildren; tag?: ComponentChildren; sub?: ComponentChildren; right?: ComponentChildren }) {
+  const short = state === 'done' || state === 'later';
+  return (
+    <li class={`path-step path-step--${state}`}>
+      <span class="path-step__dot" aria-hidden="true">{state === 'done' ? '✓' : ''}</span>
+      <div class="path-step__text">
+        <strong>
+          {title}
+          {tag !== undefined && tag !== '' && <span class="up-row__lvl"> {tag}</span>}
+        </strong>
+        {!short && sub && <span>{sub}</span>}
+      </div>
+      {right}
+    </li>
   );
 }

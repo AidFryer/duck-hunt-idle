@@ -6,12 +6,17 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { gainText } from './BotsTab';
-import { BuyButton, Finished, JumpChips, Row, RowNote } from './Kit';
+import { BuyButton, Finished, JumpChips, Row, RowNote, SectionHead, type Tone } from './Kit';
+import type { IconName } from '../tabs';
 
 type Up = HudSnapshot['upgrades'][number];
 
 /** Sooner things first: by the lodge level that opens them, then by price. */
 const byWhen = (a: Up, b: Up) => a.lodge - b.lodge || a.price.coins.cmp(b.price.coins);
+
+const LAND_ICON: Record<string, [IconName, Tone]> = {
+  marsh: ['marsh', 'marsh'], timber: ['leaf', 'timber'], field: ['wind', 'field'], bay: ['boat', 'bay'],
+};
 
 export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const marsh = hud.upgrades.filter((u) => !UPGRADES[u.id].field && !UPGRADES[u.id].room && !UPGRADES[u.id].ground);
@@ -38,8 +43,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
   ];
   const groundSection = (key: string, title: string, children: preact.ComponentChildren, hint?: preact.ComponentChildren) => (
     <section id={`land-${key}`} class="jump-target land-section">
-      <h4 class="group-head">{title}</h4>
-      {hint}
+      <SectionHead icon={LAND_ICON[key]![0]} tone={LAND_ICON[key]![1]} title={title} note={hint} />
       <ul class="up-list">{children}</ul>
     </section>
   );
@@ -74,7 +78,7 @@ export function UpgradesTab({ hud, controls, notation }: { hud: HudSnapshot; con
           />
           {notDone(far[0]!.ups).map(up)}
         </>
-      ), <p class="card__hint up-hint">The feather ground: birds here give {STANDS.feathers}× feathers{hud.stands.feathersPerMin >= 1 ? ` (about ${formatNumber(hud.stands.feathersPerMin, notation)} a minute)` : ''}.</p>)}
+      ), `The feather ground: birds here give ${STANDS.feathers}× feathers${hud.stands.feathersPerMin >= 1 ? ` (about ${formatNumber(hud.stands.feathersPerMin, notation)} a minute)` : ''}.`)}
 
       {hud.field.open && groundSection('field', 'Goose Field', (
         <>
@@ -124,8 +128,7 @@ function FoodPlots({ hud, controls, notation }: { hud: HudSnapshot; controls: Ga
   }
   return (
     <section class="plots" aria-label="Food plots">
-      <h4 class="group-head">Food plots</h4>
-      <p class="card__hint up-hint">The crop decides which birds come. Each level draws more flocks to the marsh, and every {PLOT_LEVELS.birdsEvery} levels makes flocks bigger.</p>
+      <SectionHead icon="sun" tone="field" title="Food plots" note={`The crop decides which birds come. Each level draws more flocks to the marsh, and every ${PLOT_LEVELS.birdsEvery} levels makes flocks bigger.`} />
       <ul class="up-list">
         {p.list.map((plot, i) => {
           const open = picking === i || !plot.crop;

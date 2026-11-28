@@ -3,8 +3,8 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import type { IconName } from '../tabs';
-import { gainText, pulse } from './BotsTab';
-import { BuyButton, Finished, Row, RowNote } from './Kit';
+import { pulse } from './BotsTab';
+import { BuyButton, Finished, Pips, Row, RowNote, SectionHead } from './Kit';
 import { Icon } from './Icon';
 
 const ROOM_ICON: Partial<Record<UpgradeId, IconName>> = {
@@ -25,8 +25,8 @@ export function GuestBoard({ hud, controls, notation }: { hud: HudSnapshot; cont
   }
   return (
     <section id="lodge-guests" class="lodge-section jump-target" aria-label="Guest hunting parties">
-      <h4 class="group-head">Guest hunting parties</h4>
-      <p class="card__hint">
+      <SectionHead icon="podium" tone="gold" title="Guest hunting parties" />
+      <p class="sec-note">
         {g.served} parties served · guestbook +{Math.round(g.bookBonus * 100)}% coins. {g.toNextLine} more for the next line.
       </p>
       {g.board.length === 0 && <p class="card__hint">No bookings right now. A new guest calls each morning.</p>}
@@ -66,31 +66,46 @@ export function LodgeRooms({ hud, controls, notation }: { hud: HudSnapshot; cont
   if (open.length === 0 && soon.length === 0) return null;
   const ready = open.filter((u) => u.level < u.max);
   const done = open.filter((u) => u.level >= u.max);
-  const row = (u: (typeof rooms)[number]) => {
+  const card = (u: (typeof rooms)[number]) => {
     const d = UPGRADES[u.id];
     const maxed = u.level >= u.max;
     return (
-      <Row
-        cls={maxed ? 'is-maxed' : ''}
-        hint={d.blurb}
-        pic={<Icon name={ROOM_ICON[u.id] ?? 'lodge'} size={20} />}
-        title={d.name}
-        tag={u.level > 0 ? `${u.level}/${u.max}` : 'new'}
-        sub={`${d.effect}${u.id === 'guestDock' && !maxed ? ` (coins +${Math.round((hud.reputation - 1) * 100)}% → +${Math.round((hud.reputationNextDock - 1) * 100)}%)` : ''}${u.gain >= 0.05 && !maxed ? ` · ${gainText(u.gain, notation)}` : ''}`}
-        right={maxed ? <RowNote done>Max</RowNote> : <BuyButton price={u.price} notation={notation} affordable={u.affordable} onBuy={() => controls.buyUpgrade(u.id)} />}
-      />
+      <li class={`mini-card ${u.level > 0 ? 'is-built' : ''} ${maxed ? 'is-maxed' : ''}`} title={d.blurb}>
+        <div class="mini-card__head">
+          <span class="mini-card__icon"><Icon name={ROOM_ICON[u.id] ?? 'lodge'} size={18} /></span>
+          <div>
+            <strong>{d.name}</strong>
+            {u.level > 0 ? <Pips level={u.level} max={u.max} /> : <span class="mini-card__status is-need">Not built</span>}
+          </div>
+        </div>
+        <span class="mini-card__effect">
+          {d.effect}
+          {u.id === 'guestDock' && !maxed ? ` (coins +${Math.round((hud.reputation - 1) * 100)}% → +${Math.round((hud.reputationNextDock - 1) * 100)}%)` : ''}
+        </span>
+        {maxed ? (
+          <span class="mini-card__status">Finished</span>
+        ) : (
+          <BuyButton price={u.price} notation={notation} affordable={u.affordable} label={`${u.level > 0 ? 'Improve' : 'Build'} the ${d.name}`} onBuy={() => controls.buyUpgrade(u.id)} />
+        )}
+      </li>
     );
   };
   return (
     <section id="lodge-rooms" class="lodge-section jump-target" aria-label="Lodge rooms">
-      <h4 class="group-head">Rooms</h4>
-      <ul class="up-list">
-        {ready.map(row)}
+      <SectionHead icon="bed" tone="rust" title="Rooms" />
+      <ul class="card-grid">
+        {ready.map(card)}
         {soon.map((u) => (
-          <Row cls="is-locked" pic={<Icon name="lock" size={16} />} title={UPGRADES[u.id].name} sub={`${UPGRADES[u.id].effect} · comes with the ${u.lodgeName}`} />
+          <li class="mini-card is-locked">
+            <div class="mini-card__head">
+              <span class="mini-card__icon"><Icon name="lock" size={15} /></span>
+              <div><strong>{UPGRADES[u.id].name}</strong></div>
+            </div>
+            <span class="mini-card__effect">Comes with the {u.lodgeName}</span>
+          </li>
         ))}
       </ul>
-      <Finished count={done.length}>{done.map(row)}</Finished>
+      <Finished count={done.length}><li class="finished__grid"><ul class="card-grid">{done.map(card)}</ul></li></Finished>
     </section>
   );
 }

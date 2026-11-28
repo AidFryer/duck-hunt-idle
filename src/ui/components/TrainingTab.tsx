@@ -1,5 +1,5 @@
 import Decimal from 'break_infinity.js';
-import { BOTS, CREW_TITLE, crewOf, WORKSHOP_ORDER } from '../../data/economy';
+import { BOTS, crewOf, WORKSHOP_ORDER, type CrewId } from '../../data/economy';
 import { BRANCHES, BRANCH_ORDER, TRAINING, type BranchId } from '../../data/training';
 import { dogNameOf } from '../../data/goals';
 import { LODGE_LEVELS } from '../../data/progression';
@@ -7,7 +7,8 @@ import { formatNumber, type Notation } from '../../util/format';
 import type { GameControls } from '../controls';
 import type { HudSnapshot } from '../hudState';
 import { dogPortrait, portrait } from '../portraits';
-import { BuyButton, Finished, JumpChips, Row, RowNote } from './Kit';
+import { BuyButton, JumpChips, Path, PathStep, Row, RowNote, SectionHead, type Tone } from './Kit';
+import type { IconName } from '../tabs';
 
 /** Crew Training: your retriever, drills for each bot, and skills learned for good. */
 export function TrainingTab({ hud, controls, notation }: { hud: HudSnapshot; controls: GameControls; notation: Notation }) {
@@ -39,34 +40,36 @@ function DogCard({ hud, controls, notation }: { hud: HudSnapshot; controls: Game
   const d = hud.dog;
   const n = d.next;
   const name = dogNameOf(hud.profile);
-  const learned = d.skills.filter((k) => k.has);
-  const coming = d.skills.filter((k) => !k.has);
   return (
-    <section id="train-dog" class="jump-target" aria-label={`${name}, your retriever`}>
-      <h4 class="group-head">{name}, your retriever</h4>
-      <ul class="up-list">
-        <Row
-          pic={<img src={dogPortrait()} alt="" />}
-          title={name}
-          tag={`Lv ${d.level}/${d.max}`}
-          sub={n ? `Fetch birds by hand: ${formatNumber(Math.min(n.haveFetches, n.fetches), notation)}/${formatNumber(n.fetches, notation)}` : "A champion. There's nothing left to teach."}
-          extra={n && <span class="guest__bar"><span style={{ width: `${Math.round(Math.min(1, n.haveFetches / Math.max(1, n.fetches)) * 100)}%` }} /></span>}
-          right={
-            n ? (
-              <BuyButton price={{ coins: new Decimal(0), feathers: new Decimal(n.feathers) }} notation={notation} affordable={n.affordable} label={`Train to level ${n.level}`} onBuy={() => controls.trainDog()} />
-            ) : (
-              <RowNote done>Champion</RowNote>
-            )
-          }
-        />
-        {coming.slice(0, 1).map((k) => <Row cls="is-locked" tag={`Lv ${k.level}`} title={k.name} sub={k.desc} />)}
+    <section id="train-dog" class="dog-card jump-target" aria-label={`${name}, your retriever`}>
+      <div class="dog-card__head">
+        <div class="dog-card__portrait"><img src={dogPortrait()} alt="" /></div>
+        <div class="dog-card__who">
+          <strong>{name}</strong>
+          <em>Your retriever · level {d.level} of {d.max}</em>
+        </div>
+      </div>
+      <div class="dog-card__next">
+        {n ? (
+          <>
+            <div class="dog-card__need">
+              <small>Fetch birds by hand to train: {formatNumber(Math.min(n.haveFetches, n.fetches), notation)}/{formatNumber(n.fetches, notation)}</small>
+              <span class="guest__bar"><span style={{ width: `${Math.round(Math.min(1, n.haveFetches / Math.max(1, n.fetches)) * 100)}%` }} /></span>
+            </div>
+            <BuyButton price={{ coins: new Decimal(0), feathers: new Decimal(n.feathers) }} notation={notation} affordable={n.affordable} label={`Train to level ${n.level}`} onBuy={() => controls.trainDog()} />
+          </>
+        ) : (
+          <RowNote done>A champion. Nothing left to teach.</RowNote>
+        )}
+      </div>
+      <ul class="dog-skills">
+        {d.skills.map((k) => (
+          <li class={k.has ? 'has' : ''}>
+            <span class="dog-skills__lvl">{k.has ? '✓' : `Lv ${k.level}`}</span>
+            <span><strong>{k.name}</strong> {k.desc}</span>
+          </li>
+        ))}
       </ul>
-      <Finished count={coming.length - 1} label="Later">
-        {coming.slice(1).map((k) => <Row cls="is-locked" tag={`Lv ${k.level}`} title={k.name} sub={k.desc} />)}
-      </Finished>
-      <Finished count={learned.length} label="Learned">
-        {learned.map((k) => <Row cls="is-maxed" tag={`Lv ${k.level}`} title={k.name} sub={k.desc} right={<RowNote done>✓</RowNote>} />)}
-      </Finished>
     </section>
   );
 }
@@ -77,8 +80,7 @@ function Drills({ hud, controls, notation }: { hud: HudSnapshot; controls: GameC
   if (owned.length === 0) return null;
   return (
     <section id="train-drills" class="jump-target" aria-label="Drills">
-      <h4 class="group-head">Drills</h4>
-      <p class="card__hint">Each drill makes one kind of bot faster for the rest of the season. Skills below are kept for good.</p>
+      <SectionHead icon="gear" tone="wood" title="Drills" note="Each drill makes one kind of bot faster for the rest of the season. Skills below are kept for good." />
       <ul class="up-list">
         {owned.map((id) => {
           const b = hud.bots[id];
@@ -87,7 +89,7 @@ function Drills({ hud, controls, notation }: { hud: HudSnapshot; controls: GameC
               pic={<img src={portrait(id)} alt="" />}
               title={BOTS[id].name}
               tag={`Lv ${b.level}`}
-              sub={`${CREW_TITLE[crewOf(id)].replace(' crew', '')} · +${Math.round(BOTS[id].levelSpeedBonus * 100)}% speed a drill`}
+              sub={`${SHORT_CREW[crewOf(id)]} · +${Math.round(BOTS[id].levelSpeedBonus * 100)}% speed a drill`}
               right={<BuyButton price={b.levelPrice} notation={notation} affordable={b.levelAffordable} label={`Drill the ${BOTS[id].name}s`} onBuy={() => controls.levelUp(id)} />}
             />
           );
@@ -97,42 +99,39 @@ function Drills({ hud, controls, notation }: { hud: HudSnapshot; controls: GameC
   );
 }
 
+const SHORT_CREW: Record<CrewId, string> = { marsh: 'Marsh', timber: 'Timber', field: 'Goose Field', bay: 'Bay', lodge: 'Lodge' };
+
+const BRANCH_ICON: Record<BranchId, [IconName, Tone]> = {
+  teamwork: ['rope', 'wood'], callers: ['wind', 'marsh'], blinds: ['star', 'rust'], retrievers: ['drop', 'bay'], ledger: ['book', 'gold'], field: ['sun', 'field'],
+};
+
 function Branch({ id, hud, controls, notation }: { id: BranchId; hud: HudSnapshot; controls: GameControls; notation: Notation }) {
   const skills = hud.training.skills.filter((k) => TRAINING[k.id].branch === id);
-  const learned = skills.filter((k) => k.status === 'learned');
-  const ready = skills.filter((k) => k.status === 'ready');
-  const locked = skills.filter((k) => k.status !== 'learned' && k.status !== 'ready');
-  // Ready skills, then the next locked one; anything further along folds away.
-  const rest = [...ready, ...locked.slice(0, ready.length ? 0 : 1)];
-  const later = locked.slice(ready.length ? 0 : 1);
-  const row = (k: (typeof skills)[number]) => {
-    const d = TRAINING[k.id];
-    return (
-      <Row
-        cls={k.status === 'learned' ? 'is-maxed' : k.status === 'ready' ? '' : 'is-locked'}
-        title={d.name}
-        sub={d.desc}
-        right={
-          k.status === 'ready' ? (
-            <BuyButton price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} affordable={k.affordable} label={`Learn ${d.name}`} onBuy={() => controls.buyTraining(k.id)} />
-          ) : k.status === 'learned' ? (
-            <RowNote done>✓</RowNote>
-          ) : k.status === 'needsLodge' ? (
-            <RowNote>{LODGE_LEVELS[d.lodge - 1]?.name ?? `Lodge ${d.lodge}`}</RowNote>
-          ) : (
-            <RowNote>After {TRAINING[d.requires!].name}</RowNote>
-          )
-        }
-      />
-    );
-  };
+  let nextShown = false;
   return (
     <section id={`train-${id}`} class="jump-target" aria-label={BRANCHES[id].name}>
-      <h4 class="group-head">{BRANCHES[id].name}</h4>
-      <p class="card__hint">{BRANCHES[id].blurb}</p>
-      <ul class="up-list">{rest.map(row)}</ul>
-      <Finished count={later.length} label="Later">{later.map(row)}</Finished>
-      <Finished count={learned.length} label="Learned">{learned.map(row)}</Finished>
+      <SectionHead icon={BRANCH_ICON[id][0]} tone={BRANCH_ICON[id][1]} title={BRANCHES[id].name} note={BRANCHES[id].blurb} />
+      <Path>
+        {skills.map((k) => {
+          const d = TRAINING[k.id];
+          if (k.status === 'learned') return <PathStep state="done" title={d.name} />;
+          if (k.status === 'ready') {
+            nextShown = true;
+            return (
+              <PathStep
+                state="ready"
+                title={d.name}
+                sub={d.desc}
+                right={<BuyButton price={{ coins: new Decimal(d.coins), feathers: new Decimal(d.feathers) }} notation={notation} affordable={k.affordable} label={`Learn ${d.name}`} onBuy={() => controls.buyTraining(k.id)} />}
+              />
+            );
+          }
+          const why = k.status === 'needsLodge' ? LODGE_LEVELS[d.lodge - 1]?.name ?? `Lodge ${d.lodge}` : `After ${TRAINING[d.requires!].name}`;
+          const state = nextShown ? 'later' : 'next';
+          nextShown = true;
+          return <PathStep state={state} title={d.name} sub={d.desc} right={<RowNote>{why}</RowNote>} />;
+        })}
+      </Path>
     </section>
   );
 }
