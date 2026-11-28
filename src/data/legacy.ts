@@ -3,7 +3,7 @@ import type { FlywayId } from './flyways';
 
 export const PRESTIGE = {
   /** stars = floor(sqrt(seasonCoins / divisor)) */
-  divisor: 1e10,
+  divisor: 1.2e9,
   /** Permanent production bonus per star ever earned. */
   bonusPerStar: 0.05,
 } as const;

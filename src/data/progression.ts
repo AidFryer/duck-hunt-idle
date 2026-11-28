@@ -74,7 +74,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 3, name: 'Marsh Lodge',
     gus: "Guests are coming from three counties. We'll need a ledger keeper and a proper job board.",
-    birds: 0, species: 5, coins: 50_000, feathers: 5_000, opens: [],
+    birds: 0, species: 5, coins: 12_000, feathers: 1_200, opens: [],
     points: [
       'Ledger Bot plans, so Ray gets help at the porch.',
       'Second rungs on the automation ladder: Spinning-wing Decoys, Duet Callers, Steady Blind, Kennel Pack.',
@@ -96,7 +96,7 @@ export const LODGE_LEVELS: readonly LodgeLevel[] = [
   {
     level: 5, name: 'Grand Lodge',
     gus: "Look at her. Stone chimney, three wings, a flag on the roof. Your grandfather would weep.",
-    birds: 0, species: 20, coins: 600_000_000, feathers: 20_000_000, opens: ['legacy'],
+    birds: 0, species: 20, coins: 70_000_000, feathers: 2_500_000, opens: ['legacy'],
     points: [
       'Coastal Bay: open salt water with scoters, eiders and long-tailed ducks. Hire a Bay Boatman to run it.',
       'Legacy: close out a season for Flyway Stars and move to a new flyway.',

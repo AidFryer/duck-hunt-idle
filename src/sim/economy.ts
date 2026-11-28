@@ -269,7 +269,8 @@ function baseFlockDraw(state: GameState, g: GroundId): number {
 /** Lodge reputation: more birds logged, better-paying guests. */
 export function reputationMultiplier(state: GameState): number {
   const dock = 1 + UPGRADE_EFFECTS.guestDockReputation * (state.upgrades.guestDock ?? 0);
-  return 1 + LEDGER.reputationK * dock * Math.sqrt(state.stats.lifetimeLogged);
+  // Grows gently (by tenfolds of birds logged) so it never snowballs.
+  return 1 + LEDGER.reputationK * dock * Math.log10(1 + state.stats.lifetimeLogged / 500);
 }
 
 /** Each patch on the jacket: a little more per bird. */

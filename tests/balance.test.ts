@@ -12,13 +12,13 @@ import { formatWeeks, playWeeks } from '../src/sim/weekplay';
  * `FULL_BALANCE=1 npx vitest run tests/balance.test.ts` runs the two-week check.
  */
 describe('balance: weeks of play', () => {
-  it('the first session: the Cabin and first bots, then a goal for tomorrow', () => {
+  it('the first session: the Cabin and first bots, and the Marsh Lodge only near its end', () => {
     const r = autoplay(createInitialState(1, 0), { seconds: 90 * 60, tapsPerSecond: 1 });
     const min = (t: number | null | undefined) => (t ?? Infinity) / 60;
     expect(min(r.firstBot)).toBeGreaterThan(5); // earned by hand first…
     expect(min(r.firstBot)).toBeLessThan(20); // …but not a slog
     expect(min(r.lodge[2])).toBeLessThan(20);
-    expect(r.lodge[3]).toBeNull(); // the Marsh Lodge is a goal for another day
+    expect(min(r.lodge[3])).toBeGreaterThan(45); // the Marsh Lodge caps a long first session, no sooner
     expect(r.species).toBeGreaterThanOrEqual(5);
   }, 120_000);
 

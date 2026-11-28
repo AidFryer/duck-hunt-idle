@@ -89,7 +89,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   { id: 'carving3', name: 'Whittling Away', desc: 'Collect 3 carved decoys.', shape: 'round', icon: 'feather', colors: [0x8a5a3b, 0xf4e9d4], done: (s) => Object.keys(s.carvings).length >= 3, reward: 3_000 },
   { id: 'carving7', name: 'Full Shelf', desc: 'Collect 7 carved decoys.', shape: 'diamond', icon: 'feather', colors: [0x5a3a26, 0xe8b84a], done: (s) => Object.keys(s.carvings).length >= 7, reward: 150_000 },
   { id: 'golden25', name: 'Gold Rush', desc: 'Shoot 25 golden flocks yourself.', shape: 'round', icon: 'sun', colors: [0x6b4a2f, 0xe8b84a], done: (s) => s.stats.goldenShot >= 25, reward: 15_000 },
-  { id: 'coins10b', name: 'Old Money', desc: 'Earn 10 billion coins in total.', shape: 'banner', icon: 'coin', colors: [0x2d2520, 0xe8b84a], done: (s) => s.stats.lifetimeCoins.gte(1e10), reward: 600_000 },
+  { id: 'coins10b', name: 'Old Money', desc: 'Earn 1.2 billion coins in total.', shape: 'banner', icon: 'coin', colors: [0x2d2520, 0xe8b84a], done: (s) => s.stats.lifetimeCoins.gte(1e10), reward: 600_000 },
   { id: 'coins100m', name: 'Lodge Magnate', desc: 'Earn 100 million coins in total.', shape: 'diamond', icon: 'coin', colors: [0xc9a04e, 0x2d2520], done: (s) => s.stats.lifetimeCoins.gte(1e8), reward: 15_000 },
   { id: 'away', name: 'Gone Fishin\'', desc: 'Come back after an hour away.', shape: 'round', icon: 'moon', colors: [0x8a5a3b, 0xa9c1cf], done: (s) => s.stats.longestAway >= 3600 },
 ];

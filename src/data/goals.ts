@@ -98,7 +98,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'lodge3',
     title: 'Build the Marsh Lodge',
-    gus: "Save up 50,000 coins and find five kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
+    gus: "Save up 12,000 coins and find five kinds of duck, and we can build a real lodge. Guests'll come from three counties.",
     done: (s) => s.lodge >= 3,
   },
   {
@@ -159,7 +159,7 @@ export const GOALS: readonly GoalDef[] = [
   {
     id: 'season',
     title: 'Close your first season',
-    gus: "Earn 10 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
+    gus: "Earn 1.2 billion coins in a season and we can close it out. You'll bank Flyway Stars, and a new flyway opens up.",
     done: (s) => s.stats.seasonsClosed > 0,
     progress: (s) => s.season.coins.toNumber() / PRESTIGE.divisor,
   },

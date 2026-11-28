@@ -379,8 +379,8 @@ export const RELIABILITY_CAP = 0.995;
 export const LEDGER = {
   /** Ray logs this many birds per second on his own. */
   keeperRate: 0.5,
-  /** Coin bonus from reputation: 1 + k × sqrt(birds logged). */
-  reputationK: 0.006,
+  /** Coin bonus from reputation: 1 + k × log10(1 + birds logged / 500). */
+  reputationK: 0.4,
 } as const;
 
 /** Hunter's Rhythm: quick manual taps in a row build a streak that pays a bonus. */
